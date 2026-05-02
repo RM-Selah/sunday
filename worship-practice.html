@@ -3226,7 +3226,12 @@
           <div class="settings-section">
             <div class="settings-section-header">
               <span class="settings-section-title">Data</span>
-              <span class="settings-section-desc">Manage your local data and cloud sync.</span>
+              <span class="settings-section-desc">Export your data to move it between devices or browsers. Import to restore it.</span>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+              <button class="settings-btn" onclick="window.exportSundayData()">⬇ Export data</button>
+              <button class="settings-btn" onclick="document.getElementById('import-file-input').click()">⬆ Import data</button>
+              <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="window.importSundayData(this)">
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               <button class="settings-btn" onclick="window.syncUpToCloud()">Sync to cloud ↑</button>
@@ -5293,6 +5298,103 @@
       SundayData.clear();
       localStorage.removeItem('sunday_church');
       location.reload();
+    };
+
+    // Export all Sunday data as a JSON file — download it, then import on any device/browser
+    window.exportSundayData = function() {
+      try {
+        var exportData = {
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          church: localStorage.getItem('sunday_church') || '',
+          pastor: localStorage.getItem('sunday_pastor') || '',
+          team: TEAM,
+          songs: SONGS,
+          services: services,
+          roster: state.roster,
+          set: state.set,
+          ministrySongs: state.ministrySongs
+        };
+        var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        var churchName = (exportData.church || 'sunday').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        a.href = url;
+        a.download = churchName + '-data-' + new Date().toISOString().slice(0,10) + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        var fb = document.getElementById('sync-feedback');
+        if (fb) { fb.textContent = '✓ Exported — open that file on any device to import'; fb.className = 'settings-feedback success'; }
+      } catch(e) {
+        console.error('Export failed:', e);
+        var fb = document.getElementById('sync-feedback');
+        if (fb) { fb.textContent = 'Export failed — try again'; fb.className = 'settings-feedback error'; }
+      }
+    };
+
+    // Import data from an exported JSON file — restores everything
+    window.importSundayData = function(input) {
+      var file = input.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          var data = JSON.parse(e.target.result);
+          if (!data.version || !data.team) throw new Error('Not a valid Sunday export file');
+
+          // Restore church + pastor name
+          if (data.church) { try { localStorage.setItem('sunday_church', data.church); } catch(ex) {} }
+          if (data.pastor) { try { localStorage.setItem('sunday_pastor', data.pastor); } catch(ex) {} }
+
+          // Restore team
+          if (data.team && data.team.length > 0) {
+            TEAM.length = 0;
+            data.team.forEach(function(m) { TEAM.push(m); });
+            window.TEAM = TEAM;
+          }
+
+          // Restore songs
+          if (data.songs && data.songs.length > 0) {
+            SONGS.length = 0;
+            data.songs.forEach(function(s) { SONGS.push(s); });
+            window.SONGS = SONGS;
+          }
+
+          // Restore services
+          if (data.services && data.services.length > 0) {
+            services.length = 0;
+            data.services.forEach(function(s) { services.push(s); });
+            window.services = services;
+            if (!state.rosterService && services.length > 0) state.rosterService = services[0].id;
+          }
+
+          // Restore roster + set
+          if (data.roster) state.roster = data.roster;
+          if (data.set && data.set.length > 0) state.set = data.set;
+          if (data.ministrySongs) state.ministrySongs = data.ministrySongs;
+
+          // Update church name in UI
+          var chipEl = document.querySelector('.chip');
+          if (chipEl && data.church) chipEl.textContent = data.church;
+
+          // Save everything locally and re-render
+          SundayData.save();
+          try { renderSongs(); renderSet(); renderRoster(); renderServiceToggle(); renderAvailableList(); } catch(ex) {}
+
+          var fb = document.getElementById('sync-feedback');
+          if (fb) { fb.textContent = '✓ Imported — ' + TEAM.length + ' people, ' + SONGS.length + ' songs, all roster data restored'; fb.className = 'settings-feedback success'; }
+
+          // Reset the input so the same file can be re-imported if needed
+          input.value = '';
+        } catch(err) {
+          var fb = document.getElementById('sync-feedback');
+          if (fb) { fb.textContent = 'Import failed — make sure it\'s a Sunday export file'; fb.className = 'settings-feedback error'; }
+          console.error('Import failed:', err);
+        }
+      };
+      reader.readAsText(file);
     };
 
     // Delete a team member entirely
