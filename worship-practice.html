@@ -3137,7 +3137,7 @@
           <div class="settings-section">
             <div class="settings-section-header">
               <span class="settings-section-title">Sunny AI (Anthropic)</span>
-              <span class="settings-section-desc">Your API key lives only on this device — never in any file or code. Required for Sunny to work.</span>
+              <span class="settings-section-desc">Sunny works out of the box. Paste your own Anthropic key here only if you want to use your own account — it stays on this device.</span>
             </div>
             <div class="settings-field">
               <label class="settings-label">API Key</label>
@@ -4038,8 +4038,14 @@
 
     /* ==================== SUNDAY API LAYER ==================== */
     var SundayAPI = {
+      // Direct Anthropic endpoint — used when user has pasted their own key in Settings (BYOK)
       apiUrl: 'https://api.anthropic.com/v1/messages',
+      // Proxy endpoint — used by default. Backend (server.py) holds platform credentials.
+      // The literal '__PORT_8000__' is rewritten by deploy_website to the proxied path.
+      proxyUrl: ('__PORT_8000__'.indexOf('__') === 0 ? 'http://localhost:8000' : '__PORT_8000__') + '/chat',
       apiKey: (function() { try { return localStorage.getItem('sunday_api_key') || ''; } catch(e) { return ''; } })(),
+      // True when no BYOK key — route through proxy with platform-managed model name
+      useProxy: function() { return !this.apiKey; },
 
       // === SMART MODEL ROUTING ===
       // Haiku  → fast + cheap — simple tasks (assign, add song, quick questions)
@@ -4047,6 +4053,8 @@
       modelFast:    'claude-haiku-4-5-20251001',  // ~4x cheaper — pedestrian tasks
       modelSmart:   'claude-sonnet-4-6',           // full power — anything complex
       model:        'claude-sonnet-4-6',           // default, overridden per-call
+      // Proxy uses platform model names (no dates, no dashes in version)
+      proxyModel:   'claude_sonnet_4_6',
 
       // Decide which model to use based on the message + screen
       selectModel: function(screen, message) {
@@ -4085,13 +4093,21 @@
         this.checking = true;
         var self = this;
 
-        // Try a minimal API call to verify the key works
+        // Try a minimal API call to verify connection works.
+        // If proxy mode: hit /health on the backend (no key needed).
+        // If BYOK mode: hit Anthropic directly with the user's key.
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', this.apiUrl, true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.setRequestHeader('x-api-key', this.apiKey);
-        xhr.setRequestHeader('anthropic-version', '2023-06-01');
-        xhr.setRequestHeader('anthropic-dangerous-direct-browser-access', 'true');
+        var viaProxy = this.useProxy();
+        if (viaProxy) {
+          var healthUrl = ('__PORT_8000__'.indexOf('__') === 0 ? 'http://localhost:8000' : '__PORT_8000__') + '/health';
+          xhr.open('GET', healthUrl, true);
+        } else {
+          xhr.open('POST', this.apiUrl, true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.setRequestHeader('x-api-key', this.apiKey);
+          xhr.setRequestHeader('anthropic-version', '2023-06-01');
+          xhr.setRequestHeader('anthropic-dangerous-direct-browser-access', 'true');
+        }
         xhr.timeout = 5000;
 
         xhr.onload = function() {
@@ -4371,19 +4387,28 @@
         });
         messages.push({ role: 'user', content: content });
 
+        var viaProxy = this.useProxy();
+        // Proxy mode uses platform model names; direct mode uses Anthropic's dated names.
+        var modelToSend = viaProxy ? self.proxyModel : chosenModel;
+
         var payload = JSON.stringify({
-          model: chosenModel,
+          model: modelToSend,
           max_tokens: chosenModel === self.modelFast ? 1024 : 4096,
           system: this.buildSystemPrompt(screen),
           messages: messages
         });
 
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', this.apiUrl, true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.setRequestHeader('x-api-key', this.apiKey);
-        xhr.setRequestHeader('anthropic-version', '2023-06-01');
-        xhr.setRequestHeader('anthropic-dangerous-direct-browser-access', 'true');
+        if (viaProxy) {
+          xhr.open('POST', this.proxyUrl, true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+        } else {
+          xhr.open('POST', this.apiUrl, true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.setRequestHeader('x-api-key', this.apiKey);
+          xhr.setRequestHeader('anthropic-version', '2023-06-01');
+          xhr.setRequestHeader('anthropic-dangerous-direct-browser-access', 'true');
+        }
         xhr.timeout = file ? 45000 : 20000;
 
         xhr.onload = function() {
@@ -7369,7 +7394,7 @@
       // Update status — show which model is being used
       var statusEl = document.getElementById('sidebar-chat-status');
       if (statusEl) {
-        var previewModel = SundayAPI.selectModel(apiScreen, msgText);
+        var previewModel = SundayAPI.selectModel(apiScreen, msg);
         statusEl.textContent = previewModel === SundayAPI.modelFast ? '⚡ thinking' : '✦ thinking';
         statusEl.title = previewModel === SundayAPI.modelFast ? 'Using Haiku (fast)' : 'Using Sonnet (smart)';
       }
