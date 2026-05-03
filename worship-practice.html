@@ -7931,24 +7931,22 @@
       messages: []
     };
 
-    // Skip onboarding if user already has saved data
-    if (localStorage.getItem('sunday_church') || SundayData.hasTeam()) {
+    // Skip onboarding entirely — land straight on the working app.
+    // (Onboarding will be reworked later. For now, treat every visit as a returning user.)
+    {
       var hero = document.getElementById('hero-landing');
       if (hero) { hero.classList.add('hidden'); hero.style.display = 'none'; }
-      // Restore church name
+
+      // Seed church name from localStorage if present, otherwise default to 'The Local'
       var savedChurch = localStorage.getItem('sunday_church');
-      if (savedChurch) {
-        heroState.churchName = savedChurch;
-        var chipEl = document.querySelector('.chip');
-        if (chipEl) chipEl.textContent = savedChurch;
+      if (!savedChurch) {
+        savedChurch = 'The Local';
+        try { localStorage.setItem('sunday_church', savedChurch); } catch(e) {}
       }
-    } else {
-      // Show initial greeting after a beat
-      setTimeout(function() {
-        addHeroMessage('sunday', 'Hi, I\u2019m Sunny.');
-        heroState.step = 0;
-        updateHeroPlaceholder();
-      }, 800);
+      heroState.churchName = savedChurch;
+      heroState.step = 5; // mark onboarding complete
+      var chipEl = document.querySelector('.chip');
+      if (chipEl) chipEl.textContent = savedChurch;
     }
 
     function addHeroMessage(type, text) {
