@@ -42,7 +42,7 @@
       --font-display: 'Space Grotesk', -apple-system, 'Segoe UI', sans-serif;
       --font-body: 'DM Sans', -apple-system, 'Segoe UI', sans-serif;
       --font-serif: 'Cormorant Garamond', Georgia, serif;
-      --shadow-lg: 0 20px 60px rgba(0,0,0,0.7), 0 0 1px rgba(255,248,235,0.04);
+      --shadow-lg: 0 20px 60px rgba(0,0,0,0.7), 0 0 1px rgba(232,232,242,0.04);
       --shadow-md: 0 8px 32px rgba(0,0,0,0.5);
       --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
       --radius-lg: 12px;
@@ -1470,8 +1470,8 @@
 
     .position-slot.tier3 {
       border-color: var(--classic);
-      background: rgba(154,128,96,0.10);
-      box-shadow: 0 0 12px rgba(154,128,96,0.1), inset 0 0 6px rgba(154,128,96,0.05);
+      background: rgba(152,120,200,0.10);
+      box-shadow: 0 0 12px rgba(152,120,200,0.1), inset 0 0 6px rgba(152,120,200,0.05);
     }
 
     .position-slot:hover {
@@ -1747,9 +1747,9 @@
       color: var(--amber);
     }
 
-    .available-chip.tier1 { border-color: rgba(212,146,42,0.3); }
-    .available-chip.tier2 { border-color: rgba(122,144,212,0.25); }
-    .available-chip.tier3 { border-color: rgba(154,128,96,0.2); }
+    .available-chip.tier1 { border-color: rgba(224,154,45,0.3); }
+    .available-chip.tier2 { border-color: rgba(88,136,216,0.25); }
+    .available-chip.tier3 { border-color: rgba(152,120,200,0.2); }
 
     .available-chip { position: relative; display: flex; align-items: center; gap: 2px; }
 
@@ -2324,11 +2324,11 @@
       width: 100%; height: 100%;
       background:
         linear-gradient(to bottom,
-          rgba(12,12,8,0.1) 0%,
-          rgba(12,12,8,0.2) 30%,
-          rgba(12,12,8,0.55) 60%,
-          rgba(12,12,8,0.92) 85%,
-          rgba(12,12,8,1) 100%);
+          rgba(5,5,7,0.1) 0%,
+          rgba(5,5,7,0.2) 30%,
+          rgba(5,5,7,0.6) 60%,
+          rgba(5,5,7,0.93) 85%,
+          rgba(5,5,7,1) 100%);
     }
 
     /* Grain texture overlay */
@@ -2357,11 +2357,11 @@
       font-weight: 400;
       letter-spacing: 3px;
       text-transform: uppercase;
-      color: rgba(240,237,229,0.5);
+      color: rgba(232,232,242,0.5);
     }
     .hero-masthead-rule {
       width: 32px; height: 1px;
-      background: rgba(240,237,229,0.2);
+      background: rgba(232,232,242,0.2);
     }
 
     .hero-content {
@@ -2381,7 +2381,7 @@
       font-weight: 400;
       letter-spacing: 3px;
       text-transform: uppercase;
-      color: rgba(196,150,58,0.8);
+      color: rgba(224,154,45,0.9);
       margin-bottom: 16px;
     }
 
@@ -2401,7 +2401,7 @@
       font-size: 13px;
       font-weight: 300;
       letter-spacing: 1px;
-      color: rgba(240,237,229,0.4);
+      color: rgba(232,232,242,0.4);
       margin-bottom: 40px;
       text-transform: uppercase;
     }
@@ -4216,7 +4216,7 @@
         return TEAM && TEAM.length > 0;
       },
       addMember: function(member) {
-        var colors = ['#e09a2d','#7a90d4','#6bc49a','#e87a3a','#a08a60','#c87a60','#9ab870','#b88878'];
+        var colors = ['#e09a2d','#5888d8','#68b878','#e06858','#9878c8','#d86858','#48a878','#8870d0'];
         if (!member.color) member.color = colors[TEAM.length % colors.length];
         if (!member.tier) member.tier = 2;
         if (!member.avail) member.avail = [1,2,3,4,5];
@@ -5729,7 +5729,7 @@
       roster: {},
     };
 
-    const catColors = { praise: '#e07a3a', current: '#7a90d4', homegrown: '#7ab89a', classic: '#9a8060', custom: '#d4922a' };
+    const catColors = { praise: '#e06858', current: '#5888d8', homegrown: '#68b878', classic: '#9878c8', custom: '#e09a2d' };
     const catNames = { praise: 'Praise', current: 'Current', homegrown: 'Homegrown', classic: 'Classics', custom: 'One-off' };
 
     // Legacy chat vars removed — all chat now through sidebar
@@ -6152,7 +6152,7 @@
     /* ==================== TEAM DATABASE SCREEN ==================== */
 
     var ALL_ROLES = ['WL','CO-WL','FLV','Keys','Drums','Bass','Guitar','Acoustic','MD','FOH'];
-    var ROLE_COLORS = { WL:'#c4963a', 'CO-WL':'#a07830', FLV:'#5a7a52', Keys:'#6a7a9a', Drums:'#8a5a52', Bass:'#7a6a8a', Guitar:'#5a7a6a', Acoustic:'#7a6a52', MD:'#6a5a4a', FOH:'#5a6a6a' };
+    var ROLE_COLORS = { WL:'#e09a2d', 'CO-WL':'#c07820', FLV:'#5888d8', Keys:'#7890e8', Drums:'#d86858', Bass:'#8870d0', Guitar:'#48a878', Acoustic:'#68b8a8', MD:'#e09a2d', FOH:'#5888d8' };
 
     var _editingMemberId = null;
 
@@ -6198,8 +6198,8 @@
       // Avatar
       var av = document.createElement('div');
       av.className = 'person-avatar';
-      av.style.background = (member.color || '#8a7c5a') + '22';
-      av.style.color = member.color || '#8a7c5a';
+      av.style.background = (member.color || '#5888d8') + '22';
+      av.style.color = member.color || '#5888d8';
       av.textContent = member.name.charAt(0).toUpperCase();
       row.appendChild(av);
 
@@ -6216,8 +6216,8 @@
         var pill = document.createElement('span');
         pill.className = 'person-role-pill';
         pill.textContent = r;
-        pill.style.background = (ROLE_COLORS[r] || '#8a7c5a') + '22';
-        pill.style.color = ROLE_COLORS[r] || '#8a7c5a';
+        pill.style.background = (ROLE_COLORS[r] || '#5888d8') + '22';
+        pill.style.color = ROLE_COLORS[r] || '#5888d8';
         rolesEl.appendChild(pill);
       });
       info.appendChild(nameEl);
@@ -6751,23 +6751,23 @@
     }
 
     const roleIcons = {
-      WL:       '<span style="color: #e07a3a; font-weight: 500;">♪</span>',
-      'CO-WL':  '<span style="color: #e07a3a; font-weight: 500;">♪</span>',
-      FLV1:     '<span style="color: #7a90d4; font-weight: 500;">♫</span>',
-      FLV2:     '<span style="color: #7a90d4; font-weight: 500;">♫</span>',
-      FLV3:     '<span style="color: #7a90d4; font-weight: 500;">♫</span>',
-      FLV4:     '<span style="color: #7a90d4; font-weight: 500;">♫</span>',
-      MD:       '<span style="color: #d4922a; font-weight: 500;">♬</span>',
-      KEYS1:    '<span style="color: #9a8060; font-weight: 500;">♯</span>',
-      KEYS2:    '<span style="color: #9a8060; font-weight: 500;">♯</span>',
-      ACOUSTIC: '<span style="color: #7ab89a; font-weight: 500;">♩</span>',
-      GUITAR1:  '<span style="color: #7ab89a; font-weight: 500;">♩</span>',
-      GUITAR2:  '<span style="color: #7ab89a; font-weight: 500;">♩</span>',
-      BASS:     '<span style="color: #7ab89a; font-weight: 500;">♩</span>',
-      DRUMS:    '<span style="color: #c87a60; font-weight: 500;">◉</span>',
-      FOH:      '<span style="color: #6a9a8f; font-weight: 500;">≋</span>',
-      LYRICS:   '<span style="color: #8a7ab9; font-weight: 500;">▤</span>',
-      TRACKS:   '<span style="color: #a89a7a; font-weight: 500;">⊞</span>',
+      WL:       '<span style="color: #e09a2d; font-weight: 500;">♪</span>',
+      'CO-WL':  '<span style="color: #e09a2d; font-weight: 500;">♪</span>',
+      FLV1:     '<span style="color: #5888d8; font-weight: 500;">♫</span>',
+      FLV2:     '<span style="color: #5888d8; font-weight: 500;">♫</span>',
+      FLV3:     '<span style="color: #5888d8; font-weight: 500;">♫</span>',
+      FLV4:     '<span style="color: #5888d8; font-weight: 500;">♫</span>',
+      MD:       '<span style="color: #e09a2d; font-weight: 500;">♬</span>',
+      KEYS1:    '<span style="color: #7890e8; font-weight: 500;">♯</span>',
+      KEYS2:    '<span style="color: #7890e8; font-weight: 500;">♯</span>',
+      ACOUSTIC: '<span style="color: #68b8a8; font-weight: 500;">♩</span>',
+      GUITAR1:  '<span style="color: #48a878; font-weight: 500;">♩</span>',
+      GUITAR2:  '<span style="color: #48a878; font-weight: 500;">♩</span>',
+      BASS:     '<span style="color: #8870d0; font-weight: 500;">♩</span>',
+      DRUMS:    '<span style="color: #d86858; font-weight: 500;">◉</span>',
+      FOH:      '<span style="color: #5888d8; font-weight: 500;">≋</span>',
+      LYRICS:   '<span style="color: #9878c8; font-weight: 500;">▤</span>',
+      TRACKS:   '<span style="color: #8870d0; font-weight: 500;">⊞</span>',
     };
 
     const roleLabels = {
@@ -7158,13 +7158,13 @@
       // allowRepeat: true means a person can appear in this group even if already shown above.
       const groups = [
         { key: 'wl',       label: 'Worship Leaders', icon: '<span style="color: #e09a2d; font-weight: 500;">✦</span>', match: ['WL','CO-WL'], allowRepeat: false },
-        { key: 'vocals',   label: 'Vocals',           icon: '<span style="color: #e07a3a; font-weight: 500;">♪</span>', match: ['WL','CO-WL','FLV'], allowRepeat: true },
-        { key: 'keys',     label: 'Keys',             icon: '<span style="color: #9a8060; font-weight: 500;">♯</span>', match: ['Keys'] },
-        { key: 'drums',    label: 'Drums',            icon: '<span style="color: #c87a60; font-weight: 500;">◉</span>', match: ['Drums'] },
-        { key: 'bass',     label: 'Bass',             icon: '<span style="color: #7ab89a; font-weight: 500;">♩</span>', match: ['Bass'] },
-        { key: 'guitar',   label: 'Guitar',           icon: '<span style="color: #7ab89a; font-weight: 500;">♩</span>', match: ['Guitar','Acoustic'] },
-        { key: 'md',       label: 'MD',               icon: '<span style="color: #d4922a; font-weight: 500;">♬</span>', match: ['MD'] },
-        { key: 'foh',      label: 'FOH',              icon: '<span style="color: #6a9a8f; font-weight: 500;">≋</span>', match: ['FOH'] },
+        { key: 'vocals',   label: 'Vocals',           icon: '<span style="color: #5888d8; font-weight: 500;">♪</span>', match: ['WL','CO-WL','FLV'], allowRepeat: true },
+        { key: 'keys',     label: 'Keys',             icon: '<span style="color: #7890e8; font-weight: 500;">♯</span>', match: ['Keys'] },
+        { key: 'drums',    label: 'Drums',            icon: '<span style="color: #d86858; font-weight: 500;">◉</span>', match: ['Drums'] },
+        { key: 'bass',     label: 'Bass',             icon: '<span style="color: #8870d0; font-weight: 500;">♩</span>', match: ['Bass'] },
+        { key: 'guitar',   label: 'Guitar',           icon: '<span style="color: #48a878; font-weight: 500;">♩</span>', match: ['Guitar','Acoustic'] },
+        { key: 'md',       label: 'MD',               icon: '<span style="color: #e09a2d; font-weight: 500;">♬</span>', match: ['MD'] },
+        { key: 'foh',      label: 'FOH',              icon: '<span style="color: #5888d8; font-weight: 500;">≋</span>', match: ['FOH'] },
       ];
 
       // placed tracks who's been shown in a non-repeating group
@@ -9350,17 +9350,17 @@
       // Color palette matching Sunday's dark UI
       colors: {
         bg: '#050507',
-        cardBg: '#0f0f16',
-        cardBorder: '#1a1a25',
+        cardBg: '#0f0f18',
+        cardBorder: '#15151f',
         amber: '#e09a2d',
         amberDim: 'rgba(224,154,45,0.15)',
-        praise: '#e87a3a',
-        worship: '#7a90d4',
-        homegrown: '#6bc49a',
-        classic: '#a08a60',
-        text: '#f0f0f5',
-        mid: '#8a8fa6',
-        dim: '#3d4362',
+        praise: '#e06858',
+        worship: '#5888d8',
+        homegrown: '#68b878',
+        classic: '#9878c8',
+        text: '#e8e8f2',
+        mid: '#6060a0',
+        dim: '#38385a',
         white: '#ffffff'
       },
 
