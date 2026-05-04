@@ -6157,35 +6157,50 @@
     var _editingMemberId = null;
 
     function renderPeople() {
-      var list = document.getElementById('people-list');
-      var subtitle = document.getElementById('people-subtitle');
-      if (!list) return;
-      list.innerHTML = '';
+      try {
+        var list = document.getElementById('people-list');
+        var subtitle = document.getElementById('people-subtitle');
+        if (!list) { console.warn('Sunday: people-list not found'); return; }
+        list.innerHTML = '';
 
-      var members = TEAM.filter(function(m) { return !m.archived; });
-      if (subtitle) subtitle.textContent = members.length + ' musician' + (members.length !== 1 ? 's' : '') + ' in the database';
+        var team = (typeof TEAM !== 'undefined' && Array.isArray(TEAM)) ? TEAM : [];
+        var members = team.filter(function(m) { return !m.archived; });
 
-      if (members.length === 0) {
-        list.innerHTML = '<div style="padding:40px 0; text-align:center; color:var(--dim); font-size:13px;">No musicians yet — add one above or tell Sunny.</div>';
-        return;
-      }
+        if (subtitle) subtitle.textContent = members.length + ' musician' + (members.length !== 1 ? 's' : '') + ' in the database';
 
-      // Group by tier
-      var tiers = { 1: [], 2: [], 3: [] };
-      members.forEach(function(m) { (tiers[m.tier] || tiers[3]).push(m); });
-      var tierLabels = { 1: 'Tier 1 — Lead', 2: 'Tier 2 — Regular', 3: 'Tier 3 — Developing' };
+        if (members.length === 0) {
+          list.innerHTML = '<div style="padding:48px 0; text-align:center;">' +
+            '<div style="font-size:32px; margin-bottom:12px; opacity:0.3;">♪</div>' +
+            '<div style="font-size:14px; color:var(--text); opacity:0.5; margin-bottom:8px;">No musicians yet</div>' +
+            '<div style="font-size:12px; color:var(--mid);">Hit "+ Add musician" above or tell Sunny in the chat.</div>' +
+            '</div>';
+          return;
+        }
 
-      [1, 2, 3].forEach(function(t) {
-        if (!tiers[t] || tiers[t].length === 0) return;
-        var label = document.createElement('div');
-        label.className = 'people-section-label';
-        label.textContent = tierLabels[t];
-        list.appendChild(label);
-
-        tiers[t].forEach(function(member) {
-          list.appendChild(buildPersonRow(member));
+        // Group by tier
+        var tiers = { 1: [], 2: [], 3: [] };
+        members.forEach(function(m) {
+          var t = parseInt(m.tier) || 2;
+          if (!tiers[t]) tiers[t] = [];
+          tiers[t].push(m);
         });
-      });
+        var tierLabels = { 1: 'Tier 1 — Lead', 2: 'Tier 2 — Regular', 3: 'Tier 3 — Developing' };
+
+        [1, 2, 3].forEach(function(t) {
+          if (!tiers[t] || tiers[t].length === 0) return;
+          var label = document.createElement('div');
+          label.className = 'people-section-label';
+          label.textContent = tierLabels[t];
+          list.appendChild(label);
+          tiers[t].forEach(function(member) {
+            try { list.appendChild(buildPersonRow(member)); } catch(e) { console.error('Sunday: error rendering member', member.name, e); }
+          });
+        });
+      } catch(e) {
+        console.error('Sunday: renderPeople error', e);
+        var list2 = document.getElementById('people-list');
+        if (list2) list2.innerHTML = '<div style="padding:24px; color:#e06858; font-size:13px;">Error loading team: ' + e.message + '</div>';
+      }
     }
 
     function buildPersonRow(member) {
@@ -7480,7 +7495,7 @@
       document.querySelector(`[data-tab="${screenName}"]`).classList.add('active');
 
       if (screenName === 'team') renderRoster();
-      if (screenName === 'people') { buildAddFormRoles(); renderPeople(); }
+      if (screenName === 'people') { try { buildAddFormRoles(); } catch(e){} setTimeout(function(){ renderPeople(); }, 0); }
       if (screenName === 'sunday') renderAgent();
       if (screenName === 'settings') renderSettings();
 
