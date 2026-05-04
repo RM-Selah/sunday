@@ -4886,7 +4886,8 @@
         prompt += '{"type":"SET_CHURCH_NAME","params":{"name":"River Church"}}\n';
         prompt += '{"type":"ADD_TEAM_MEMBER","params":{"name":"Full Name","roles":["WL"],"tier":1,"avail":[1,2,3,4,5],"phone":"+64211234567"}} — Roles: WL CO-WL FLV Keys Drums Bass Guitar Acoustic MD FOH\n';
         prompt += '{"type":"ADD_TEAM_BULK","params":{"members":[{"name":"Name","roles":["FLV"],"tier":2}]}}\n';
-        prompt += '{"type":"ADD_SONGS_BULK","params":{"songs":[{"title":"Song","artist":"Artist","cat":"current","key":"G","bpm":72}]}} — cats: praise current homegrown classic. CRITICAL: use the EXACT title the user said, word for word. Never substitute, correct, or rename a song title. If the user says "King of Calvary", the title is "King of Calvary" — do not replace it with anything else. Original/homegrown songs that aren\'t on CCLI are valid — use cat:"homegrown" and artist:"Original" or the writer\'s name.\n';
+        prompt += '{"type":"ADD_TO_LIBRARY","params":{"title":"Returning","artist":"Selah Worship","cat":"homegrown","key":"D","bpm":68,"mins":5}} — adds one song to the MASTER LIBRARY only, does NOT add to current set. Use when user says "add to library", "add to master list", "new song", "we wrote a song", "register this song". cats: praise current homegrown classic. Use exact title.\n';
+        prompt += '{"type":"ADD_SONGS_BULK","params":{"songs":[{"title":"Song","artist":"Artist","cat":"current","key":"G","bpm":72}]}} — bulk add to library only. cats: praise current homegrown classic. CRITICAL: use the EXACT title the user said. Original/homegrown songs are valid — use cat:"homegrown".\n';
         prompt += '{"type":"REMOVE_SERVICE","params":{"id":"service-id"}}\n';
         prompt += '{"type":"EXPORT_ROSTER_PDF","params":{"week":1,"service":"sun-am"}} — omit params for current view\n';
         prompt += '{"type":"EXPORT_SET_PDF","params":{}}\n';
@@ -5502,6 +5503,25 @@
                   }
                 });
                 console.log('Bulk added ' + addedCount + ' songs');
+              }
+              break;
+
+            case 'ADD_TO_LIBRARY':
+              if (p.title) {
+                var libTitle = p.title.trim();
+                var libExists = SONGS.find(function(s) { return s.title.toLowerCase() === libTitle.toLowerCase(); });
+                if (!libExists) {
+                  SundayData.addSong({
+                    title: libTitle,
+                    artist: p.artist || '',
+                    cat: p.cat || 'homegrown',
+                    key: p.key || 'G',
+                    bpm: p.bpm || 72,
+                    mins: p.mins || 4.5
+                  });
+                  renderSongs();
+                  console.log('Added to library:', libTitle);
+                }
               }
               break;
 
@@ -6255,10 +6275,19 @@
       // Main set add-song input box
       var addBox = document.createElement('div');
       addBox.className = 'add-song-box';
-      addBox.innerHTML = '<span class="add-icon">+</span><input type="text" id="set-add-input" placeholder="Song name \u2014 library or one-off\u2026">';
+      addBox.innerHTML = '<span class="add-icon">+</span><input type="text" id="set-add-input" placeholder="Song name \u2014 from library or one-off\u2026">';
       var setInp = addBox.querySelector('input');
       setInp.setAttribute('onkeydown', "if(event.key==='Enter'){event.preventDefault();window.addSongFromBox();}");
       slotsDiv.appendChild(addBox);
+
+      // Library hint \u2014 shown only while building
+      if (state.setBuilding) {
+        var libHint = document.createElement('div');
+        libHint.style.cssText = 'padding: 4px 4px 0; text-align:center;';
+        libHint.innerHTML = '<span style="font-family:var(--font-display); font-size:10px; color:var(--dim); opacity:0.5; letter-spacing:0.5px;">new song not in library? tell Sunny or </span>' +
+          '<button onclick="switchScreen(\'songs\')" style="background:none; border:none; font-family:var(--font-display); font-size:10px; color:var(--mid); cursor:pointer; text-decoration:underline; padding:0; letter-spacing:0.5px;">add it here \u2192</button>';
+        slotsDiv.appendChild(libHint);
+      }
     }
 
     window.startNewSet = function() {
