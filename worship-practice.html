@@ -6261,15 +6261,7 @@
               '</div>';
             slotsDiv.appendChild(mSlot);
           });
-        } else {
-          // Empty pick-from-library slot
-          var mSlot = document.createElement('div');
-          mSlot.className = 'slot ministry';
-          mSlot.style.cursor = 'pointer';
-          mSlot.setAttribute('onclick', 'window.toggleMinistryMode()');
-          mSlot.innerHTML = '<span class="ministry-empty-text">click to pick from library</span>';
-          slotsDiv.appendChild(mSlot);
-        }
+        // No empty ministry slot — user adds via input or Sunny
 
         // Ministry add-song input box
         var mBox = document.createElement('div');
@@ -6283,7 +6275,7 @@
       // Ghost placeholder slots when building mode is active
       if (state.setBuilding) {
         var filledCount = state.set.length;
-        var ghostCount = Math.max(0, 4 - filledCount);
+        var ghostCount = filledCount < 4 ? (4 - filledCount) : 1;
         for (var g = 0; g < ghostCount; g++) {
           var ghostNum = filledCount + g + 1;
           var ghost = document.createElement('div');
