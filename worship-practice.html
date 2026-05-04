@@ -902,7 +902,7 @@
     }
 
     /* Ghost slot — empty placeholder when building */
-    .slot-ghost {
+    .slot-placeholder {
       border: 1px dashed var(--gb2);
       border-radius: var(--radius-md);
       padding: 10px 14px;
@@ -912,25 +912,21 @@
       background: transparent;
     }
 
-    .slot-ghost-num {
+    .slot-placeholder-num {
       font-family: var(--font-display);
       font-size: 11px;
       color: var(--dim);
       min-width: 16px;
     }
 
-    .slot-ghost-input {
+    .slot-placeholder-text {
       flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
       font-family: var(--font-body);
       font-size: 13px;
       font-weight: 300;
-      color: var(--text);
+      color: var(--dim);
+      opacity: 0.4;
     }
-
-    .slot-ghost-input::placeholder { color: var(--dim); }
 
     /* Subtle suggest link */
     .set-suggest-link {
@@ -6248,10 +6244,10 @@
         for (var g = 0; g < ghostCount; g++) {
           var ghostNum = filledCount + g + 1;
           var ghost = document.createElement('div');
-          ghost.className = 'slot-ghost';
-          ghost.innerHTML = '<div class="slot-ghost-num">' + ghostNum + '</div>' +
-            '<div style="flex:1; font-family:var(--font-body); font-size:13px; color:var(--dim); opacity:0.35;">' +
-            (g === 0 && filledCount === 0 ? 'type below to add a song\u2026' : '\u2014') + '</div>';
+          ghost.className = 'slot-placeholder';
+          ghost.innerHTML = '<div class="slot-placeholder-num">' + ghostNum + '</div>' +
+            '<div class="slot-placeholder-text">' +
+            (g === 0 && filledCount === 0 ? 'type a song below\u2026' : '\u2014') + '</div>';
           slotsDiv.appendChild(ghost);
         }
       }
@@ -6259,7 +6255,7 @@
       // Main set add-song input box
       var addBox = document.createElement('div');
       addBox.className = 'add-song-box';
-      addBox.innerHTML = '<span class="add-icon">+</span><input type="text" id="set-add-input" placeholder="Type a song to add\u2026">';
+      addBox.innerHTML = '<span class="add-icon">+</span><input type="text" id="set-add-input" placeholder="Song name \u2014 library or one-off\u2026">';
       var setInp = addBox.querySelector('input');
       setInp.setAttribute('onkeydown', "if(event.key==='Enter'){event.preventDefault();window.addSongFromBox();}");
       slotsDiv.appendChild(addBox);
