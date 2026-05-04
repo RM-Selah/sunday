@@ -6248,8 +6248,31 @@
         slotsDiv.appendChild(slot);
       });
 
-      // Ministry divider (only when songs exist)
-      if (state.set.length > 0) {
+      // Ghost placeholder slots — typeable, in main list, always at least 1 when building
+      if (state.setBuilding) {
+        var filledCount = state.set.length;
+        var ghostCount = filledCount < 4 ? (4 - filledCount) : 1;
+        for (var g = 0; g < ghostCount; g++) {
+          var ghostNum = filledCount + g + 1;
+          var ghost = document.createElement('div');
+          ghost.className = g === 0 ? 'slot-placeholder active' : 'slot-placeholder';
+          ghost.innerHTML = '<div class="slot-placeholder-num">' + ghostNum + '</div>' +
+            '<input class="slot-inline-input" type="text" placeholder="" ' +
+            "onkeydown=\"if(event.key==='Enter'){event.preventDefault();window.addSongFromInput(this);}\">";
+          slotsDiv.appendChild(ghost);
+        }
+      } else {
+        // Non-building mode: plain add box
+        var addBox = document.createElement('div');
+        addBox.className = 'add-song-box';
+        addBox.innerHTML = '<span class="add-icon">+</span><input type="text" id="set-add-input" placeholder="Add a song\u2026">';
+        var setInp = addBox.querySelector('input');
+        setInp.setAttribute('onkeydown', "if(event.key==='Enter'){event.preventDefault();window.addSongFromBox();}");
+        slotsDiv.appendChild(addBox);
+      }
+
+      // Ministry — persistent at bottom when building or songs exist
+      if (state.setBuilding || state.set.length > 0 || state.ministrySongs.length > 0) {
         var divider = document.createElement('div');
         divider.className = 'ministry-divider-line';
         divider.textContent = 'Ministry';
@@ -6275,37 +6298,13 @@
           slotsDiv.appendChild(mSlot);
         });
 
-        // One open ministry ghost slot — always typeable
+        // Persistent open ministry slot
         var mGhost = document.createElement('div');
         mGhost.className = 'slot-placeholder';
         mGhost.innerHTML = '<div class="slot-placeholder-num">M</div>' +
           '<input class="slot-inline-input" id="ministry-add-input" type="text" placeholder="ministry song\u2026" ' +
           "onkeydown=\"if(event.key==='Enter'){event.preventDefault();window.addMinistryFromBox();}\"/>";
         slotsDiv.appendChild(mGhost);
-      }
-
-      // Ghost placeholder slots — typeable, always at least 1 when building
-      if (state.setBuilding) {
-        var filledCount = state.set.length;
-        var ghostCount = filledCount < 4 ? (4 - filledCount) : 1;
-        for (var g = 0; g < ghostCount; g++) {
-          var ghostNum = filledCount + g + 1;
-          var ghost = document.createElement('div');
-          ghost.className = g === 0 ? 'slot-placeholder active' : 'slot-placeholder';
-          var ph = g === 0 ? (filledCount === 0 ? 'song name\u2026' : 'what\u2019s next\u2026') : '';
-          ghost.innerHTML = '<div class="slot-placeholder-num">' + ghostNum + '</div>' +
-            '<input class="slot-inline-input" type="text" placeholder="' + ph + '" ' +
-            "onkeydown=\"if(event.key==='Enter'){event.preventDefault();window.addSongFromInput(this);}\">";
-          slotsDiv.appendChild(ghost);
-        }
-      } else {
-        // Non-building mode: plain add box
-        var addBox = document.createElement('div');
-        addBox.className = 'add-song-box';
-        addBox.innerHTML = '<span class="add-icon">+</span><input type="text" id="set-add-input" placeholder="Add a song\u2026">';
-        var setInp = addBox.querySelector('input');
-        setInp.setAttribute('onkeydown', "if(event.key==='Enter'){event.preventDefault();window.addSongFromBox();}");
-        slotsDiv.appendChild(addBox);
       }
 
     }
