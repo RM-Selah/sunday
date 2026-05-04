@@ -15,30 +15,36 @@
 
   <style>
     :root {
-      --bg: #050507;
-      --s1: #0a0a0f;
-      --s2: #0f0f16;
-      --s3: #16161f;
-      --gb: rgba(255,255,255,0.06);
-      --gb2: rgba(255,255,255,0.10);
-      --gl: rgba(255,255,255,0.025);
-      --text: #f0f0f5;
-      --mid: #8a8fa6;
-      --dim: #3d4362;
-      --amber: #e09a2d;
-      --amber-bright: #f0b040;
-      --adim: rgba(224,154,45,0.14);
-      --aglow: rgba(224,154,45,0.06);
-      --praise: #e87a3a;
-      --worship: #7a90d4;
-      --homegrown: #6bc49a;
-      --classic: #a08a60;
+      /* === SUNDAY — Trail / Bandit aesthetic === */
+      --bg: #0c0c08;
+      --s1: #141410;
+      --s2: #1a1a14;
+      --s3: #222218;
+      --gb: rgba(255,248,235,0.06);
+      --gb2: rgba(255,248,235,0.10);
+      --gl: rgba(255,248,235,0.025);
+      --text: #f0ede5;
+      --mid: #8a8478;
+      --dim: #4a4840;
+
+      /* Earthy accent palette */
+      --amber: #c4963a;
+      --amber-bright: #daa84a;
+      --adim: rgba(196,150,58,0.14);
+      --aglow: rgba(196,150,58,0.06);
+
+      /* Song category colours — warm earth tones */
+      --praise: #a05c38;       /* rust */
+      --worship: #5a7a52;      /* forest green */
+      --homegrown: #8a7c5a;    /* warm gold */
+      --classic: #6a6258;      /* stone */
+
       --font-display: 'Space Grotesk', -apple-system, 'Segoe UI', sans-serif;
       --font-body: 'DM Sans', -apple-system, 'Segoe UI', sans-serif;
       --font-serif: 'Cormorant Garamond', Georgia, serif;
-      --shadow-lg: 0 20px 60px rgba(0,0,0,0.6), 0 0 1px rgba(255,255,255,0.05);
-      --shadow-md: 0 8px 32px rgba(0,0,0,0.4);
-      --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-lg: 0 20px 60px rgba(0,0,0,0.7), 0 0 1px rgba(255,248,235,0.04);
+      --shadow-md: 0 8px 32px rgba(0,0,0,0.5);
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
       --radius-lg: 12px;
       --radius-md: 8px;
       --radius-sm: 6px;
@@ -3137,7 +3143,7 @@
           <div class="settings-section">
             <div class="settings-section-header">
               <span class="settings-section-title">Sunny AI (Anthropic)</span>
-              <span class="settings-section-desc">Sunny works out of the box. Paste your own Anthropic key here only if you want to use your own account — it stays on this device.</span>
+              <span class="settings-section-desc">Your API key lives only on this device — never in any file or code. Required for Sunny to work.</span>
             </div>
             <div class="settings-field">
               <label class="settings-label">API Key</label>
@@ -4038,14 +4044,8 @@
 
     /* ==================== SUNDAY API LAYER ==================== */
     var SundayAPI = {
-      // Direct Anthropic endpoint — used when user has pasted their own key in Settings (BYOK)
       apiUrl: 'https://api.anthropic.com/v1/messages',
-      // Proxy endpoint — used by default. Backend (server.py) holds platform credentials.
-      // The literal '__PORT_8000__' is rewritten by deploy_website to the proxied path.
-      proxyUrl: ('__PORT_8000__'.indexOf('__') === 0 ? 'http://localhost:8000' : '__PORT_8000__') + '/chat',
       apiKey: (function() { try { return localStorage.getItem('sunday_api_key') || ''; } catch(e) { return ''; } })(),
-      // True when no BYOK key — route through proxy with platform-managed model name
-      useProxy: function() { return !this.apiKey; },
 
       // === SMART MODEL ROUTING ===
       // Haiku  → fast + cheap — simple tasks (assign, add song, quick questions)
@@ -4053,8 +4053,6 @@
       modelFast:    'claude-haiku-4-5-20251001',  // ~4x cheaper — pedestrian tasks
       modelSmart:   'claude-sonnet-4-6',           // full power — anything complex
       model:        'claude-sonnet-4-6',           // default, overridden per-call
-      // Proxy uses platform model names (no dates, no dashes in version)
-      proxyModel:   'claude_sonnet_4_6',
 
       // Decide which model to use based on the message + screen
       selectModel: function(screen, message) {
@@ -4093,21 +4091,13 @@
         this.checking = true;
         var self = this;
 
-        // Try a minimal API call to verify connection works.
-        // If proxy mode: hit /health on the backend (no key needed).
-        // If BYOK mode: hit Anthropic directly with the user's key.
+        // Try a minimal API call to verify the key works
         var xhr = new XMLHttpRequest();
-        var viaProxy = this.useProxy();
-        if (viaProxy) {
-          var healthUrl = ('__PORT_8000__'.indexOf('__') === 0 ? 'http://localhost:8000' : '__PORT_8000__') + '/health';
-          xhr.open('GET', healthUrl, true);
-        } else {
-          xhr.open('POST', this.apiUrl, true);
-          xhr.setRequestHeader('Content-Type', 'application/json');
-          xhr.setRequestHeader('x-api-key', this.apiKey);
-          xhr.setRequestHeader('anthropic-version', '2023-06-01');
-          xhr.setRequestHeader('anthropic-dangerous-direct-browser-access', 'true');
-        }
+        xhr.open('POST', this.apiUrl, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('x-api-key', this.apiKey);
+        xhr.setRequestHeader('anthropic-version', '2023-06-01');
+        xhr.setRequestHeader('anthropic-dangerous-direct-browser-access', 'true');
         xhr.timeout = 5000;
 
         xhr.onload = function() {
@@ -4387,28 +4377,19 @@
         });
         messages.push({ role: 'user', content: content });
 
-        var viaProxy = this.useProxy();
-        // Proxy mode uses platform model names; direct mode uses Anthropic's dated names.
-        var modelToSend = viaProxy ? self.proxyModel : chosenModel;
-
         var payload = JSON.stringify({
-          model: modelToSend,
+          model: chosenModel,
           max_tokens: chosenModel === self.modelFast ? 1024 : 4096,
           system: this.buildSystemPrompt(screen),
           messages: messages
         });
 
         var xhr = new XMLHttpRequest();
-        if (viaProxy) {
-          xhr.open('POST', this.proxyUrl, true);
-          xhr.setRequestHeader('Content-Type', 'application/json');
-        } else {
-          xhr.open('POST', this.apiUrl, true);
-          xhr.setRequestHeader('Content-Type', 'application/json');
-          xhr.setRequestHeader('x-api-key', this.apiKey);
-          xhr.setRequestHeader('anthropic-version', '2023-06-01');
-          xhr.setRequestHeader('anthropic-dangerous-direct-browser-access', 'true');
-        }
+        xhr.open('POST', this.apiUrl, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('x-api-key', this.apiKey);
+        xhr.setRequestHeader('anthropic-version', '2023-06-01');
+        xhr.setRequestHeader('anthropic-dangerous-direct-browser-access', 'true');
         xhr.timeout = file ? 45000 : 20000;
 
         xhr.onload = function() {
@@ -5207,6 +5188,7 @@
       scroll.innerHTML = '';
 
       let filtered = SONGS.filter(s => {
+        if (s.archived) return false; // hide archived songs
         if (state.currentCategory !== 'all' && s.cat !== state.currentCategory) return false;
         if (state.searchQuery) {
           const q = state.searchQuery.toLowerCase();
@@ -5307,11 +5289,14 @@
     window.deleteSong = function(id) {
       var idx = SONGS.findIndex(function(s) { return s.id === id; });
       if (idx < 0) return;
-      // Remove from set and ministry if present
+      var song = SONGS[idx];
+      // Confirm before removing — archive instead of hard delete
+      if (!confirm('Archive "' + song.title + '"?\n\nIt\'ll be hidden from the library but not permanently deleted. You can restore it from Settings → Data.')) return;
+      // Mark as archived rather than splicing out
+      song.archived = true;
+      // Remove from active set and ministry
       state.set = state.set.filter(function(s) { return s.id !== id; });
       state.ministrySongs = state.ministrySongs.filter(function(s) { return s.id !== id; });
-      SONGS.splice(idx, 1);
-      window.SONGS = SONGS;
       SundayData.save();
       renderSongs();
       renderSet();
@@ -7394,7 +7379,7 @@
       // Update status — show which model is being used
       var statusEl = document.getElementById('sidebar-chat-status');
       if (statusEl) {
-        var previewModel = SundayAPI.selectModel(apiScreen, msg);
+        var previewModel = SundayAPI.selectModel(apiScreen, msgText);
         statusEl.textContent = previewModel === SundayAPI.modelFast ? '⚡ thinking' : '✦ thinking';
         statusEl.title = previewModel === SundayAPI.modelFast ? 'Using Haiku (fast)' : 'Using Sonnet (smart)';
       }
@@ -7931,22 +7916,24 @@
       messages: []
     };
 
-    // Skip onboarding entirely — land straight on the working app.
-    // (Onboarding will be reworked later. For now, treat every visit as a returning user.)
-    {
+    // Skip onboarding if user already has saved data
+    if (localStorage.getItem('sunday_church') || SundayData.hasTeam()) {
       var hero = document.getElementById('hero-landing');
       if (hero) { hero.classList.add('hidden'); hero.style.display = 'none'; }
-
-      // Seed church name from localStorage if present, otherwise default to 'The Local'
+      // Restore church name
       var savedChurch = localStorage.getItem('sunday_church');
-      if (!savedChurch) {
-        savedChurch = 'The Local';
-        try { localStorage.setItem('sunday_church', savedChurch); } catch(e) {}
+      if (savedChurch) {
+        heroState.churchName = savedChurch;
+        var chipEl = document.querySelector('.chip');
+        if (chipEl) chipEl.textContent = savedChurch;
       }
-      heroState.churchName = savedChurch;
-      heroState.step = 5; // mark onboarding complete
-      var chipEl = document.querySelector('.chip');
-      if (chipEl) chipEl.textContent = savedChurch;
+    } else {
+      // Show initial greeting after a beat
+      setTimeout(function() {
+        addHeroMessage('sunday', 'Hi, I\u2019m Sunny.');
+        heroState.step = 0;
+        updateHeroPlaceholder();
+      }, 800);
     }
 
     function addHeroMessage(type, text) {
