@@ -2213,109 +2213,123 @@
     /* ===================== HERO LANDING SCREEN ===================== */
     .hero-landing {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       z-index: 1000;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      background: var(--bg);
-      transition: opacity 0.6s ease, transform 0.6s ease;
+      justify-content: flex-end;
+      transition: opacity 0.8s ease, transform 0.8s ease;
+      overflow: hidden;
     }
 
     .hero-landing.hidden {
       opacity: 0;
-      transform: scale(1.02);
+      transform: scale(1.03);
       pointer-events: none;
     }
 
+    /* Full-bleed photograph — trail / foggy forest */
     .hero-bg {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       z-index: 0;
-      overflow: hidden;
+      background-image: url('https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1920&q=85');
+      background-size: cover;
+      background-position: center 40%;
+      filter: saturate(0.7) brightness(0.55);
     }
 
-    .hero-bg::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background:
-        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(224,154,45,0.08) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 40% at 20% 80%, rgba(122,144,212,0.04) 0%, transparent 50%),
-        radial-gradient(ellipse 50% 30% at 80% 60%, rgba(107,196,154,0.03) 0%, transparent 50%),
-        linear-gradient(180deg, var(--bg) 0%, #06060a 100%);
-    }
-
-    /* Animated subtle grid lines */
+    /* Editorial gradient — bottom heavy so chat sits cleanly */
     .hero-bg::after {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-      background-size: 60px 60px;
-      mask-image: radial-gradient(ellipse 60% 50% at 50% 40%, black 0%, transparent 70%);
-      -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 40%, black 0%, transparent 70%);
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background:
+        linear-gradient(to bottom,
+          rgba(12,12,8,0.1) 0%,
+          rgba(12,12,8,0.2) 30%,
+          rgba(12,12,8,0.55) 60%,
+          rgba(12,12,8,0.92) 85%,
+          rgba(12,12,8,1) 100%);
+    }
+
+    /* Grain texture overlay */
+    .hero-bg::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+      opacity: 0.035;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="4" result="noise"/></filter><rect width="200" height="200" fill="white" filter="url(%23n)"/></svg>');
+    }
+
+    /* Masthead — top left, editorial */
+    .hero-masthead {
+      position: absolute;
+      top: 32px; left: 40px;
+      z-index: 2;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .hero-masthead-name {
+      font-family: var(--font-serif);
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(240,237,229,0.5);
+    }
+    .hero-masthead-rule {
+      width: 32px; height: 1px;
+      background: rgba(240,237,229,0.2);
     }
 
     .hero-content {
       position: relative;
-      z-index: 1;
+      z-index: 2;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      text-align: center;
-      max-width: 640px;
+      align-items: flex-start;
       width: 100%;
-      padding: 0 24px;
+      max-width: 680px;
+      padding: 0 40px 56px;
     }
 
-    .hero-orb {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, var(--amber-bright), var(--amber), #8a5a10);
-      box-shadow: 0 0 40px rgba(224,154,45,0.3), 0 0 80px rgba(224,154,45,0.1);
-      margin-bottom: 32px;
-      animation: hero-orb-breathe 4s ease-in-out infinite;
-    }
-
-    @keyframes hero-orb-breathe {
-      0%, 100% { box-shadow: 0 0 40px rgba(224,154,45,0.3), 0 0 80px rgba(224,154,45,0.1); transform: scale(1); }
-      50% { box-shadow: 0 0 50px rgba(224,154,45,0.4), 0 0 100px rgba(224,154,45,0.15); transform: scale(1.05); }
+    .hero-eyebrow {
+      font-family: var(--font-serif);
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(196,150,58,0.8);
+      margin-bottom: 16px;
     }
 
     .hero-title {
-      font-family: var(--font-display);
-      font-size: 48px;
-      font-weight: 700;
-      letter-spacing: -1.5px;
+      font-family: var(--font-serif);
+      font-size: 64px;
+      font-weight: 400;
+      font-style: italic;
+      letter-spacing: -1px;
       color: var(--text);
-      margin-bottom: 12px;
-      line-height: 1.1;
+      margin-bottom: 8px;
+      line-height: 1.0;
     }
 
     .hero-subtitle {
       font-family: var(--font-body);
-      font-size: 16px;
+      font-size: 13px;
       font-weight: 300;
-      color: var(--mid);
-      margin-bottom: 48px;
-      line-height: 1.5;
+      letter-spacing: 1px;
+      color: rgba(240,237,229,0.4);
+      margin-bottom: 40px;
+      text-transform: uppercase;
     }
 
     .hero-chat-container {
@@ -2435,18 +2449,6 @@
       border-bottom-right-radius: 4px;
     }
 
-    .hero-version {
-      position: absolute;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-family: var(--font-display);
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 1px;
-      color: var(--dim);
-      opacity: 0.4;
-    }
     /* ===================== SETTINGS SCREEN ===================== */
     .settings-status-pill {
       display: flex;
@@ -2803,22 +2805,21 @@
       }
 
       /* Hero onboarding — mobile */
-      .hero-content {
-        padding: 20px;
+      .hero-masthead {
+        top: 20px;
+        left: 20px;
       }
 
-      .hero-orb {
-        width: 60px;
-        height: 60px;
+      .hero-content {
+        padding: 0 20px 48px;
       }
 
       .hero-title {
-        font-size: 28px;
+        font-size: 40px;
       }
 
-      .hero-subtitle {
-        font-size: 14px;
-        padding: 0 10px;
+      .hero-eyebrow {
+        font-size: 10px;
       }
 
       .hero-chat-container {
@@ -2920,20 +2921,28 @@
   <!-- HERO LANDING -->
   <div class="hero-landing" id="hero-landing">
     <div class="hero-bg"></div>
+
+    <!-- Masthead — top left, like a magazine nameplate -->
+    <div class="hero-masthead">
+      <span class="hero-masthead-name">Sunday</span>
+      <div class="hero-masthead-rule"></div>
+      <span class="hero-masthead-name" style="font-size:11px; letter-spacing:2px; opacity:0.5;">Worship Team</span>
+    </div>
+
+    <!-- Bottom-left editorial content -->
     <div class="hero-content">
-      <div class="hero-orb"></div>
-      <h1 class="hero-title">Sunday</h1>
+      <div class="hero-eyebrow">Worship Team Assistant</div>
+      <h1 class="hero-title">Good to have<br>you here.</h1>
       <div class="hero-messages" id="hero-messages"></div>
       <div class="hero-chat-container">
         <div class="hero-chat-bar">
           <input type="text" class="hero-chat-input" id="hero-chat-input"
-                 placeholder="Say hello to Sunny..."
+                 placeholder="Tell Sunny your church name to get started…"
                  onkeydown="if(event.key==='Enter')window.handleHeroChat()">
-          <button class="hero-chat-send" onclick="window.handleHeroChat()">&rarr;</button>
+          <button class="hero-chat-send" onclick="window.handleHeroChat()">&#x2192;</button>
         </div>
       </div>
     </div>
-    <div class="hero-version">SUNDAY v3.6</div>
   </div>
 
   <div id="app">
