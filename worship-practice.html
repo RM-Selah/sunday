@@ -910,6 +910,28 @@
       align-items: center;
       gap: 12px;
       background: transparent;
+      transition: border-color 0.3s, background 0.3s;
+    }
+
+    .slot-placeholder.active {
+      border-color: var(--amber);
+      border-style: solid;
+      background: var(--aglow);
+      animation: slot-pulse 2.4s ease-in-out infinite;
+    }
+
+    @keyframes slot-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(224,154,45,0); }
+      50% { box-shadow: 0 0 12px 2px rgba(224,154,45,0.12); }
+    }
+
+    .slot-placeholder.active .slot-placeholder-num {
+      color: var(--amber);
+    }
+
+    .slot-placeholder.active .slot-placeholder-text {
+      color: var(--mid);
+      opacity: 0.8;
     }
 
     .slot-placeholder-num {
@@ -5956,6 +5978,7 @@
           state.ministrySongs.splice(minIdx, 1);
         } else {
           state.set.push(song);
+          state.setBuilding = true; // keep guide active while picking
         }
       }
       renderSongs();
@@ -6264,10 +6287,10 @@
         for (var g = 0; g < ghostCount; g++) {
           var ghostNum = filledCount + g + 1;
           var ghost = document.createElement('div');
-          ghost.className = 'slot-placeholder';
+          ghost.className = g === 0 ? 'slot-placeholder active' : 'slot-placeholder';
+          var hintText = g === 0 ? (filledCount === 0 ? 'choose a song from the list\u2026' : 'what\u2019s next\u2026') : '\u2014';
           ghost.innerHTML = '<div class="slot-placeholder-num">' + ghostNum + '</div>' +
-            '<div class="slot-placeholder-text">' +
-            (g === 0 && filledCount === 0 ? 'type a song below\u2026' : '\u2014') + '</div>';
+            '<div class="slot-placeholder-text">' + hintText + '</div>';
           slotsDiv.appendChild(ghost);
         }
       }
