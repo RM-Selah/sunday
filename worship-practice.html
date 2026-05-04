@@ -1181,6 +1181,74 @@
       color: var(--amber);
     }
 
+    /* ---- Month strip ---- */
+    .month-strip {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 24px;
+      border-bottom: 1px solid var(--gb);
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex-shrink: 0;
+    }
+    .month-strip::-webkit-scrollbar { display: none; }
+
+    .month-strip-year {
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 1px;
+      color: var(--dim);
+      text-transform: uppercase;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+
+    .month-pill {
+      position: relative;
+      padding: 4px 9px;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      color: var(--dim);
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .month-pill:hover { color: var(--text); background: var(--gl); }
+    .month-pill.active {
+      color: var(--amber);
+      background: var(--adim);
+    }
+    .month-pill.has-data::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--amber);
+      opacity: 0.7;
+    }
+    .month-pill.active.has-data::after {
+      opacity: 1;
+    }
+
+    .month-strip-divider {
+      width: 1px;
+      height: 14px;
+      background: var(--gb);
+      margin: 0 6px;
+      flex-shrink: 0;
+    }
+
     .service-toggle {
       display: flex;
       gap: 0;
@@ -3090,6 +3158,8 @@
               <div class="service-toggle" id="service-toggle"></div>
             </div>
           </div>
+
+          <div class="month-strip" id="month-strip"></div>
 
           <div class="week-tabs" id="week-tabs"></div>
 
@@ -5657,10 +5727,72 @@
 
     function renderRoster() {
       renderRosterHeader();
+      renderMonthStrip();
       renderServiceToggle();
       renderWeekTabs();
       renderStageView();
       renderAvailableList();
+    }
+
+    function renderMonthStrip() {
+      var container = document.getElementById('month-strip');
+      if (!container) return;
+      container.innerHTML = '';
+
+      var activeParts = state.rosterMonth.split(' ');
+      var activeMonthName = activeParts[0];
+      var activeYear = parseInt(activeParts[1]);
+
+      // Collect all years that have any roster data (plus current year)
+      var yearsWithData = {};
+      Object.keys(state.roster).forEach(function(key) {
+        var m = key.match(/\s(\d{4})-/);
+        if (m) yearsWithData[parseInt(m[1])] = true;
+      });
+      yearsWithData[activeYear] = true;
+      // Also include next year if we're in Q4
+      if (new Date().getMonth() >= 9) yearsWithData[activeYear + 1] = true;
+
+      var years = Object.keys(yearsWithData).map(Number).sort();
+      var MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      var MONTH_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+      years.forEach(function(yr, yi) {
+        if (yi > 0) {
+          var div = document.createElement('div');
+          div.className = 'month-strip-divider';
+          container.appendChild(div);
+        }
+
+        var yearLabel = document.createElement('span');
+        yearLabel.className = 'month-strip-year';
+        yearLabel.textContent = yr;
+        container.appendChild(yearLabel);
+
+        MONTH_SHORT.forEach(function(abbr, idx) {
+          var fullName = MONTH_FULL[idx];
+          var monthKey = fullName + ' ' + yr;
+          var isActive = (fullName === activeMonthName && yr === activeYear);
+
+          // Check if this month has any roster data
+          var hasData = Object.keys(state.roster).some(function(k) {
+            return k.indexOf(monthKey + '-') === 0 && Object.keys(state.roster[k]).length > 0;
+          });
+
+          var pill = document.createElement('button');
+          pill.className = 'month-pill' + (isActive ? ' active' : '') + (hasData ? ' has-data' : '');
+          pill.textContent = abbr;
+          pill.title = fullName + ' ' + yr + (hasData ? ' — has roster data' : '');
+          pill.onclick = (function(mn, y) {
+            return function() {
+              state.rosterMonth = mn + ' ' + y;
+              state.rosterWeek = 1;
+              renderRoster();
+            };
+          })(fullName, yr);
+          container.appendChild(pill);
+        });
+      });
     }
 
     function renderRosterHeader() {
