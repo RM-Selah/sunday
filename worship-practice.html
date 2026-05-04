@@ -950,6 +950,20 @@
       opacity: 0.4;
     }
 
+    .slot-inline-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text);
+      min-width: 0;
+    }
+    .slot-inline-input::placeholder { color: var(--dim); opacity: 0.5; }
+    .slot-placeholder.active .slot-inline-input::placeholder { color: var(--mid); opacity: 0.7; }
+
     /* Subtle suggest link */
     .set-suggest-link {
       padding: 12px 24px 0;
@@ -6234,45 +6248,43 @@
         slotsDiv.appendChild(slot);
       });
 
-      // Ministry divider and slot (only show when there are main songs)
+      // Ministry divider (only when songs exist)
       if (state.set.length > 0) {
         var divider = document.createElement('div');
         divider.className = 'ministry-divider-line';
         divider.textContent = 'Ministry';
         slotsDiv.appendChild(divider);
 
-        // Render each ministry song
-        if (state.ministrySongs.length > 0) {
-          state.ministrySongs.forEach(function(ms, mi) {
-            var mSlot = document.createElement('div');
-            mSlot.className = 'slot ministry filled';
-            mSlot.style.cursor = 'default';
-            mSlot.innerHTML = '<div class="ministry-badge">M</div>' +
-              '<div class="slot-content">' +
-                '<div class="slot-song-title">' + esc(ms.title) + '</div>' +
-                '<div class="slot-song-meta">' +
-                  '<span class="slot-badge" style="background: ' + (catColors[ms.cat] || 'var(--mid)') + '22; color: ' + (catColors[ms.cat] || 'var(--mid)') + ';">' + esc(catNames[ms.cat] || 'Unknown') + '</span>' +
-                  '<span>' + esc(ms.key) + '</span>' +
-                  (ms.bpm ? '<span>' + ms.bpm + ' bpm</span>' : '') +
-                '</div>' +
+        // Filled ministry songs
+        state.ministrySongs.forEach(function(ms, mi) {
+          var mSlot = document.createElement('div');
+          mSlot.className = 'slot ministry filled';
+          mSlot.style.cursor = 'default';
+          mSlot.innerHTML = '<div class="ministry-badge">M</div>' +
+            '<div class="slot-content">' +
+              '<div class="slot-song-title">' + esc(ms.title) + '</div>' +
+              '<div class="slot-song-meta">' +
+                '<span class="slot-badge" style="background: ' + (catColors[ms.cat] || 'var(--mid)') + '22; color: ' + (catColors[ms.cat] || 'var(--mid)') + ';">' + esc(catNames[ms.cat] || 'Unknown') + '</span>' +
+                '<span>' + esc(ms.key) + '</span>' +
+                (ms.bpm ? '<span>' + ms.bpm + ' bpm</span>' : '') +
               '</div>' +
-              '<div class="slot-actions">' +
-                '<button class="slot-action-btn" onclick="window.removeMinistry(' + mi + ')">&#10005;</button>' +
-              '</div>';
-            slotsDiv.appendChild(mSlot);
-          });
-        // No empty ministry slot — user adds via input or Sunny
+            '</div>' +
+            '<div class="slot-actions">' +
+              '<button class="slot-action-btn" onclick="window.removeMinistry(' + mi + ')">&#10005;</button>' +
+            '</div>';
+          slotsDiv.appendChild(mSlot);
+        });
 
-        // Ministry add-song input box
-        var mBox = document.createElement('div');
-        mBox.className = 'add-song-box ministry-box';
-        mBox.innerHTML = '<span class="add-icon">+</span><input type="text" id="ministry-add-input" placeholder="Type a ministry song\u2026">';
-        var mInp = mBox.querySelector('input');
-        mInp.setAttribute('onkeydown', "if(event.key==='Enter'){event.preventDefault();window.addMinistryFromBox();}");
-        slotsDiv.appendChild(mBox);
+        // One open ministry ghost slot — always typeable
+        var mGhost = document.createElement('div');
+        mGhost.className = 'slot-placeholder';
+        mGhost.innerHTML = '<div class="slot-placeholder-num">M</div>' +
+          '<input class="slot-inline-input" id="ministry-add-input" type="text" placeholder="ministry song\u2026" ' +
+          "onkeydown=\"if(event.key==='Enter'){event.preventDefault();window.addMinistryFromBox();}\"/>";
+        slotsDiv.appendChild(mGhost);
       }
 
-      // Ghost placeholder slots when building mode is active
+      // Ghost placeholder slots — typeable, always at least 1 when building
       if (state.setBuilding) {
         var filledCount = state.set.length;
         var ghostCount = filledCount < 4 ? (4 - filledCount) : 1;
@@ -6280,20 +6292,21 @@
           var ghostNum = filledCount + g + 1;
           var ghost = document.createElement('div');
           ghost.className = g === 0 ? 'slot-placeholder active' : 'slot-placeholder';
-          var hintText = g === 0 ? (filledCount === 0 ? 'choose a song from the list\u2026' : 'what\u2019s next\u2026') : '\u2014';
+          var ph = g === 0 ? (filledCount === 0 ? 'song name\u2026' : 'what\u2019s next\u2026') : '';
           ghost.innerHTML = '<div class="slot-placeholder-num">' + ghostNum + '</div>' +
-            '<div class="slot-placeholder-text">' + hintText + '</div>';
+            '<input class="slot-inline-input" type="text" placeholder="' + ph + '" ' +
+            "onkeydown=\"if(event.key==='Enter'){event.preventDefault();window.addSongFromInput(this);}\">";
           slotsDiv.appendChild(ghost);
         }
+      } else {
+        // Non-building mode: plain add box
+        var addBox = document.createElement('div');
+        addBox.className = 'add-song-box';
+        addBox.innerHTML = '<span class="add-icon">+</span><input type="text" id="set-add-input" placeholder="Add a song\u2026">';
+        var setInp = addBox.querySelector('input');
+        setInp.setAttribute('onkeydown', "if(event.key==='Enter'){event.preventDefault();window.addSongFromBox();}");
+        slotsDiv.appendChild(addBox);
       }
-
-      // Main set add-song input box
-      var addBox = document.createElement('div');
-      addBox.className = 'add-song-box';
-      addBox.innerHTML = '<span class="add-icon">+</span><input type="text" id="set-add-input" placeholder="Song name \u2014 from library or one-off\u2026">';
-      var setInp = addBox.querySelector('input');
-      setInp.setAttribute('onkeydown', "if(event.key==='Enter'){event.preventDefault();window.addSongFromBox();}");
-      slotsDiv.appendChild(addBox);
 
     }
 
@@ -6302,9 +6315,9 @@
       state.ministrySongs = [];
       state.setBuilding = true;
       renderSet();
-      // Focus the add-song input
+      // Focus the first active ghost slot input
       setTimeout(function() {
-        var inp = document.getElementById('set-add-input');
+        var inp = document.querySelector('.slot-placeholder.active .slot-inline-input');
         if (inp) inp.focus();
       }, 50);
     };
@@ -8003,6 +8016,35 @@
       } catch(e) {
         console.error('addSongFromBox error:', e);
       }
+    };
+
+    // Called from inline ghost slot inputs — adds song and moves focus to next active slot
+    window.addSongFromInput = function(inp) {
+      try {
+        var val = inp.value.trim();
+        if (!val) return;
+        var song = matchOrCreateSong(val);
+        var isNew = !state.set.find(function(s) { return s.id === song.id; });
+        if (isNew) {
+          state.set.push(song);
+          state.setBuilding = true;
+        }
+        renderSongs();
+        renderSet();
+        // Flash confirmation
+        var resp = document.getElementById('set-chat-response');
+        if (resp) {
+          resp.innerHTML = '<span class="sunday-label-sm">Sunday</span> ' +
+            (isNew ? 'Added <strong>' + esc(song.title) + '</strong>' + (song.custom ? ' (one-off)' : '') + ' to the set.'
+                   : '<strong>' + esc(song.title) + '</strong> is already in the set.');
+          resp.classList.add('visible');
+        }
+        // Focus next active ghost input
+        setTimeout(function() {
+          var next = document.querySelector('.slot-placeholder.active .slot-inline-input');
+          if (next) { next.focus(); next.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+        }, 50);
+      } catch(e) { console.error('addSongFromInput error:', e); }
     };
 
     /* ==================== GLOBAL WINDOW FUNCTIONS ==================== */
