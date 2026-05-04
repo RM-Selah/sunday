@@ -6280,14 +6280,6 @@
       setInp.setAttribute('onkeydown', "if(event.key==='Enter'){event.preventDefault();window.addSongFromBox();}");
       slotsDiv.appendChild(addBox);
 
-      // Library hint \u2014 shown only while building
-      if (state.setBuilding) {
-        var libHint = document.createElement('div');
-        libHint.style.cssText = 'padding: 4px 4px 0; text-align:center;';
-        libHint.innerHTML = '<span style="font-family:var(--font-display); font-size:10px; color:var(--dim); opacity:0.5; letter-spacing:0.5px;">new song not in library? tell Sunny or </span>' +
-          '<button onclick="switchScreen(\'songs\')" style="background:none; border:none; font-family:var(--font-display); font-size:10px; color:var(--mid); cursor:pointer; text-decoration:underline; padding:0; letter-spacing:0.5px;">add it here \u2192</button>';
-        slotsDiv.appendChild(libHint);
-      }
     }
 
     window.startNewSet = function() {
