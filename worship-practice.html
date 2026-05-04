@@ -15,29 +15,29 @@
 
   <style>
     :root {
-      /* === SUNDAY — Trail / Bandit aesthetic === */
-      --bg: #0c0c08;
-      --s1: #141410;
-      --s2: #1a1a14;
-      --s3: #222218;
-      --gb: rgba(255,248,235,0.06);
-      --gb2: rgba(255,248,235,0.10);
-      --gl: rgba(255,248,235,0.025);
-      --text: #f0ede5;
-      --mid: #8a8478;
-      --dim: #4a4840;
+      /* === SUNDAY — Blue & Gold === */
+      --bg: #050507;
+      --s1: #0a0a10;
+      --s2: #0f0f18;
+      --s3: #15151f;
+      --gb: rgba(110,120,255,0.08);
+      --gb2: rgba(110,120,255,0.14);
+      --gl: rgba(110,120,255,0.04);
+      --text: #e8e8f2;
+      --mid: #6060a0;
+      --dim: #38385a;
 
-      /* Earthy accent palette */
-      --amber: #c4963a;
-      --amber-bright: #daa84a;
-      --adim: rgba(196,150,58,0.14);
-      --aglow: rgba(196,150,58,0.06);
+      /* Gold accent */
+      --amber: #e09a2d;
+      --amber-bright: #f0b040;
+      --adim: rgba(224,154,45,0.14);
+      --aglow: rgba(224,154,45,0.06);
 
-      /* Song category colours — warm earth tones */
-      --praise: #a05c38;       /* rust */
-      --worship: #5a7a52;      /* forest green */
-      --homegrown: #8a7c5a;    /* warm gold */
-      --classic: #6a6258;      /* stone */
+      /* Song category colours */
+      --praise: #e06858;
+      --worship: #5888d8;
+      --homegrown: #68b878;
+      --classic: #9878c8;
 
       --font-display: 'Space Grotesk', -apple-system, 'Segoe UI', sans-serif;
       --font-body: 'DM Sans', -apple-system, 'Segoe UI', sans-serif;
@@ -520,6 +520,12 @@
 
     .screen.active {
       display: flex;
+    }
+
+    /* People / Team screen scrolls as a block, not a flex column */
+    .screen[data-screen="people"].active,
+    .screen[data-screen="settings"].active {
+      display: block;
     }
 
     /* ===================== SET BUILDER SCREEN ===================== */
@@ -2523,6 +2529,8 @@
       max-width: 860px;
       margin: 0 auto;
       padding-bottom: 80px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .people-header {
@@ -3548,7 +3556,7 @@
     </div>
 
       <!-- SCREEN: TEAM DATABASE -->
-      <div class="screen" data-screen="people" style="overflow-y:auto;">
+      <div class="screen" data-screen="people" style="overflow-y:auto; display:none; flex-direction:column;">
         <div class="people-container">
 
           <div class="people-header">
