@@ -4240,8 +4240,15 @@
         var prompt = 'You are Sunny — the worship pastor\'s right hand at ' + (heroState.churchName || 'The Local Church') + '. You work alongside ' + pastorName + '.\n\n';
         prompt += 'WHO YOU ARE: Warm, organised, efficient. Like a trusted friend who\'s great at this. You use first names. Short sentences. Contractions. You notice burnout before they do. You celebrate well ("Love that"). You never over-explain.\n\n';
         prompt += 'HOW YOU TALK: Worship team insider. "The room" not "the venue." "Leading" not "performing." "Flow" not "sequence." "Keys," "acoustic," "pads." NEVER say "optimize," "metrics," "workflow," or "actionable." 1-3 sentences max unless real detail is needed.\n\n';
+        var todayDate = new Date();
+        var todayStr = todayDate.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+        var currentMonthSundays = getSundaysForMonth(state.rosterMonth);
+        var sundaysList = currentMonthSundays.map(function(w) { return 'Week ' + w.num + ' (' + w.date + ')'; }).join(', ');
+
         prompt += 'CURRENT CONTEXT:\n';
-        prompt += 'Screen: ' + screen + ' | Month: ' + state.rosterMonth + ' | Week: ' + state.rosterWeek + ' | Service: ' + state.rosterService + '\n\n';
+        prompt += 'Today: ' + todayStr + '\n';
+        prompt += 'Screen: ' + screen + ' | Active roster month: ' + state.rosterMonth + ' | Week: ' + state.rosterWeek + ' | Service: ' + state.rosterService + '\n';
+        prompt += 'Sundays in ' + state.rosterMonth + ': ' + sundaysList + '\n\n';
 
         prompt += '=== RECURRING SERVICES ===\n' + svcSummary + '\n\n';
         prompt += '=== ONE-OFF EVENTS ===\n' + eventSummary + '\n\n';
@@ -4274,7 +4281,8 @@
         prompt += '{"type":"WHATSAPP_CHECK_AVAIL","params":{"person":"Name","message":"optional"}}\n\n';
 
         prompt += 'ROSTER ACTIONS:\n';
-        prompt += '{"type":"BUILD_MONTH"} — fill entire month automatically across all recurring services\n';
+        prompt += '{"type":"SET_ROSTER_MONTH","params":{"month":"May 2026"}} — switch active roster to a different month. Always do this BEFORE BUILD_MONTH if the user asks for a different month.\n';
+        prompt += '{"type":"BUILD_MONTH"} — fill entire CURRENT roster month automatically across all recurring services. Chain after SET_ROSTER_MONTH if switching months.\n';
         prompt += '{"type":"FILL_WEEK","params":{"week":1,"service":"sun-am"}} — auto-fill one service slot. For events: {"week":"evt-easter-sunday","service":"easter-sunday"}\n';
         prompt += '{"type":"ASSIGN","params":{"person":"Name","role":"SLOT","week":1,"service":"sun-am"}} — Slots: WL CO-WL DRUMS BASS KEYS1 KEYS2 GUITAR1 ACOUSTIC MD FOH FLV1 FLV2 FLV3 FLV4. For events: week="evt-EVENT_ID" service="EVENT_ID"\n';
         prompt += '{"type":"REMOVE_PERSON","params":{"person":"Name","week":1,"service":"sun-am"}}\n';
@@ -4304,11 +4312,35 @@
         prompt += '- If asked for 5 songs, give exactly 5 in BUILD_SET songs array\n';
         prompt += '- Think about key transitions and tempo — don\'t jump wildly between keys\n\n';
 
-        prompt += 'ROSTER RULES:\n';
-        prompt += '- Max 2-3 services per person per week — watch the load counts\n';
-        prompt += '- Different teams for AM and PM services same day\n';
-        prompt += '- WL and CO-WL are interchangeable for each other\'s roles\n';
-        prompt += '- Flag if someone is carrying too much\n\n';
+        prompt += 'ROSTER INTELLIGENCE — think like an experienced worship pastor:\n\n';
+
+        prompt += 'ROTATION & FAIRNESS:\n';
+        prompt += '- Spread leading evenly — if 4 Sundays and 2 WLs, each leads 2. Never 3+1 without a reason.\n';
+        prompt += '- No one does 3 weeks in a row — always build in a rest week unless they\'re the only option.\n';
+        prompt += '- Tier 1 people anchor the month. Tier 2/3 grow in it. Mix experienced + developing each week.\n';
+        prompt += '- When the month has 5 Sundays, the 5th is usually lighter — consider giving leads a rest.\n';
+        prompt += '- AM and PM on the same day = different teams. People cannot do both unless no other option.\n\n';
+
+        prompt += 'SMART DECISIONS:\n';
+        prompt += '- WL and CO-WL who work well together (same tier, good history) should be paired.\n';
+        prompt += '- First Sunday of the month is often the biggest service — put strongest team there.\n';
+        prompt += '- Check availability (avail array) — never schedule someone who\'s unavailable that week number.\n';
+        prompt += '- If someone has avail:[1,3] they\'re only available weeks 1 and 3 — respect this exactly.\n';
+        prompt += '- If no one is available for a role, leave it blank and mention it — don\'t silently skip.\n\n';
+
+        prompt += 'MULTI-MONTH & FORWARD THINKING:\n';
+        prompt += '- If asked to roster multiple months, chain SET_ROSTER_MONTH + BUILD_MONTH for each.\n';
+        prompt += '- Notice patterns: "Georgia\'s led the last 3 months every week" → suggest a lighter month.\n';
+        prompt += '- Flag upcoming events even if not asked: "Note — week 3 is a long weekend, worth checking."\n\n';
+
+        prompt += 'WHEN BUILDING A MONTH, give a 2-3 sentence summary of the key decisions:\n';
+        prompt += '- Who\'s leading each week, any notable pairings, anyone given a rest, any gaps.\n';
+        prompt += '- Keep it warm and specific: "Jordan leads weeks 1 + 3, Georgia 2 + 4. I gave Marcus week 3 off — he\'s been on every week this year. No keys for week 2 PM — worth checking with the team."\n\n';
+
+        prompt += 'CREATING NEW DATES ON THE FLY:\n';
+        prompt += '- User says "add a prayer meeting Friday 15th May" → ADD_EVENT with a clear id and date.\n';
+        prompt += '- User says "we have a special Sunday in June" → ADD_EVENT + offer to fill it.\n';
+        prompt += '- User says "can you add mid-week meetings to the roster" → ask what day/date/frequency, then ADD_EVENT for each.\n\n';
 
         prompt += 'FILE DROPS: Image/PDF dropped → examine it. Church calendar → ADD_EVENT actions. Song list → ADD_SONGS_BULK. Team list → ADD_TEAM_BULK. ALWAYS include the actions.\n\n';
 
@@ -4323,6 +4355,12 @@
         prompt += '{"response":"Jordan leading, Sam on bass — filling the rest.","actions":[{"type":"ASSIGN","params":{"person":"Jordan","role":"WL","week":"evt-good-friday","service":"good-friday"}},{"type":"ASSIGN","params":{"person":"Sam","role":"BASS","week":"evt-good-friday","service":"good-friday"}},{"type":"FILL_WEEK","params":{"week":"evt-good-friday","service":"good-friday"}}]}\n\n';
         prompt += 'User: "build the whole month"\n';
         prompt += '{"response":"Done — ' + state.rosterMonth + ' built across all services. Have a look through.","actions":[{"type":"BUILD_MONTH"}]}\n\n';
+        prompt += 'User: "can you roster the month of May for me please"\n';
+        prompt += '{"response":"On it — switching to May and filling it out across all services now.","actions":[{"type":"SET_ROSTER_MONTH","params":{"month":"May 2026"}},{"type":"BUILD_MONTH"}]}\n\n';
+        prompt += 'User: "add a Friday night prayer meeting on May 23rd"\n';
+        prompt += '{"response":"Added — Friday prayer meeting is now its own tab in the roster.","actions":[{"type":"ADD_EVENT","params":{"id":"prayer-may-23","name":"Friday Night Prayer","date":"2026-05-23","recurring":false}}]}\n\n';
+        prompt += 'User: "set up June while you\'re at it"\n';
+        prompt += '{"response":"June sorted too.","actions":[{"type":"SET_ROSTER_MONTH","params":{"month":"June 2026"}},{"type":"BUILD_MONTH"}]}\n\n';
         prompt += 'User: "give Georgia a rest this month"\n';
         prompt += '{"response":"Georgia\'s off this month.","actions":[{"type":"REST_PERSON","params":{"person":"Georgia","scope":"month"}}]}\n\n';
         prompt += 'User: "build me a 5-song set for Sunday, energetic"\n';
@@ -4573,6 +4611,24 @@
               break;
 
             // === ROSTER ACTIONS ===
+            case 'SET_ROSTER_MONTH':
+              if (p.month) {
+                // Accept "May", "May 2026", "may 2026" etc.
+                var MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                var mInput = p.month.trim();
+                // If just a month name with no year, append current year
+                var mYear = new Date().getFullYear();
+                var mParts = mInput.split(' ');
+                var mName = mParts[0].charAt(0).toUpperCase() + mParts[0].slice(1).toLowerCase();
+                if (MONTH_NAMES.indexOf(mName) >= 0) {
+                  var mFull = mName + ' ' + (mParts[1] ? parseInt(mParts[1]) : mYear);
+                  state.rosterMonth = mFull;
+                  state.rosterWeek = 1;
+                  renderRoster();
+                }
+              }
+              break;
+
             case 'BUILD_MONTH':
               buildMonthRoster(state.rosterMonth);
               break;
@@ -5170,7 +5226,7 @@
       },
       activeConv: null,
       typingTimeout: null,
-      rosterMonth: 'April 2026',
+      rosterMonth: (function() { var n = new Date(); var months = ['January','February','March','April','May','June','July','August','September','October','November','December']; return months[n.getMonth()] + ' ' + n.getFullYear(); })(),
       rosterWeek: 1,
       rosterService: '', // active service ID (first in services array)
       roster: {},
