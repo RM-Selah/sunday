@@ -2517,6 +2517,353 @@
       border-bottom-right-radius: 4px;
     }
 
+    /* ===================== TEAM DATABASE SCREEN ===================== */
+    .people-container {
+      padding: 32px;
+      max-width: 860px;
+      margin: 0 auto;
+      padding-bottom: 80px;
+    }
+
+    .people-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .people-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.3px;
+      margin-bottom: 4px;
+    }
+
+    .people-subtitle {
+      font-size: 12px;
+      color: var(--dim);
+    }
+
+    .people-add-btn {
+      padding: 8px 18px;
+      background: var(--amber);
+      border: none;
+      border-radius: var(--radius-pill);
+      color: var(--bg);
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+      flex-shrink: 0;
+    }
+
+    .people-add-btn:hover { background: var(--amber-bright); }
+
+    /* Add/Edit form */
+    .member-form-wrap {
+      margin-bottom: 24px;
+    }
+
+    .member-form {
+      background: var(--s2);
+      border: 1px solid var(--gb2);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+    }
+
+    .member-form-title {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 20px;
+      letter-spacing: 0.2px;
+    }
+
+    .member-form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .member-form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .member-form-label {
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+
+    .member-form-input {
+      background: var(--s3);
+      border: 1px solid var(--gb);
+      border-radius: var(--radius-md);
+      padding: 9px 12px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 300;
+      transition: border-color var(--transition);
+    }
+
+    .member-form-input:focus {
+      outline: none;
+      border-color: var(--amber);
+    }
+
+    .role-checkboxes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .role-check-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      background: var(--s3);
+      border: 1px solid var(--gb);
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--mid);
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .role-check-label input { display: none; }
+
+    .role-check-label.checked {
+      background: var(--adim);
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    .tier-selector {
+      display: flex;
+      gap: 6px;
+    }
+
+    .tier-btn {
+      padding: 6px 12px;
+      background: var(--s3);
+      border: 1px solid var(--gb);
+      border-radius: var(--radius-md);
+      color: var(--mid);
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tier-btn.active {
+      background: var(--adim);
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    .avail-checkboxes {
+      display: flex;
+      gap: 8px;
+    }
+
+    .avail-check {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-display);
+      font-size: 11px;
+      color: var(--mid);
+      cursor: pointer;
+    }
+
+    .avail-check input { accent-color: var(--amber); }
+
+    .member-form-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .member-form-save {
+      padding: 8px 20px;
+      background: var(--amber);
+      border: none;
+      border-radius: var(--radius-pill);
+      color: var(--bg);
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .member-form-save:hover { background: var(--amber-bright); }
+
+    .member-form-cancel {
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid var(--gb);
+      border-radius: var(--radius-pill);
+      color: var(--mid);
+      font-family: var(--font-display);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* Team list */
+    .people-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .people-section-label {
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--dim);
+      padding: 16px 0 8px;
+    }
+
+    .person-row {
+      display: grid;
+      grid-template-columns: 36px 1fr auto auto auto;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 16px;
+      background: var(--s1);
+      border: 1px solid transparent;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .person-row:hover {
+      background: var(--s2);
+      border-color: var(--gb);
+    }
+
+    .person-row.expanded {
+      background: var(--s2);
+      border-color: var(--gb2);
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+
+    .person-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .person-name {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .person-roles {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .person-role-pill {
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .person-avail {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .avail-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--gb2);
+    }
+
+    .avail-dot.on { background: var(--amber); opacity: 0.7; }
+
+    .person-tier {
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--dim);
+      min-width: 24px;
+      text-align: right;
+    }
+
+    .person-actions {
+      display: flex;
+      gap: 6px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .person-row:hover .person-actions { opacity: 1; }
+
+    .person-action-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 4px;
+      border: 1px solid var(--gb);
+      background: transparent;
+      color: var(--mid);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .person-action-btn:hover { border-color: var(--amber); color: var(--amber); }
+    .person-action-btn.del:hover { border-color: #c0392b; color: #c0392b; }
+
+    /* Inline edit panel */
+    .person-edit-panel {
+      background: var(--s2);
+      border: 1px solid var(--gb2);
+      border-top: none;
+      border-radius: 0 0 var(--radius-md) var(--radius-md);
+      padding: 16px 16px 16px 68px;
+      margin-bottom: 2px;
+    }
+
     /* ===================== SETTINGS SCREEN ===================== */
     .settings-status-pill {
       display: flex;
@@ -3023,6 +3370,7 @@
       <div class="nav-tabs">
         <button class="nav-tab active" data-tab="set" onclick="switchScreen('set')">Set</button>
         <button class="nav-tab" data-tab="team" onclick="switchScreen('team')">Roster</button>
+        <button class="nav-tab" data-tab="people" onclick="switchScreen('people')">Team</button>
         <button class="nav-tab" data-tab="sunday" onclick="switchScreen('sunday')">Sunday</button>
         <button class="nav-tab" data-tab="settings" onclick="switchScreen('settings')" style="opacity:0.5; font-size:12px;">⚙</button>
       </div>
@@ -3198,6 +3546,73 @@
         </div>
       </div>
     </div>
+
+      <!-- SCREEN: TEAM DATABASE -->
+      <div class="screen" data-screen="people" style="overflow-y:auto;">
+        <div class="people-container">
+
+          <div class="people-header">
+            <div>
+              <h2 class="people-title">Team</h2>
+              <p class="people-subtitle" id="people-subtitle">Loading…</p>
+            </div>
+            <button class="people-add-btn" onclick="window.openAddMember()">+ Add musician</button>
+          </div>
+
+          <!-- Add / Edit form (hidden by default) -->
+          <div class="member-form-wrap" id="member-form-wrap" style="display:none;">
+            <div class="member-form" id="member-form">
+              <div class="member-form-title" id="member-form-title">New musician</div>
+
+              <div class="member-form-row">
+                <div class="member-form-field">
+                  <label class="member-form-label">Name</label>
+                  <input type="text" class="member-form-input" id="mf-name" placeholder="First name or full name">
+                </div>
+                <div class="member-form-field">
+                  <label class="member-form-label">Phone (optional)</label>
+                  <input type="text" class="member-form-input" id="mf-phone" placeholder="+64 21 …">
+                </div>
+              </div>
+
+              <div class="member-form-field">
+                <label class="member-form-label">Roles</label>
+                <div class="role-checkboxes" id="role-checkboxes"></div>
+              </div>
+
+              <div class="member-form-row">
+                <div class="member-form-field">
+                  <label class="member-form-label">Tier</label>
+                  <div class="tier-selector" id="mf-tier">
+                    <button class="tier-btn active" data-tier="1" onclick="window.setTier(1,this)">1 — Lead</button>
+                    <button class="tier-btn" data-tier="2" onclick="window.setTier(2,this)">2 — Regular</button>
+                    <button class="tier-btn" data-tier="3" onclick="window.setTier(3,this)">3 — Developing</button>
+                  </div>
+                </div>
+                <div class="member-form-field">
+                  <label class="member-form-label">Available weeks</label>
+                  <div class="avail-checkboxes" id="avail-checkboxes">
+                    <label class="avail-check"><input type="checkbox" value="1" checked> Wk 1</label>
+                    <label class="avail-check"><input type="checkbox" value="2" checked> Wk 2</label>
+                    <label class="avail-check"><input type="checkbox" value="3" checked> Wk 3</label>
+                    <label class="avail-check"><input type="checkbox" value="4" checked> Wk 4</label>
+                    <label class="avail-check"><input type="checkbox" value="5" checked> Wk 5</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="member-form-actions">
+                <button class="member-form-save" id="member-form-save" onclick="window.saveMemberForm()">Save</button>
+                <button class="member-form-cancel" onclick="window.closeAddMember()">Cancel</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Team list -->
+          <div class="people-list" id="people-list"></div>
+
+        </div>
+      </div>
 
       <!-- ===================== SETTINGS SCREEN ===================== -->
       <div class="screen" data-screen="settings" style="overflow-y: auto;">
@@ -5083,6 +5498,10 @@
         if (screen !== 'set') {
           try { renderSongs(); } catch(e) {}
         }
+        // Always refresh team list if on people screen
+        try { if (screen === 'people') renderPeople(); } catch(e) {}
+        // Refresh people in background so team tab stays current
+        try { renderPeople(); } catch(e) {}
       }
     };
 
@@ -5721,6 +6140,294 @@
       renderSongs();
       renderSet();
     }
+
+    /* ==================== TEAM DATABASE SCREEN ==================== */
+
+    var ALL_ROLES = ['WL','CO-WL','FLV','Keys','Drums','Bass','Guitar','Acoustic','MD','FOH'];
+    var ROLE_COLORS = { WL:'#c4963a', 'CO-WL':'#a07830', FLV:'#5a7a52', Keys:'#6a7a9a', Drums:'#8a5a52', Bass:'#7a6a8a', Guitar:'#5a7a6a', Acoustic:'#7a6a52', MD:'#6a5a4a', FOH:'#5a6a6a' };
+
+    var _editingMemberId = null;
+
+    function renderPeople() {
+      var list = document.getElementById('people-list');
+      var subtitle = document.getElementById('people-subtitle');
+      if (!list) return;
+      list.innerHTML = '';
+
+      var members = TEAM.filter(function(m) { return !m.archived; });
+      if (subtitle) subtitle.textContent = members.length + ' musician' + (members.length !== 1 ? 's' : '') + ' in the database';
+
+      if (members.length === 0) {
+        list.innerHTML = '<div style="padding:40px 0; text-align:center; color:var(--dim); font-size:13px;">No musicians yet — add one above or tell Sunny.</div>';
+        return;
+      }
+
+      // Group by tier
+      var tiers = { 1: [], 2: [], 3: [] };
+      members.forEach(function(m) { (tiers[m.tier] || tiers[3]).push(m); });
+      var tierLabels = { 1: 'Tier 1 — Lead', 2: 'Tier 2 — Regular', 3: 'Tier 3 — Developing' };
+
+      [1, 2, 3].forEach(function(t) {
+        if (!tiers[t] || tiers[t].length === 0) return;
+        var label = document.createElement('div');
+        label.className = 'people-section-label';
+        label.textContent = tierLabels[t];
+        list.appendChild(label);
+
+        tiers[t].forEach(function(member) {
+          list.appendChild(buildPersonRow(member));
+        });
+      });
+    }
+
+    function buildPersonRow(member) {
+      var wrap = document.createElement('div');
+
+      var row = document.createElement('div');
+      row.className = 'person-row';
+      row.setAttribute('data-id', member.id);
+
+      // Avatar
+      var av = document.createElement('div');
+      av.className = 'person-avatar';
+      av.style.background = (member.color || '#8a7c5a') + '22';
+      av.style.color = member.color || '#8a7c5a';
+      av.textContent = member.name.charAt(0).toUpperCase();
+      row.appendChild(av);
+
+      // Name + roles
+      var info = document.createElement('div');
+      info.style.minWidth = '0';
+      var nameEl = document.createElement('div');
+      nameEl.className = 'person-name';
+      nameEl.textContent = member.name;
+      var rolesEl = document.createElement('div');
+      rolesEl.className = 'person-roles';
+      rolesEl.style.marginTop = '4px';
+      (member.roles || []).forEach(function(r) {
+        var pill = document.createElement('span');
+        pill.className = 'person-role-pill';
+        pill.textContent = r;
+        pill.style.background = (ROLE_COLORS[r] || '#8a7c5a') + '22';
+        pill.style.color = ROLE_COLORS[r] || '#8a7c5a';
+        rolesEl.appendChild(pill);
+      });
+      info.appendChild(nameEl);
+      info.appendChild(rolesEl);
+      row.appendChild(info);
+
+      // Availability dots
+      var availEl = document.createElement('div');
+      availEl.className = 'person-avail';
+      availEl.title = 'Available weeks: ' + (member.avail && member.avail.length ? member.avail.join(', ') : 'none');
+      [1,2,3,4,5].forEach(function(w) {
+        var dot = document.createElement('div');
+        dot.className = 'avail-dot' + (member.avail && member.avail.indexOf(w) >= 0 ? ' on' : '');
+        availEl.appendChild(dot);
+      });
+      row.appendChild(availEl);
+
+      // Tier badge
+      var tierEl = document.createElement('div');
+      tierEl.className = 'person-tier';
+      tierEl.textContent = 'T' + (member.tier || 2);
+      row.appendChild(tierEl);
+
+      // Actions
+      var actionsEl = document.createElement('div');
+      actionsEl.className = 'person-actions';
+
+      var editBtn = document.createElement('button');
+      editBtn.className = 'person-action-btn';
+      editBtn.title = 'Edit';
+      editBtn.textContent = '✎';
+      editBtn.onclick = function(e) { e.stopPropagation(); window.editMember(member.id, wrap); };
+
+      var archiveBtn = document.createElement('button');
+      archiveBtn.className = 'person-action-btn del';
+      archiveBtn.title = 'Remove from team';
+      archiveBtn.textContent = '×';
+      archiveBtn.onclick = function(e) {
+        e.stopPropagation();
+        if (confirm('Remove ' + member.name + ' from the team?\n\nThey won\'t appear on the roster but won\'t be permanently deleted.')) {
+          member.archived = true;
+          SundayData.save();
+          renderPeople();
+        }
+      };
+
+      actionsEl.appendChild(editBtn);
+      actionsEl.appendChild(archiveBtn);
+      row.appendChild(actionsEl);
+
+      // Click row = quick edit toggle
+      row.onclick = function() { window.editMember(member.id, wrap); };
+
+      wrap.appendChild(row);
+      return wrap;
+    }
+
+    window.editMember = function(id, wrap) {
+      // Close any already-open edit panel
+      document.querySelectorAll('.person-edit-panel').forEach(function(p) { p.remove(); });
+      document.querySelectorAll('.person-row.expanded').forEach(function(r) { r.classList.remove('expanded'); });
+
+      var member = TEAM.find(function(m) { return m.id === id; });
+      if (!member) return;
+
+      var row = wrap.querySelector('.person-row');
+      if (row.classList.contains('expanded')) {
+        row.classList.remove('expanded');
+        return;
+      }
+      row.classList.add('expanded');
+
+      var panel = document.createElement('div');
+      panel.className = 'person-edit-panel';
+
+      // Name + Phone row
+      panel.innerHTML = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">' +
+        '<div>' +
+          '<div class="member-form-label" style="margin-bottom:5px;">Name</div>' +
+          '<input type="text" class="member-form-input" id="ep-name" value="' + member.name.replace(/"/g,'&quot;') + '">' +
+        '</div>' +
+        '<div>' +
+          '<div class="member-form-label" style="margin-bottom:5px;">Phone</div>' +
+          '<input type="text" class="member-form-input" id="ep-phone" value="' + (member.phone || '').replace(/"/g,'&quot;') + '" placeholder="+64 21…">' +
+        '</div>' +
+      '</div>' +
+      '<div style="margin-bottom:12px;">' +
+        '<div class="member-form-label" style="margin-bottom:6px;">Roles</div>' +
+        '<div class="role-checkboxes" id="ep-roles"></div>' +
+      '</div>' +
+      '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">' +
+        '<div>' +
+          '<div class="member-form-label" style="margin-bottom:6px;">Tier</div>' +
+          '<div class="tier-selector" id="ep-tier"></div>' +
+        '</div>' +
+        '<div>' +
+          '<div class="member-form-label" style="margin-bottom:6px;">Available weeks</div>' +
+          '<div class="avail-checkboxes" id="ep-avail"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex; gap:8px;">' +
+        '<button class="member-form-save" onclick="window.saveEditPanel(\'' + id + '\', this.closest(\'.person-edit-panel\'))">Save changes</button>' +
+        '<button class="member-form-cancel" onclick="this.closest(\'.person-edit-panel\').remove(); document.querySelector(\'[data-id=\\\'' + id + '\\\']\').classList.remove(\'expanded\')">Cancel</button>' +
+      '</div>';
+
+      // Build role checkboxes
+      var rolesWrap = panel.querySelector('#ep-roles');
+      ALL_ROLES.forEach(function(r) {
+        var lbl = document.createElement('label');
+        lbl.className = 'role-check-label' + (member.roles && member.roles.indexOf(r) >= 0 ? ' checked' : '');
+        lbl.innerHTML = '<input type="checkbox" value="' + r + '"' + (member.roles && member.roles.indexOf(r) >= 0 ? ' checked' : '') + '> ' + r;
+        lbl.querySelector('input').onchange = function() { lbl.classList.toggle('checked', this.checked); };
+        rolesWrap.appendChild(lbl);
+      });
+
+      // Tier
+      var tierWrap = panel.querySelector('#ep-tier');
+      [['1','Lead'],['2','Regular'],['3','Developing']].forEach(function(pair) {
+        var btn = document.createElement('button');
+        btn.className = 'tier-btn' + (String(member.tier) === pair[0] ? ' active' : '');
+        btn.textContent = pair[0] + ' — ' + pair[1];
+        btn.dataset.tier = pair[0];
+        btn.onclick = function() {
+          tierWrap.querySelectorAll('.tier-btn').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+        };
+        tierWrap.appendChild(btn);
+      });
+
+      // Availability
+      var availWrap = panel.querySelector('#ep-avail');
+      [1,2,3,4,5].forEach(function(w) {
+        var lbl = document.createElement('label');
+        lbl.className = 'avail-check';
+        var chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.value = w;
+        chk.checked = member.avail && member.avail.indexOf(w) >= 0;
+        chk.style.accentColor = 'var(--amber)';
+        lbl.appendChild(chk);
+        lbl.appendChild(document.createTextNode(' Wk ' + w));
+        availWrap.appendChild(lbl);
+      });
+
+      wrap.appendChild(panel);
+    };
+
+    window.saveEditPanel = function(id, panel) {
+      var member = TEAM.find(function(m) { return m.id === id; });
+      if (!member) return;
+
+      var name = panel.querySelector('#ep-name').value.trim();
+      if (name) member.name = name;
+      member.phone = panel.querySelector('#ep-phone').value.trim();
+      member.roles = Array.from(panel.querySelectorAll('#ep-roles input:checked')).map(function(i) { return i.value; });
+      var activeTier = panel.querySelector('#ep-tier .tier-btn.active');
+      if (activeTier) member.tier = parseInt(activeTier.dataset.tier);
+      member.avail = Array.from(panel.querySelectorAll('#ep-avail input:checked')).map(function(i) { return parseInt(i.value); });
+
+      SundayData.save();
+      renderPeople();
+    };
+
+    // Add member form (top of screen)
+    window.openAddMember = function() {
+      _editingMemberId = null;
+      var wrap = document.getElementById('member-form-wrap');
+      var title = document.getElementById('member-form-title');
+      if (title) title.textContent = 'New musician';
+      document.getElementById('mf-name').value = '';
+      document.getElementById('mf-phone').value = '';
+      // Reset roles
+      buildAddFormRoles();
+      // Reset tier
+      document.querySelectorAll('#mf-tier .tier-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.tier === '2'); });
+      // Reset avail
+      document.querySelectorAll('#avail-checkboxes input').forEach(function(c) { c.checked = true; });
+      wrap.style.display = 'block';
+      document.getElementById('mf-name').focus();
+    };
+
+    window.closeAddMember = function() {
+      document.getElementById('member-form-wrap').style.display = 'none';
+    };
+
+    function buildAddFormRoles() {
+      var wrap = document.getElementById('role-checkboxes');
+      if (!wrap) return;
+      wrap.innerHTML = '';
+      ALL_ROLES.forEach(function(r) {
+        var lbl = document.createElement('label');
+        lbl.className = 'role-check-label';
+        lbl.innerHTML = '<input type="checkbox" value="' + r + '"> ' + r;
+        lbl.querySelector('input').onchange = function() { lbl.classList.toggle('checked', this.checked); };
+        wrap.appendChild(lbl);
+      });
+    }
+
+    window.setTier = function(t, btn) {
+      document.querySelectorAll('#mf-tier .tier-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    };
+
+    window.saveMemberForm = function() {
+      var name = document.getElementById('mf-name').value.trim();
+      if (!name) { document.getElementById('mf-name').focus(); return; }
+
+      var roles = Array.from(document.querySelectorAll('#role-checkboxes input:checked')).map(function(i) { return i.value; });
+      var tierBtn = document.querySelector('#mf-tier .tier-btn.active');
+      var tier = tierBtn ? parseInt(tierBtn.dataset.tier) : 2;
+      var avail = Array.from(document.querySelectorAll('#avail-checkboxes input:checked')).map(function(i) { return parseInt(i.value); });
+      var phone = document.getElementById('mf-phone').value.trim();
+
+      SundayData.addMember({ name: name, roles: roles, tier: tier, avail: avail, phone: phone });
+      SundayData.save();
+      window.closeAddMember();
+      renderPeople();
+    };
 
     /* ==================== ROSTER SCREEN ==================== */
     const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -6765,6 +7472,7 @@
       document.querySelector(`[data-tab="${screenName}"]`).classList.add('active');
 
       if (screenName === 'team') renderRoster();
+      if (screenName === 'people') { buildAddFormRoles(); renderPeople(); }
       if (screenName === 'sunday') renderAgent();
       if (screenName === 'settings') renderSettings();
 
@@ -6772,12 +7480,13 @@
       var chatCtx = document.getElementById('sidebar-chat-context');
       var chatInput = document.getElementById('sidebar-chat-input');
       if (chatCtx && chatInput) {
-        var labels = { set: 'SET', team: 'ROSTER', sunday: 'SUNDAY', settings: 'SETTINGS' };
+        var labels = { set: 'SET', team: 'ROSTER', people: 'TEAM', sunday: 'SUNDAY', settings: 'SETTINGS' };
         var placeholders = {
-          set: 'Tell Sunday what you\u2019re after\u2026',
-          team: 'Brief Sunday on the team\u2026',
-          sunday: 'Chat with Sunday\u2026',
-          settings: 'Ask Sunday anything\u2026'
+          set: 'Tell Sunny what you\u2019re after\u2026',
+          team: 'Brief Sunny on the roster\u2026',
+          people: 'Add a musician, update someone\u2019s availability\u2026',
+          sunday: 'Chat with Sunny\u2026',
+          settings: 'Ask Sunny anything\u2026'
         };
         chatCtx.textContent = labels[screenName] || 'SET';
         chatInput.placeholder = placeholders[screenName] || 'Talk to Sunny\u2026';
