@@ -3651,8 +3651,9 @@
       <div id="set-card-overlay" style="display:none; position:fixed; inset:0; background:rgba(5,5,7,0.85); z-index:500; overflow-y:auto; padding:24px 16px;">
         <div id="set-card" style="background:#fff; border-radius:12px; max-width:440px; margin:0 auto; padding:32px 36px; font-family:var(--font-display); color:#111;"></div>
         <div style="max-width:440px; margin:16px auto 0; display:flex; gap:10px; flex-wrap:wrap;">
-          <button id="btn-card-whatsapp" onclick="window.shareSetWhatsApp()" style="flex:1; background:var(--amber); border:none; border-radius:8px; padding:12px 18px; font-family:var(--font-display); font-size:12px; letter-spacing:0.5px; color:#fff; cursor:pointer; font-weight:500;">Send via WhatsApp</button>
-          <button id="btn-card-email" onclick="window.shareSetEmail()" style="flex:1; background:transparent; border:1px solid rgba(255,255,255,0.2); border-radius:8px; padding:12px 18px; font-family:var(--font-display); font-size:12px; letter-spacing:0.5px; color:rgba(255,255,255,0.7); cursor:pointer;">Send via Email</button>
+          <button id="btn-card-whatsapp" onclick="window.shareSetWhatsApp()" style="flex:1; background:var(--amber); border:none; border-radius:8px; padding:12px 18px; font-family:var(--font-display); font-size:12px; letter-spacing:0.5px; color:#fff; cursor:pointer; font-weight:500;">WhatsApp</button>
+          <button id="btn-card-imessage" onclick="window.shareSetIMessage()" style="flex:1; background:transparent; border:1px solid rgba(255,255,255,0.2); border-radius:8px; padding:12px 18px; font-family:var(--font-display); font-size:12px; letter-spacing:0.5px; color:rgba(255,255,255,0.7); cursor:pointer;">iMessage</button>
+          <button id="btn-card-email" onclick="window.shareSetEmail()" style="flex:1; background:transparent; border:1px solid rgba(255,255,255,0.2); border-radius:8px; padding:12px 18px; font-family:var(--font-display); font-size:12px; letter-spacing:0.5px; color:rgba(255,255,255,0.7); cursor:pointer;">Email</button>
           <button onclick="window.closeSetCard()" style="background:transparent; border:none; padding:12px; color:rgba(255,255,255,0.4); cursor:pointer; font-size:18px; line-height:1;">✕</button>
         </div>
       </div>
@@ -8101,8 +8102,7 @@
       html += '<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px;">';
       html += '<div><div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#888; margin-bottom:6px;">' + esc(churchName) + '</div>';
       html += '<div style="font-size:22px; font-weight:500; color:#111; line-height:1.2;">Sunday set</div></div>';
-      html += '<div style="text-align:right;"><div style="font-size:13px; font-weight:500; color:#111;">' + esc(dateStr) + '</div>';
-      html += (svcName ? '<div style="font-size:12px; color:#888; margin-top:2px;">' + esc(svcName) + (svcTime ? ' \u00b7 ' + esc(svcTime) : '') + '</div>' : '') + '</div></div>';
+      html += '<div style="text-align:right;"><div style="font-size:12px; color:#888;">' + esc(state.rosterMonth) + '</div></div></div>';
 
       // Meta row
       html += '<div style="display:flex; gap:24px; margin-bottom:20px; padding-bottom:16px; border-bottom:0.5px solid #e5e5e5;">';
@@ -8184,6 +8184,21 @@
       var totalMins = Math.round(state.set.reduce(function(a, s) { return a + (s.mins || 4.5); }, 0));
       lines.push('\n' + state.set.length + ' songs \u00b7 ~' + totalMins + ' minutes');
       window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(lines.join('\n'));
+    };
+
+    window.shareSetIMessage = function() {
+      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Sunday';
+      var lines = ['🎵 ' + churchName + ' — Set List\n'];
+      state.set.forEach(function(s, i) {
+        lines.push((i+1) + '. ' + s.title + (s.key ? ' (' + s.key + ')' : ''));
+      });
+      if (state.ministrySongs && state.ministrySongs.length > 0) {
+        lines.push('\nMinistry');
+        state.ministrySongs.forEach(function(ms) { lines.push('— ' + ms.title); });
+      }
+      var totalMins = Math.round(state.set.reduce(function(a, s) { return a + (s.mins || 4.5); }, 0));
+      lines.push('\n' + state.set.length + ' songs · ~' + totalMins + ' min');
+      window.open('sms:&body=' + encodeURIComponent(lines.join('\n')), '_blank');
     };
 
     window.handleEditSet = function() {
