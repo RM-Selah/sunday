@@ -62,7 +62,7 @@
       width: 100%;
       height: 100%;
       background:
-        linear-gradient(rgba(5,5,7,0.72), rgba(5,5,7,0.72)),
+        linear-gradient(rgba(5,5,7,0.50), rgba(5,5,7,0.50)),
         url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1920&q=80') center/cover no-repeat fixed;
       color: var(--text);
       font-family: var(--font-body);
@@ -118,7 +118,7 @@
       display: flex;
       align-items: center;
       padding: 0 24px;
-      background: rgba(8,8,14,0.75);
+      background: rgba(8,8,14,0.55);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border-bottom: 1px solid var(--gb);
@@ -214,7 +214,7 @@
     .sidebar {
       grid-column: 1;
       grid-row: 2;
-      background: rgba(8,8,14,0.72);
+      background: rgba(8,8,14,0.52);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border-right: 1px solid var(--gb);
@@ -547,7 +547,7 @@
       flex-direction: column;
       border-right: 1px solid var(--gb);
       overflow: hidden;
-      background: rgba(10,10,18,0.65);
+      background: rgba(10,10,18,0.48);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
     }
@@ -772,7 +772,7 @@
       display: flex;
       flex-direction: column;
       padding: 20px;
-      background: rgba(10,10,18,0.65);
+      background: rgba(10,10,18,0.48);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       overflow-y: auto;
@@ -1109,6 +1109,45 @@
       font-size: 9px;
     }
 
+    .slot-key-btn {
+      cursor: pointer;
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--gb);
+      font-size: 11px;
+      color: var(--mid);
+      background: transparent;
+      transition: border-color 0.15s, color 0.15s;
+      font-family: var(--font-display);
+    }
+    .slot-key-btn:hover { border-color: var(--amber); color: var(--amber); }
+
+    .key-picker-popup {
+      position: fixed;
+      z-index: 300;
+      background: var(--s2);
+      border: 1px solid var(--gb2);
+      border-radius: 10px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+    }
+    .key-picker-popup button {
+      background: var(--s3);
+      border: 1px solid var(--gb);
+      border-radius: 6px;
+      padding: 7px 4px;
+      font-family: var(--font-display);
+      font-size: 11px;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .key-picker-popup button:hover { background: var(--gb2); }
+    .key-picker-popup button.active { background: var(--amber); color: #fff; border-color: var(--amber); }
+
     .slot-actions {
       display: none;
       flex-direction: column;
@@ -1303,7 +1342,7 @@
       display: flex;
       flex-direction: column;
       height: 100%;
-      background: rgba(5,5,7,0.55);
+      background: rgba(5,5,7,0.38);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
     }
@@ -2692,6 +2731,12 @@
       padding-bottom: 80px;
       width: 100%;
       box-sizing: border-box;
+    }
+
+    .screen[data-screen="people"].active {
+      background: rgba(5,5,7,0.38);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
     }
 
     .people-header {
@@ -5893,6 +5938,12 @@
     // Load saved data AFTER defaults are declared (so localStorage can override them)
     SundayData.load();
 
+    // Seed Returning if not already in library
+    (function() {
+      var exists = SONGS.find(function(s) { return s.title.toLowerCase() === 'returning'; });
+      if (!exists) SundayData.addSong({ title: 'Returning', artist: 'Selah Worship', cat: 'homegrown', key: 'A', bpm: 68, mins: 5 });
+    })();
+
     /* ==================== STATE ==================== */
     // Dynamic services — Sunday creates these conversationally
     // Each service has: id (unique slug), name (display), day, time, recurring (true/false), date (for one-offs)
@@ -6253,7 +6304,7 @@
             '<div class="slot-song-title">' + esc(song.title) + '</div>' +
             '<div class="slot-song-meta">' +
               '<span class="slot-badge" style="background: ' + (catColors[song.cat] || 'var(--mid)') + '22; color: ' + (catColors[song.cat] || 'var(--mid)') + ';">' + esc(catNames[song.cat] || 'Unknown') + '</span>' +
-              '<span>' + esc(song.key) + '</span>' +
+              '<span class="slot-key-btn" onclick="event.stopPropagation();window.openKeyPicker(' + i + ',event)">' + esc(song.key || '?') + '</span>' +
               (song.bpm ? '<span>' + song.bpm + ' bpm</span>' : '') +
             '</div>' +
           '</div>' +
@@ -8278,6 +8329,45 @@
 
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
       }, 300);
+    };
+
+    window.openKeyPicker = function(idx, event) {
+      var existing = document.getElementById('key-picker-popup');
+      if (existing) { existing.remove(); return; }
+      var KEYS = ['A','Bb','B','C','C#','D','Eb','E','F','F#','G','Ab'];
+      var song = state.set[idx];
+      if (!song) return;
+      var popup = document.createElement('div');
+      popup.id = 'key-picker-popup';
+      popup.className = 'key-picker-popup';
+      var rect = event.target.getBoundingClientRect();
+      var top = rect.bottom + 6;
+      var left = rect.left;
+      if (left + 180 > window.innerWidth) left = window.innerWidth - 188;
+      popup.style.top = top + 'px';
+      popup.style.left = left + 'px';
+      KEYS.forEach(function(k) {
+        var btn = document.createElement('button');
+        btn.textContent = k;
+        if (song.key === k) btn.classList.add('active');
+        btn.onclick = function(e) {
+          e.stopPropagation();
+          song.key = k;
+          var inLib = SONGS.find(function(s) { return s.id === song.id; });
+          if (inLib) inLib.key = k;
+          SundayData.save();
+          popup.remove();
+          renderSet();
+        };
+        popup.appendChild(btn);
+      });
+      document.body.appendChild(popup);
+      setTimeout(function() {
+        document.addEventListener('click', function closeIt() {
+          popup.remove();
+          document.removeEventListener('click', closeIt);
+        }, { once: true });
+      }, 10);
     };
 
     window.removeFromSet = function(index) {
