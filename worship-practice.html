@@ -5938,10 +5938,15 @@
     // Load saved data AFTER defaults are declared (so localStorage can override them)
     SundayData.load();
 
-    // Seed Returning if not already in library
+    // Seed Returning if not already in library, or fix artist if wrong
     (function() {
       var exists = SONGS.find(function(s) { return s.title.toLowerCase() === 'returning'; });
-      if (!exists) SundayData.addSong({ title: 'Returning', artist: 'Selah Worship', cat: 'homegrown', key: 'A', bpm: 68, mins: 5 });
+      if (!exists) {
+        SundayData.addSong({ title: 'Returning', artist: 'Reuben Morgan', cat: 'homegrown', key: 'A', bpm: 68, mins: 5 });
+      } else if (exists.artist !== 'Reuben Morgan') {
+        exists.artist = 'Reuben Morgan';
+        SundayData.save();
+      }
     })();
 
     /* ==================== STATE ==================== */
