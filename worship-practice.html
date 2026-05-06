@@ -6199,7 +6199,7 @@
 
       // Finalise button
       var btnFinalise = document.getElementById('btn-finalise');
-      if (btnFinalise) btnFinalise.disabled = state.set.length < 3;
+      if (btnFinalise) btnFinalise.disabled = state.set.length < 1;
 
       // Arc bar
       var arcBar = document.getElementById('arc-bar');
@@ -8057,7 +8057,7 @@
     };
 
     window.handleFinalise = function() {
-      if (state.set.length < 3) return;
+      if (state.set.length < 1) return;
       window.buildAndShowSetCard();
     };
 
