@@ -61,7 +61,9 @@
     html, body {
       width: 100%;
       height: 100%;
-      background: var(--bg);
+      background:
+        linear-gradient(rgba(5,5,7,0.72), rgba(5,5,7,0.72)),
+        url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1920&q=80') center/cover no-repeat fixed;
       color: var(--text);
       font-family: var(--font-body);
       font-weight: 300;
@@ -116,7 +118,9 @@
       display: flex;
       align-items: center;
       padding: 0 24px;
-      background: var(--s1);
+      background: rgba(8,8,14,0.75);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
       border-bottom: 1px solid var(--gb);
       gap: 16px;
       z-index: 10;
@@ -210,7 +214,9 @@
     .sidebar {
       grid-column: 1;
       grid-row: 2;
-      background: var(--s1);
+      background: rgba(8,8,14,0.72);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
       border-right: 1px solid var(--gb);
       display: flex;
       flex-direction: column;
@@ -541,6 +547,9 @@
       flex-direction: column;
       border-right: 1px solid var(--gb);
       overflow: hidden;
+      background: rgba(10,10,18,0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
     }
 
     .library-header {
@@ -763,7 +772,9 @@
       display: flex;
       flex-direction: column;
       padding: 20px;
-      background: var(--s2);
+      background: rgba(10,10,18,0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
       overflow-y: auto;
     }
 
@@ -1292,7 +1303,9 @@
       display: flex;
       flex-direction: column;
       height: 100%;
-      background: var(--bg);
+      background: rgba(5,5,7,0.55);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
     }
 
     .roster-header {
