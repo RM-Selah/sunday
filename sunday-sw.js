@@ -1,8 +1,7 @@
 // Sunday Service Worker — Offline support + caching
-const CACHE_NAME = 'sunday-v3.6';
+const CACHE_NAME = 'sunday-v3.7';
 const ASSETS = [
   './',
-  './worship-practice.html',
   './sunday-manifest.json',
   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Space+Grotesk:wght@300;400;500;600;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'

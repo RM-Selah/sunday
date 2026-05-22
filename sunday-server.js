@@ -10,7 +10,7 @@
  *   3. (Optional) Supabase:      export SUPABASE_URL=https://xxx.supabase.co
  *                                export SUPABASE_KEY=eyJ...
  *   4. Run:                      node sunday-server.js
- *   5. Open worship-practice.html in your browser
+ *   5. Open index.html in your browser
  *
  * Endpoints:
  *   GET  /health            — Server status
@@ -539,7 +539,7 @@ server.listen(PORT, () => {
   console.log('  │  WhatsApp: ' + (WHATSAPP_ENABLED ? 'ON ✓' : 'OFF (set Twilio env vars)').padEnd(31) + '│');
   console.log('  │  Supabase: ' + (SUPABASE_URL ? 'ON ✓' : 'OFF (set SUPABASE_URL)').padEnd(31) + '│');
   console.log('  │                                             │');
-  console.log('  │  Open worship-practice.html                 │');
+  console.log('  │  Open index.html                 │');
   console.log('  │  Sunday will connect automatically.         │');
   console.log('  └───────────────────────────────────────────┘');
   console.log('');

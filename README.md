@@ -8,7 +8,7 @@ The app runs three ways depending on how much you want plugged in:
 
 **1. App only (offline, localStorage)**
 
-Open `worship-practice.html` in a browser. That's it — set builder, roster, people, and settings all work locally.
+Open `index.html` in a browser. That's it — set builder, roster, people, and settings all work locally.
 
 **2. App + AI**
 
@@ -17,7 +17,7 @@ export ANTHROPIC_API_KEY=sk-ant-...
 npm start
 ```
 
-Then open `worship-practice.html`. The Sunday AI chat will connect to `http://localhost:3456` automatically.
+Then open `index.html`. The Sunday AI chat will connect to `http://localhost:3456` automatically.
 
 **3. Full stack — AI + WhatsApp + Supabase**
 
@@ -36,7 +36,7 @@ For WhatsApp inbound, expose the server via ngrok and point your Twilio webhook 
 
 | File | What it is |
 |---|---|
-| `worship-practice.html` | The entire app — 5 screens (set, team, sunday, people, settings) |
+| `index.html` | The entire app — 5 screens (set, team, sunday, people, settings) |
 | `sunday-server.js` | Node HTTP server: `/chat` (Claude proxy), `/whatsapp/*`, `/sync-state` |
 | `sunday-schema.sql` | Supabase/Postgres schema, multi-tenant by `church_id`, RLS enabled |
 | `sunday-manifest.json` | PWA manifest |

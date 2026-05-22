@@ -2,7 +2,7 @@
   "name": "Sunday — Worship Team Assistant",
   "short_name": "Sunday",
   "description": "Your intelligent worship pastor assistant. Build sets, manage rosters, coordinate your team.",
-  "start_url": "./worship-practice.html",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#050507",
