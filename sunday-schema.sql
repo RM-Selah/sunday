@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS people (
 
 CREATE INDEX idx_people_church ON people(church_id);
 CREATE INDEX idx_people_phone ON people(phone);
+CREATE UNIQUE INDEX idx_people_church_name ON people(church_id, name);  -- required for upsert onConflict
 
 -- Services — recurring (Sunday AM) and one-off (Easter Friday)
 CREATE TABLE IF NOT EXISTS services (
@@ -48,6 +49,7 @@ CREATE TABLE IF NOT EXISTS services (
 );
 
 CREATE INDEX idx_services_church ON services(church_id);
+CREATE UNIQUE INDEX idx_services_church_slug ON services(church_id, slug);  -- required for upsert onConflict
 
 -- Songs — the worship library
 CREATE TABLE IF NOT EXISTS songs (
@@ -66,6 +68,7 @@ CREATE TABLE IF NOT EXISTS songs (
 );
 
 CREATE INDEX idx_songs_church ON songs(church_id);
+CREATE UNIQUE INDEX idx_songs_church_title ON songs(church_id, title);  -- required for upsert onConflict
 
 -- Availability — who's free when
 CREATE TABLE IF NOT EXISTS availability (
