@@ -6026,6 +6026,23 @@
       return song;
     }
 
+    // ── DEMO SEED VERSION — bump this string whenever you change the seed
+    //    arrays below or want every existing browser to refresh to the latest.
+    //    On load, if the saved version differs, we clear team/songs/services
+    //    so the new seed takes effect (NOTE: removes only seedable lists,
+    //    not roster assignments). Remove this whole block when real
+    //    onboarding ships.
+    var SEED_VERSION = 'demo-2026-05-23-b';
+    try {
+      var savedSeedVersion = localStorage.getItem('sunday_seed_version');
+      if (savedSeedVersion !== SEED_VERSION) {
+        localStorage.removeItem('sunday_team');
+        localStorage.removeItem('sunday_songs');
+        localStorage.removeItem('sunday_services');
+        localStorage.setItem('sunday_seed_version', SEED_VERSION);
+      }
+    } catch(e) {}
+
     // ── SEED: Selah master song library (demo data — May 2026)
     //    localStorage overrides this on subsequent loads (see SundayData.load below).
     var SONGS = window.SONGS = [
