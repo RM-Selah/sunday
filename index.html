@@ -8232,21 +8232,40 @@
 
     /* ==================== ADD SONG INPUT BOXES ==================== */
 
-    // Shared: match a typed value against the library, or create a one-off
+    // Shared: match a typed value against the library, or create a one-off.
+    // Strict rules:
+    //   1. Case-insensitive exact match (ignoring apostrophes/punctuation) wins.
+    //   2. If the typed string is a substantial substring of a library title
+    //      (handles abbreviations like "Beautiful Name" → "What a Beautiful Name"),
+    //      require ≥ 4 chars AND ≥ 60% length coverage — otherwise it's a new song.
+    //   3. Anything else creates a one-off custom song.
+    // This deliberately avoids fuzzy word-overlap matching, which used to grab the
+    // wrong library song whenever a typed title shared one common word.
     function matchOrCreateSong(val) {
-      var bestMatch = null;
-      var bestScore = 0;
-      var valLower = val.toLowerCase();
-      SONGS.forEach(function(song) {
-        var titleLower = song.title.toLowerCase();
-        if (titleLower === valLower) { bestMatch = song; bestScore = 999; }
-        if (bestScore < 999) {
-          var tw = titleLower.split(' ');
-          var sc = tw.filter(function(w) { return w.length > 2 && valLower.indexOf(w) >= 0; }).length;
-          if (sc > bestScore) { bestScore = sc; bestMatch = song; }
+      var norm = function(s) {
+        return s.toLowerCase()
+          .replace(/[''`]/g, '')
+          .replace(/[^\w]+/g, ' ')
+          .replace(/\s+/g, ' ').trim();
+      };
+      var valN = norm(val);
+      if (!valN) return createCustomSong(val);
+
+      // 1. Exact (normalized) match
+      for (var i = 0; i < SONGS.length; i++) {
+        if (norm(SONGS[i].title) === valN) return SONGS[i];
+      }
+      // 2. Strong substring match (typed contained in title, ≥60% length)
+      if (valN.length >= 4) {
+        for (var j = 0; j < SONGS.length; j++) {
+          var titleN = norm(SONGS[j].title);
+          if (titleN.length >= 4 && titleN.indexOf(valN) >= 0 && (valN.length / titleN.length) >= 0.6) {
+            return SONGS[j];
+          }
         }
-      });
-      return (bestMatch && bestScore > 0) ? bestMatch : createCustomSong(val);
+      }
+      // 3. Otherwise — new song
+      return createCustomSong(val);
     }
 
     // Ministry input box — Enter to add
