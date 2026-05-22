@@ -3625,8 +3625,8 @@
 </head>
 <body>
 
-  <!-- HERO LANDING -->
-  <div class="hero-landing" id="hero-landing">
+  <!-- HERO LANDING — archived for separate onboarding sprint; hidden via class -->
+  <div class="hero-landing hidden" id="hero-landing" style="display:none;">
     <div class="hero-bg"></div>
 
     <!-- Masthead — top left, like a magazine nameplate -->
@@ -9430,25 +9430,17 @@
       messages: []
     };
 
-    // Skip onboarding if user already has saved data
-    if (localStorage.getItem('sunday_church') || SundayData.hasTeam()) {
+    // Onboarding archived \u2014 separate sprint. Always skip hero, restore church name if saved.
+    (function skipOnboarding() {
       var hero = document.getElementById('hero-landing');
       if (hero) { hero.classList.add('hidden'); hero.style.display = 'none'; }
-      // Restore church name
       var savedChurch = localStorage.getItem('sunday_church');
       if (savedChurch) {
         heroState.churchName = savedChurch;
         var chipEl = document.querySelector('.chip');
         if (chipEl) chipEl.textContent = savedChurch;
       }
-    } else {
-      // Show initial greeting after a beat
-      setTimeout(function() {
-        addHeroMessage('sunday', 'Hi, I\u2019m Sunny.');
-        heroState.step = 0;
-        updateHeroPlaceholder();
-      }, 800);
-    }
+    })();
 
     function addHeroMessage(type, text) {
       var container = document.getElementById('hero-messages');
