@@ -4508,13 +4508,24 @@
         } catch(e) {}
       },
       load: function() {
+        // Only override seeded defaults if localStorage has non-empty data.
+        // Lets us ship demo data that survives stale empty-array saves.
         try {
           var t = localStorage.getItem('sunday_team');
-          if (t) { TEAM = JSON.parse(t); window.TEAM = TEAM; }
+          if (t) {
+            var parsedT = JSON.parse(t);
+            if (Array.isArray(parsedT) && parsedT.length > 0) { TEAM = parsedT; window.TEAM = TEAM; }
+          }
           var s = localStorage.getItem('sunday_songs');
-          if (s) { SONGS = JSON.parse(s); window.SONGS = SONGS; }
+          if (s) {
+            var parsedS = JSON.parse(s);
+            if (Array.isArray(parsedS) && parsedS.length > 0) { SONGS = parsedS; window.SONGS = SONGS; }
+          }
           var sv = localStorage.getItem('sunday_services');
-          if (sv) { services = JSON.parse(sv); window.services = services; }
+          if (sv) {
+            var parsedSv = JSON.parse(sv);
+            if (Array.isArray(parsedSv) && parsedSv.length > 0) { services = parsedSv; window.services = services; }
+          }
           var r = localStorage.getItem('sunday_roster');
           if (r) { state.roster = JSON.parse(r); }
         } catch(e) {}
@@ -6015,11 +6026,107 @@
       return song;
     }
 
-    var SONGS = window.SONGS = [];
+    // ── SEED: Selah master song library (demo data — May 2026)
+    //    localStorage overrides this on subsequent loads (see SundayData.load below).
+    var SONGS = window.SONGS = [
+      // Praise
+      {id:1,  title:'I Thank God',            artist:'Housefires',              cat:'praise',    key:'G',  bpm:128, mins:4.5},
+      {id:2,  title:'Trust in God',           artist:'Elevation Worship',       cat:'praise',    key:'A',  bpm:120, mins:4.5},
+      {id:3,  title:'Praise',                 artist:'Elevation Worship',       cat:'praise',    key:'B',  bpm:124, mins:4.5},
+      {id:4,  title:'Joy',                    artist:'Bethel Music',            cat:'praise',    key:'D',  bpm:135, mins:4.5},
+      {id:5,  title:'Run to the Father',      artist:'Cody Carnes',             cat:'praise',    key:'A',  bpm:118, mins:4.5},
+      // Worship
+      {id:6,  title:'Goodness of God',        artist:'Bethel',                  cat:'worship',   key:'A',  bpm:64,  mins:5.0},
+      {id:7,  title:'Bless God',              artist:'Brooke Ligertwood',       cat:'worship',   key:'C',  bpm:72,  mins:5.0},
+      {id:8,  title:'A Thousand Hallelujahs', artist:'Brooke Ligertwood',       cat:'worship',   key:'D',  bpm:74,  mins:5.0},
+      {id:9,  title:'King of Kings',          artist:'Hillsong Worship',        cat:'worship',   key:'D',  bpm:73,  mins:5.0},
+      {id:10, title:'Jireh',                  artist:'Elevation/Maverick City', cat:'worship',   key:'F#', bpm:76,  mins:5.5},
+      {id:11, title:'Holy Forever',           artist:'Chris Tomlin',            cat:'worship',   key:'G',  bpm:75,  mins:5.0},
+      {id:12, title:'Build My Life',          artist:'Pat Barrett',             cat:'worship',   key:'E',  bpm:68,  mins:5.0},
+      {id:13, title:'The Blessing',           artist:'Elevation/Kari Jobe',     cat:'worship',   key:'A',  bpm:69,  mins:5.5},
+      {id:14, title:'Yes I Will',             artist:'Vertical Worship',        cat:'worship',   key:'A',  bpm:74,  mins:5.0},
+      {id:15, title:'Same God',               artist:'Elevation Worship',       cat:'worship',   key:'A',  bpm:78,  mins:5.0},
+      // Homegrown
+      {id:16, title:'Doorkeeper',             artist:'COMMONS',                 cat:'homegrown', key:'C',  bpm:72,  mins:5.0},
+      {id:17, title:'Act Justly Love Mercy',  artist:'COMMONS',                 cat:'homegrown', key:'D',  bpm:80,  mins:4.5},
+      {id:18, title:'King of Calvary',        artist:'COMMONS',                 cat:'homegrown', key:'A',  bpm:74,  mins:5.0},
+      {id:19, title:"The Father's House",     artist:'The Local',               cat:'homegrown', key:'G',  bpm:70,  mins:5.0},
+      // Classics
+      {id:20, title:'Mighty to Save',         artist:'Hillsong',                cat:'classic',   key:'A',  bpm:75,  mins:5.0},
+      {id:21, title:'Cornerstone',            artist:'Hillsong',                cat:'classic',   key:'C',  bpm:73,  mins:5.0},
+      {id:22, title:'Forever Reign',          artist:'Hillsong',                cat:'classic',   key:'D',  bpm:76,  mins:5.0},
+      {id:23, title:'I Give You My Heart',    artist:'Reuben Morgan',           cat:'classic',   key:'D',  bpm:68,  mins:4.5},
+      {id:24, title:'How Great is Our God',   artist:'Chris Tomlin',            cat:'classic',   key:'A',  bpm:79,  mins:5.0},
+      {id:25, title:'10000 Reasons',          artist:'Matt Redman',             cat:'classic',   key:'G',  bpm:72,  mins:4.5},
+      {id:26, title:'What a Beautiful Name',  artist:'Hillsong',                cat:'classic',   key:'D',  bpm:68,  mins:5.0},
+      {id:27, title:'Oceans',                 artist:'Hillsong United',         cat:'classic',   key:'B',  bpm:72,  mins:6.5}
+    ];
 
     // avail: array of week numbers (1-5) this person is available for the current month
     // (In production, the AI agent gathers this from each team member via chat)
-    var TEAM = [];
+    // ── SEED: Selah team (demo data — May 2026). Role mapping from source:
+    //    worship_leader→WL, vocals→FLV, electric→Guitar, acoustic→Acoustic,
+    //    keys→Keys, drums→Drums, bass→Bass, md→MD, audio→FOH.
+    //    Production/Vision kept as tags (no slot in the roster matcher).
+    //    localStorage overrides this on subsequent loads.
+    var TEAM = [
+      // Worship Leaders (tier 1)
+      {name:'Reuben Morgan',        roles:['WL','MD','Acoustic'],   tier:1, avail:[1,2,3,4,5], color:'#d4922a'},
+      {name:'Charli-Rose Whincop',  roles:['WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#b88878'},
+      {name:'Dani Marchio',         roles:['WL','FLV','Keys'],      tier:1, avail:[1,2,3,4,5], color:'#9ab870'},
+      {name:'Ezra Morgan',          roles:['WL','Acoustic'],        tier:1, avail:[1,2,3,4,5], color:'#7ab89a'},
+      {name:'Georgia Gourlay',      roles:['WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#c89a4a'},
+      {name:'Vivienne Williams',    roles:['WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#a878b8'},
+      {name:'Jade Jeyaratnam',      roles:['WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#9ab870'},
+      {name:'Josh Osborne',         roles:['WL','Acoustic','FLV'],  tier:1, avail:[1,2,3,4,5], color:'#7878b8'},
+      // Vocals
+      {name:'Sarah Morgan',         roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#d49ab8'},
+      {name:'Hannah Stewart',       roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#b89a78'},
+      {name:'Mia Carter',           roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#9ab8c8'},
+      {name:'Lucy Dean',            roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#c8a878'},
+      {name:'Ben Tipo',             roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#788ab8'},
+      {name:'Maddy Klein',          roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#b878a8'},
+      {name:'Tim Walker',           roles:['FLV','Acoustic'],       tier:2, avail:[1,2,3,4,5], color:'#78b89a'},
+      {name:'Nina Adler',           roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#c89a8a'},
+      // Electric
+      {name:'Jones Morgan',         roles:['Guitar','Drums'],       tier:2, avail:[1,2,3,4,5], color:'#b88878'},
+      {name:'Sam Reid',             roles:['Guitar'],               tier:2, avail:[1,2,3,4,5], color:'#7898b8'},
+      {name:'Jake Mathers',         roles:['Guitar','Acoustic'],    tier:2, avail:[1,2,3,4,5], color:'#9a78b8'},
+      {name:'Will Hartman',         roles:['Guitar'],               tier:2, avail:[1,2,3,4,5], color:'#b8a878'},
+      // Acoustic
+      {name:'Tom Bryant',           roles:['Acoustic','FLV'],       tier:2, avail:[1,2,3,4,5], color:'#a8c878'},
+      {name:'Eli Marshall',         roles:['Acoustic'],             tier:2, avail:[1,2,3,4,5], color:'#7ab8a8'},
+      {name:'Caleb Wood',           roles:['Acoustic'],             tier:2, avail:[1,2,3,4,5], color:'#b89a8a'},
+      // Bass
+      {name:'Drew Phillips',        roles:['Bass'],                 tier:2, avail:[1,2,3,4,5], color:'#7878a8'},
+      {name:'Marcus Lim',           roles:['Bass'],                 tier:2, avail:[1,2,3,4,5], color:'#a8a878'},
+      {name:'Theo Singh',           roles:['Bass','Keys'],          tier:2, avail:[1,2,3,4,5], color:'#a87878'},
+      // Keys
+      {name:'Naomi Bell',           roles:['Keys','FLV'],           tier:2, avail:[1,2,3,4,5], color:'#c878a8'},
+      {name:'Owen Foster',          roles:['Keys'],                 tier:2, avail:[1,2,3,4,5], color:'#78b8c8'},
+      {name:'Ruth Zhang',           roles:['Keys','FLV'],           tier:2, avail:[1,2,3,4,5], color:'#b8c878'},
+      {name:'Ash Quinn',            roles:['Keys'],                 tier:2, avail:[1,2,3,4,5], color:'#a89ac8'},
+      // Drums
+      {name:'Levi Brooks',          roles:['Drums'],                tier:2, avail:[1,2,3,4,5], color:'#c89878'},
+      {name:'Toby Hayes',           roles:['Drums'],                tier:2, avail:[1,2,3,4,5], color:'#789ab8'},
+      {name:'Joel Park',            roles:['Drums'],                tier:2, avail:[1,2,3,4,5], color:'#b878c8'},
+      // Production / FOH / Vision
+      {name:'Pete Davies',          roles:['Production'],           tier:2, avail:[1,2,3,4,5], color:'#9aa8b8'},
+      {name:'Dan Cole',             roles:['Production','FOH'],     tier:2, avail:[1,2,3,4,5], color:'#a8b89a'},
+      {name:'Ash Turner',           roles:['Production','Vision'],  tier:2, avail:[1,2,3,4,5], color:'#b8a89a'},
+      {name:'Maya Robins',          roles:['Production'],           tier:2, avail:[1,2,3,4,5], color:'#9ab8b8'},
+      {name:'Chris Yeo',            roles:['FOH'],                  tier:2, avail:[1,2,3,4,5], color:'#a89a78'},
+      {name:'Lila Beck',            roles:['FOH'],                  tier:2, avail:[1,2,3,4,5], color:'#a878b8'},
+      {name:'Jack Ahern',           roles:['Vision'],               tier:2, avail:[1,2,3,4,5], color:'#78a8a8'},
+      {name:'Holly Ross',           roles:['Vision'],               tier:2, avail:[1,2,3,4,5], color:'#c8a89a'},
+      {name:'Sam Vega',             roles:['Vision'],               tier:2, avail:[1,2,3,4,5], color:'#9a78a8'},
+      // Extras
+      {name:'Anna Doyle',           roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#b89aa8'},
+      {name:'Riley Park',           roles:['FLV','Keys'],           tier:2, avail:[1,2,3,4,5], color:'#7898a8'},
+      {name:'Cass Hill',            roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#a8b878'},
+      {name:'Finn Bates',           roles:['Acoustic','FLV'],       tier:2, avail:[1,2,3,4,5], color:'#a89a78'},
+      {name:'Jess Ko',              roles:['Drums','FLV'],          tier:2, avail:[1,2,3,4,5], color:'#c89ab8'}
+    ];
 
     var PEOPLE = {};
 
