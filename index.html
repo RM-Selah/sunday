@@ -1547,8 +1547,11 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px;
-      overflow-y: auto;
+      padding: clamp(8px, 2vh, 40px);
+      /* No scrollbar — the stage scales to fit the container (see fitStageToContainer in JS). */
+      overflow: hidden;
+      min-height: 0;
+      min-width: 0;
       background: radial-gradient(ellipse at 50% 0%, rgba(224,154,45,0.03) 0%, var(--bg) 60%);
     }
 
@@ -1565,6 +1568,11 @@
       justify-content: space-between;
       position: relative;
       box-shadow: var(--shadow-lg), inset 0 0 60px rgba(255,255,255,0.01);
+      /* Scale transform set by fitStageToContainer in JS to keep the whole virtual
+         stage visible regardless of available space. */
+      transform-origin: center center;
+      transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: transform;
     }
 
     .stage-label {
@@ -7247,7 +7255,47 @@
       stage.appendChild(boothRow);
 
       stageView.appendChild(stage);
+
+      // Fit the virtual stage into whatever space the container offers — no scrolling.
+      requestAnimationFrame(fitStageToContainer);
     }
+
+    // Scale the virtual stage with a transform so the whole layout stays visible
+    // regardless of window size. Re-runs on container resize.
+    function fitStageToContainer() {
+      var stageView = document.getElementById('stage-view');
+      if (!stageView) return;
+      var stage = stageView.querySelector('.stage');
+      if (!stage) return;
+
+      // Reset before measuring so the natural layout size is reported.
+      stage.style.transform = '';
+
+      var cs = window.getComputedStyle(stageView);
+      var availW = stageView.clientWidth  - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      var availH = stageView.clientHeight - parseFloat(cs.paddingTop)  - parseFloat(cs.paddingBottom);
+      var natW = stage.offsetWidth;
+      var natH = stage.offsetHeight;
+      if (natW <= 0 || natH <= 0 || availW <= 0 || availH <= 0) return;
+
+      var scale = Math.min(availW / natW, availH / natH, 1); // never scale up past natural
+      if (scale < 1) {
+        stage.style.transform = 'scale(' + scale.toFixed(4) + ')';
+      }
+    }
+
+    // Re-fit on container/window resize. Use ResizeObserver where available,
+    // fall back to window resize otherwise.
+    (function attachStageResizeObserver() {
+      var stageView = document.getElementById('stage-view');
+      if (!stageView) return;
+      if (typeof ResizeObserver !== 'undefined') {
+        var ro = new ResizeObserver(function() { fitStageToContainer(); });
+        ro.observe(stageView);
+      } else {
+        window.addEventListener('resize', fitStageToContainer);
+      }
+    })();
 
     function getFirstName(fullName) {
       if (!fullName) return '';
