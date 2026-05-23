@@ -8294,8 +8294,8 @@
     function matchOrCreateSong(val) {
       var norm = function(s) {
         return s.toLowerCase()
-          .replace(/[''`]/g, '')
-          .replace(/[^\w]+/g, ' ')
+          .replace(/[''`,]/g, '')        // strip apostrophes, smart-quotes, commas
+          .replace(/[^\w]+/g, ' ')       // other punctuation → space
           .replace(/\s+/g, ' ').trim();
       };
       var valN = norm(val);
