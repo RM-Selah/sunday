@@ -6040,7 +6040,7 @@
     //    so the new seed takes effect (NOTE: removes only seedable lists,
     //    not roster assignments). Remove this whole block when real
     //    onboarding ships.
-    var SEED_VERSION = 'demo-2026-05-23-b';
+    var SEED_VERSION = 'demo-2026-05-23-c';
     try {
       var savedSeedVersion = localStorage.getItem('sunday_seed_version');
       if (savedSeedVersion !== SEED_VERSION) {
@@ -6174,7 +6174,11 @@
     /* ==================== STATE ==================== */
     // Dynamic services — Sunday creates these conversationally
     // Each service has: id (unique slug), name (display), day, time, recurring (true/false), date (for one-offs)
-    var services = window.services = [];
+    // ── SEED: one recurring Sunday service so the roster page is usable on first visit.
+    //    Remove or override when real onboarding ships.
+    var services = window.services = [
+      { id: 'sun-am', name: 'Sunday AM', day: 'Sunday', time: '9:30am', recurring: true, sort_order: 0 }
+    ];
 
     var state = window.state = {
       currentScreen: 'set',
