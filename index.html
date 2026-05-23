@@ -6040,7 +6040,7 @@
     //    so the new seed takes effect (NOTE: removes only seedable lists,
     //    not roster assignments). Remove this whole block when real
     //    onboarding ships.
-    var SEED_VERSION = 'demo-2026-05-23-c';
+    var SEED_VERSION = 'demo-2026-05-23-d';
     try {
       var savedSeedVersion = localStorage.getItem('sunday_seed_version');
       if (savedSeedVersion !== SEED_VERSION) {
@@ -6090,20 +6090,21 @@
     // avail: array of week numbers (1-5) this person is available for the current month
     // (In production, the AI agent gathers this from each team member via chat)
     // ── SEED: Selah team (demo data — May 2026). Role mapping from source:
-    //    worship_leader→WL, vocals→FLV, electric→Guitar, acoustic→Acoustic,
+    //    worship_leader→WL+CO-WL (interchangeable pool — both slot pickers
+    //    show the same people), vocals→FLV, electric→Guitar, acoustic→Acoustic,
     //    keys→Keys, drums→Drums, bass→Bass, md→MD, audio→FOH.
     //    Production/Vision kept as tags (no slot in the roster matcher).
     //    localStorage overrides this on subsequent loads.
     var TEAM = [
-      // Worship Leaders (tier 1)
-      {name:'Reuben Morgan',        roles:['WL','MD','Acoustic'],   tier:1, avail:[1,2,3,4,5], color:'#d4922a'},
-      {name:'Charli-Rose Whincop',  roles:['WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#b88878'},
-      {name:'Dani Marchio',         roles:['WL','FLV','Keys'],      tier:1, avail:[1,2,3,4,5], color:'#9ab870'},
-      {name:'Ezra Morgan',          roles:['WL','Acoustic'],        tier:1, avail:[1,2,3,4,5], color:'#7ab89a'},
-      {name:'Georgia Gourlay',      roles:['WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#c89a4a'},
-      {name:'Vivienne Williams',    roles:['WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#a878b8'},
-      {name:'Jade Jeyaratnam',      roles:['WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#9ab870'},
-      {name:'Josh Osborne',         roles:['WL','Acoustic','FLV'],  tier:1, avail:[1,2,3,4,5], color:'#7878b8'},
+      // Worship Leaders (tier 1) — tagged WL + CO-WL so they appear in either slot
+      {name:'Reuben Morgan',        roles:['WL','CO-WL','MD','Acoustic'],   tier:1, avail:[1,2,3,4,5], color:'#d4922a'},
+      {name:'Charli-Rose Whincop',  roles:['WL','CO-WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#b88878'},
+      {name:'Dani Marchio',         roles:['WL','CO-WL','FLV','Keys'],      tier:1, avail:[1,2,3,4,5], color:'#9ab870'},
+      {name:'Ezra Morgan',          roles:['WL','CO-WL','Acoustic'],        tier:1, avail:[1,2,3,4,5], color:'#7ab89a'},
+      {name:'Georgia Gourlay',      roles:['WL','CO-WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#c89a4a'},
+      {name:'Vivienne Williams',    roles:['WL','CO-WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#a878b8'},
+      {name:'Jade Jeyaratnam',      roles:['WL','CO-WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#9ab870'},
+      {name:'Josh Osborne',         roles:['WL','CO-WL','Acoustic','FLV'],  tier:1, avail:[1,2,3,4,5], color:'#7878b8'},
       // Vocals
       {name:'Sarah Morgan',         roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#d49ab8'},
       {name:'Hannah Stewart',       roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#b89a78'},
