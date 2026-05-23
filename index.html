@@ -8281,14 +8281,16 @@
     /* ==================== ADD SONG INPUT BOXES ==================== */
 
     // Shared: match a typed value against the library, or create a one-off.
-    // Strict rules:
-    //   1. Case-insensitive exact match (ignoring apostrophes/punctuation) wins.
-    //   2. If the typed string is a substantial substring of a library title
-    //      (handles abbreviations like "Beautiful Name" → "What a Beautiful Name"),
-    //      require ≥ 4 chars AND ≥ 60% length coverage — otherwise it's a new song.
-    //   3. Anything else creates a one-off custom song.
-    // This deliberately avoids fuzzy word-overlap matching, which used to grab the
-    // wrong library song whenever a typed title shared one common word.
+    //
+    // Worship songs share a LOT of vocabulary ("Build My Life" vs "Build My Life
+    // on You", "King of Kings" vs "King of My Heart", "Holy" vs "Holy Forever").
+    // We err on the side of creating a new entry rather than auto-correcting
+    // the user's intent toward a similar library title.
+    //
+    // The ONLY auto-match is a normalized exact match — same string, case +
+    // apostrophes + punctuation ignored. Anything else, even a near-miss, gets
+    // added as a one-off (clearly tagged "(one-off)" in the confirmation).
+    // The user can then pick the library version manually if they meant that.
     function matchOrCreateSong(val) {
       var norm = function(s) {
         return s.toLowerCase()
@@ -8299,20 +8301,9 @@
       var valN = norm(val);
       if (!valN) return createCustomSong(val);
 
-      // 1. Exact (normalized) match
       for (var i = 0; i < SONGS.length; i++) {
         if (norm(SONGS[i].title) === valN) return SONGS[i];
       }
-      // 2. Strong substring match (typed contained in title, ≥60% length)
-      if (valN.length >= 4) {
-        for (var j = 0; j < SONGS.length; j++) {
-          var titleN = norm(SONGS[j].title);
-          if (titleN.length >= 4 && titleN.indexOf(valN) >= 0 && (valN.length / titleN.length) >= 0.6) {
-            return SONGS[j];
-          }
-        }
-      }
-      // 3. Otherwise — new song
       return createCustomSong(val);
     }
 
