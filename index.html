@@ -6015,14 +6015,15 @@
       // Quality filter — fill remaining with tier 1-2 only
       if (entities.wantQuality) {
         var rosteredNames = new Set(Object.values(roster));
-        var emptySlots = ['WL','CO-WL','MD','DRUMS','BASS','KEYS1','KEYS2','ACOUSTIC','GUITAR1','FLV1','FLV2','FLV3','FLV4','FOH']
+        var emptySlots = ['WL','CO-WL','MD','DRUMS','BASS','KEYS1','KEYS2','ACOUSTIC','GUITAR1','FLV1','FLV2','FLV3','FLV4','FOH','PROD','LYRICS','VISION']
           .filter(function(s) { return !roster[s]; });
 
         var roleMapForFill = {
           WL: ['WL'], 'CO-WL': ['WL','CO-WL','FLV'], MD: ['MD','Keys'], DRUMS: ['Drums'], BASS: ['Bass','MD'],
           KEYS1: ['Keys','MD'], KEYS2: ['Keys','MD'], ACOUSTIC: ['Acoustic','Guitar','WL'],
           GUITAR1: ['Guitar','Acoustic'], FLV1: ['FLV','CO-WL','WL'], FLV2: ['FLV','CO-WL'],
-          FLV3: ['FLV','CO-WL'], FLV4: ['FLV'], FOH: ['FOH']
+          FLV3: ['FLV','CO-WL'], FLV4: ['FLV'], FOH: ['FOH'],
+          PROD: ['Production','FOH'], VISION: ['Vision','Production'], LYRICS: ['Vision','FOH']
         };
 
         emptySlots.forEach(function(slot) {
@@ -7276,11 +7277,13 @@
       backRow.appendChild(createPositionSlot('DRUMS', currentRoster));
       stage.appendChild(backRow);
 
-      // Booth (FOH, Lyrics)
+      // Booth (Production, FOH, Lyrics, Vision) — the tech team has slots too
       const boothRow = document.createElement('div');
       boothRow.className = 'stage-row booth';
+      boothRow.appendChild(createPositionSlot('PROD', currentRoster));
       boothRow.appendChild(createPositionSlot('FOH', currentRoster));
       boothRow.appendChild(createPositionSlot('LYRICS', currentRoster));
+      boothRow.appendChild(createPositionSlot('VISION', currentRoster));
       stage.appendChild(boothRow);
 
       stageView.appendChild(stage);
@@ -7368,13 +7371,15 @@
       DRUMS:    '<span style="color: #d86858; font-weight: 500;">◉</span>',
       FOH:      '<span style="color: #5888d8; font-weight: 500;">≋</span>',
       LYRICS:   '<span style="color: #9878c8; font-weight: 500;">▤</span>',
+      VISION:   '<span style="color: #9878c8; font-weight: 500;">◫</span>',
+      PROD:     '<span style="color: #e09a2d; font-weight: 500;">▥</span>',
       TRACKS:   '<span style="color: #8870d0; font-weight: 500;">⊞</span>',
     };
 
     const roleLabels = {
       WL: 'WL', 'CO-WL': 'CO-WL', FLV1: 'FLV', FLV2: 'FLV', FLV3: 'FLV', FLV4: 'FLV',
       MD: 'MD', KEYS1: 'Keys', KEYS2: 'Keys', ACOUSTIC: 'Acoustic', GUITAR1: 'Guitar', GUITAR2: 'Guitar',
-      BASS: 'Bass', DRUMS: 'Drums', FOH: 'FOH', LYRICS: 'Lyrics', TRACKS: 'Tracks'
+      BASS: 'Bass', DRUMS: 'Drums', FOH: 'FOH', LYRICS: 'Lyrics', VISION: 'Vision', PROD: 'Prod', TRACKS: 'Tracks'
     };
 
     // Cache for month load counts — refreshed each render cycle
@@ -7476,7 +7481,8 @@
         MD: ['MD','Keys'], KEYS1: ['Keys','MD'], KEYS2: ['Keys','MD'],
         ACOUSTIC: ['Acoustic','Guitar','WL'], GUITAR1: ['Guitar','Acoustic'], GUITAR2: ['Guitar'],
         BASS: ['Bass','MD'], DRUMS: ['Drums'],
-        FOH: ['FOH'], LYRICS: ['FOH'],
+        FOH: ['FOH'], LYRICS: ['Vision','FOH'],
+        PROD: ['Production','FOH'], VISION: ['Vision','Production'],
       };
 
       const eligible = TEAM
@@ -7680,6 +7686,18 @@
       // 10. FOH
       var foh = pickAvailable(['FOH']);
       if (foh) { roster.FOH = foh; used.add(foh); }
+
+      // 11. Production
+      var prod = pickAvailable(['Production', 'FOH']);
+      if (prod) { roster.PROD = prod; used.add(prod); }
+
+      // 12. Lyrics — usually a Vision/projection person
+      var lyrics = pickAvailable(['Vision', 'FOH']);
+      if (lyrics) { roster.LYRICS = lyrics; used.add(lyrics); }
+
+      // 13. Vision (cameras / livestream)
+      var vision = pickAvailable(['Vision', 'Production']);
+      if (vision) { roster.VISION = vision; used.add(vision); }
 
       return roster;
     }
@@ -10279,6 +10297,9 @@
           { id: 'ACOUSTIC', label: 'Acoustic', icon: '🎸' },
           { id: 'MD', label: 'Music Director', icon: '🎼' },
           { id: 'FOH', label: 'Sound / FOH', icon: '🎛️' },
+          { id: 'PROD', label: 'Production', icon: '💡' },
+          { id: 'LYRICS', label: 'Lyrics', icon: '📺' },
+          { id: 'VISION', label: 'Vision', icon: '📹' },
           { id: 'FLV1', label: 'Vocal 1', icon: '🎙' },
           { id: 'FLV2', label: 'Vocal 2', icon: '🎙' },
           { id: 'FLV3', label: 'Vocal 3', icon: '🎙' },
@@ -10433,7 +10454,7 @@
           return;
         }
 
-        // Slots in display order (all 14 slots; empty rows still render)
+        // Slots in display order (all slots; empty rows auto-trimmed below)
         var slotDefs = [
           { id: 'WL',       label: 'Worship Lead' },
           { id: 'CO-WL',    label: 'Co-Lead' },
@@ -10449,7 +10470,10 @@
           { id: 'FLV2',     label: 'Vocal 2' },
           { id: 'FLV3',     label: 'Vocal 3' },
           { id: 'FLV4',     label: 'Vocal 4' },
-          { id: 'FOH',      label: 'FOH' }
+          { id: 'PROD',     label: 'Production' },
+          { id: 'FOH',      label: 'FOH' },
+          { id: 'LYRICS',   label: 'Lyrics' },
+          { id: 'VISION',   label: 'Vision' }
         ];
 
         // Trim slot rows where ALL weeks are empty — keeps the grid tight
@@ -10837,8 +10861,10 @@
         ['FLV2',     'Vocal'],
         ['FLV3',     'Vocal'],
         ['FLV4',     'Vocal'],
+        ['PROD',     'Production'],
         ['FOH',      'FOH'],
-        ['LYRICS',   'Lyrics']
+        ['LYRICS',   'Lyrics'],
+        ['VISION',   'Vision']
       ];
 
       var lines = ['\u{1F3B5} *' + churchName + ' — ' + serviceName + '*'];
