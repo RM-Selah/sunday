@@ -3815,10 +3815,14 @@
               <button class="btn-suggest" onclick="window.exportRosterPDF()" style="padding:6px 12px; font-size:10px; opacity:0.7;" title="Export roster as PDF">PDF ↓</button>
               <div style="position:relative;">
                 <button class="btn-suggest" onclick="window.toggleRosterShareMenu(event)" style="padding:6px 12px; font-size:10px; opacity:0.7;" title="Share this roster">Share ↗</button>
-                <div id="roster-share-menu" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:rgba(15,15,22,0.96); border:1px solid var(--gb); border-radius:8px; padding:6px; min-width:200px; z-index:200; box-shadow:0 12px 32px rgba(0,0,0,0.45); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);">
+                <div id="roster-share-menu" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:rgba(15,15,22,0.96); border:1px solid var(--gb); border-radius:8px; padding:6px; min-width:220px; z-index:200; box-shadow:0 12px 32px rgba(0,0,0,0.45); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);">
+                  <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:6px 12px 4px;">This week</div>
                   <button onclick="window.shareRosterImage(); window.closeRosterShareMenu();" style="display:block; width:100%; text-align:left; background:none; border:none; padding:9px 12px; font-size:12px; color:rgba(255,255,255,0.9); cursor:pointer; border-radius:5px; font-family:var(--font-display);" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'">📸 &nbsp; Share as image</button>
                   <button onclick="window.shareRosterWhatsApp(); window.closeRosterShareMenu();" style="display:block; width:100%; text-align:left; background:none; border:none; padding:9px 12px; font-size:12px; color:rgba(255,255,255,0.9); cursor:pointer; border-radius:5px; font-family:var(--font-display);" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'">💬 &nbsp; WhatsApp (text)</button>
                   <button onclick="window.shareRosterEmail(); window.closeRosterShareMenu();" style="display:block; width:100%; text-align:left; background:none; border:none; padding:9px 12px; font-size:12px; color:rgba(255,255,255,0.9); cursor:pointer; border-radius:5px; font-family:var(--font-display);" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'">📧 &nbsp; Email</button>
+                  <div style="height:1px; background:rgba(255,255,255,0.08); margin:6px 8px;"></div>
+                  <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:6px 12px 4px;">Whole month</div>
+                  <button onclick="window.exportMonthOverviewPDF(); window.closeRosterShareMenu();" style="display:block; width:100%; text-align:left; background:none; border:none; padding:9px 12px; font-size:12px; color:rgba(255,255,255,0.9); cursor:pointer; border-radius:5px; font-family:var(--font-display);" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'">🗓 &nbsp; Month overview PDF</button>
                 </div>
               </div>
               <button class="btn-suggest" onclick="window.startBuildMonth()" style="padding:6px 14px; font-size:11px;">✦ Build month</button>
@@ -10373,6 +10377,183 @@
         }
       },
 
+      // Generate a Month Overview PDF: every Sunday of the current month
+      // for the current service, as a grid of role × week. Single page,
+      // designed to be the artifact you share after a rostering meeting.
+      generateMonthOverviewPDF: function(monthName, serviceId) {
+        var self = this;
+        var month = monthName || state.rosterMonth;
+        var svcId = serviceId || state.rosterService || (services[0] && services[0].id) || 'default';
+        var svc = services.find(function(s) { return s.id === svcId; });
+        var serviceName = svc ? svc.name : svcId;
+
+        var churchName = '';
+        try { churchName = localStorage.getItem('sunday_church') || ''; } catch(e) {}
+        if (!churchName && typeof heroState !== 'undefined') churchName = heroState.churchName || '';
+
+        var weeks = getSundaysForMonth(month); // [{num, date}, ...]
+        if (weeks.length === 0) {
+          alert('No weeks found for ' + month);
+          return;
+        }
+
+        // Slots in display order (all 14 slots; empty rows still render)
+        var slotDefs = [
+          { id: 'WL',       label: 'Worship Lead' },
+          { id: 'CO-WL',    label: 'Co-Lead' },
+          { id: 'MD',       label: 'MD' },
+          { id: 'KEYS1',    label: 'Keys' },
+          { id: 'KEYS2',    label: 'Keys 2' },
+          { id: 'DRUMS',    label: 'Drums' },
+          { id: 'BASS',     label: 'Bass' },
+          { id: 'GUITAR1',  label: 'Guitar' },
+          { id: 'GUITAR2',  label: 'Guitar 2' },
+          { id: 'ACOUSTIC', label: 'Acoustic' },
+          { id: 'FLV1',     label: 'Vocal 1' },
+          { id: 'FLV2',     label: 'Vocal 2' },
+          { id: 'FLV3',     label: 'Vocal 3' },
+          { id: 'FLV4',     label: 'Vocal 4' },
+          { id: 'FOH',      label: 'FOH' }
+        ];
+
+        // Trim slot rows where ALL weeks are empty — keeps the grid tight
+        var rosters = weeks.map(function(w) {
+          return state.roster[month + '-' + w.num + '-' + svcId] || {};
+        });
+        var activeSlots = slotDefs.filter(function(s) {
+          return rosters.some(function(r) { return !!r[s.id]; });
+        });
+        if (activeSlots.length === 0) activeSlots = slotDefs.slice(0, 8);
+
+        // Canvas — A3 landscape-ish, sized to content
+        var roleColW = 130;
+        var weekColW = 175;
+        var W = roleColW + (weekColW * weeks.length) + 100;
+        var headerH = 150;
+        var rowH = 38;
+        var H = headerH + 60 + activeSlots.length * rowH + 60;
+
+        var canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        var ctx = canvas.getContext('2d');
+
+        // Background + gradient
+        ctx.fillStyle = self.colors.bg;
+        ctx.fillRect(0, 0, W, H);
+        var grad = ctx.createLinearGradient(0, 0, W, H);
+        grad.addColorStop(0, 'rgba(224,154,45,0.03)');
+        grad.addColorStop(1, 'rgba(122,144,212,0.03)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = self.colors.amber;
+        ctx.fillRect(0, 0, W, 3);
+
+        // Header
+        var y = 40;
+        ctx.fillStyle = self.colors.amber;
+        ctx.font = '600 11px "Space Grotesk", sans-serif';
+        ctx.fillText('SUNDAY', 50, y);
+
+        if (churchName) {
+          ctx.fillStyle = self.colors.text;
+          ctx.font = '300 30px "Space Grotesk", sans-serif';
+          ctx.fillText(churchName, 50, y + 38);
+        }
+
+        ctx.fillStyle = self.colors.mid;
+        ctx.font = '400 15px "DM Sans", sans-serif';
+        ctx.fillText(month + '  ·  ' + serviceName, 50, y + 65);
+
+        // Grid header
+        var gridX = 50;
+        var gridY = headerH;
+        ctx.strokeStyle = self.colors.cardBorder;
+        ctx.lineWidth = 1;
+
+        // Week headers
+        ctx.fillStyle = self.colors.dim;
+        ctx.font = '500 10px "Space Grotesk", sans-serif';
+        ctx.fillText('ROLE', gridX + 12, gridY + 22);
+        weeks.forEach(function(w, i) {
+          var x = gridX + roleColW + (i * weekColW);
+          ctx.fillStyle = self.colors.dim;
+          ctx.font = '500 10px "Space Grotesk", sans-serif';
+          ctx.fillText('WEEK ' + w.num, x + 12, gridY + 14);
+          ctx.fillStyle = self.colors.text;
+          ctx.font = '400 13px "DM Sans", sans-serif';
+          ctx.fillText(w.date, x + 12, gridY + 32);
+        });
+
+        // Header underline
+        ctx.beginPath();
+        ctx.moveTo(gridX, gridY + 44);
+        ctx.lineTo(gridX + roleColW + (weekColW * weeks.length), gridY + 44);
+        ctx.stroke();
+
+        // Rows
+        activeSlots.forEach(function(slot, rowIdx) {
+          var ry = gridY + 60 + (rowIdx * rowH);
+
+          // Subtle zebra striping
+          if (rowIdx % 2 === 0) {
+            ctx.fillStyle = 'rgba(255,255,255,0.015)';
+            ctx.fillRect(gridX, ry - 18, roleColW + (weekColW * weeks.length), rowH);
+          }
+
+          // Role label
+          ctx.fillStyle = self.colors.mid;
+          ctx.font = '500 11px "Space Grotesk", sans-serif';
+          ctx.fillText(slot.label.toUpperCase(), gridX + 12, ry);
+
+          // Each week's assignment
+          weeks.forEach(function(w, i) {
+            var x = gridX + roleColW + (i * weekColW);
+            var name = (state.roster[month + '-' + w.num + '-' + svcId] || {})[slot.id];
+            if (name) {
+              ctx.fillStyle = self.colors.text;
+              ctx.font = '400 13px "DM Sans", sans-serif';
+              // Truncate if too long
+              var display = name;
+              if (ctx.measureText(display).width > weekColW - 24) {
+                while (ctx.measureText(display + '…').width > weekColW - 24 && display.length > 0) {
+                  display = display.slice(0, -1);
+                }
+                display += '…';
+              }
+              ctx.fillText(display, x + 12, ry);
+              // Amber accent dot
+              ctx.beginPath();
+              ctx.arc(x + weekColW - 14, ry - 4, 2.5, 0, Math.PI * 2);
+              ctx.fillStyle = self.colors.amber;
+              ctx.fill();
+            } else {
+              ctx.fillStyle = self.colors.dim;
+              ctx.font = '300 13px "DM Sans", sans-serif';
+              ctx.fillText('—', x + 12, ry);
+            }
+          });
+        });
+
+        // Column dividers
+        ctx.strokeStyle = self.colors.cardBorder;
+        ctx.lineWidth = 1;
+        for (var ci = 0; ci <= weeks.length; ci++) {
+          var x = gridX + roleColW + (ci * weekColW);
+          ctx.beginPath();
+          ctx.moveTo(x, gridY);
+          ctx.lineTo(x, gridY + 60 + activeSlots.length * rowH - 6);
+          ctx.stroke();
+        }
+
+        // Footer
+        ctx.fillStyle = self.colors.dim;
+        ctx.font = '300 10px "DM Sans", sans-serif';
+        ctx.fillText('Generated by Sunday  ·  ' + new Date().toLocaleDateString(), 50, H - 25);
+
+        self._canvasToPDF(canvas, (churchName || 'Sunday') + ' — ' + month + ' — ' + serviceName + ' (Month Overview)');
+      },
+
       // Generate Set List PDF
       generateSetPDF: function() {
         var self = this;
@@ -10655,6 +10836,10 @@
 
     window.shareRosterImage = function() {
       SundayPDF.generateRosterImage();
+    };
+
+    window.exportMonthOverviewPDF = function() {
+      SundayPDF.generateMonthOverviewPDF();
     };
 
     // Dropdown toggle for the roster Share menu
