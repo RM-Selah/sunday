@@ -4872,7 +4872,15 @@
 
     /* ==================== SUNDAY API LAYER ==================== */
     var SundayAPI = {
-      apiUrl: 'https://api.anthropic.com/v1/messages',
+      // Sunday API Worker (Cloudflare, custom domain on runworship.com).
+      // The Worker holds the Anthropic key as a server-side secret so the
+      // browser never sees it. The /chat endpoint mirrors Anthropic's
+      // /v1/messages payload shape, so the response handling below is
+      // unchanged.
+      workerUrl: 'https://api.runworship.com',
+      apiUrl:    'https://api.runworship.com/chat',
+      // Legacy: a user-supplied key in localStorage is no longer needed but kept
+      // for backward compatibility / future "bring your own key" power-user mode.
       apiKey: (function() { try { return localStorage.getItem('sunday_api_key') || ''; } catch(e) { return ''; } })(),
 
       // === SMART MODEL ROUTING ===
@@ -4919,32 +4927,26 @@
         this.checking = true;
         var self = this;
 
-        // Try a minimal API call to verify the key works
+        // Cheap GET /health on the Worker — verifies the Worker is reachable
+        // and reports whether the server-side API key is set. Doesn't burn
+        // Anthropic tokens.
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', this.apiUrl, true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.setRequestHeader('x-api-key', this.apiKey);
-        xhr.setRequestHeader('anthropic-version', '2023-06-01');
-        xhr.setRequestHeader('anthropic-dangerous-direct-browser-access', 'true');
+        xhr.open('GET', this.workerUrl + '/health', true);
         xhr.timeout = 5000;
 
         xhr.onload = function() {
           self.checking = false;
-          if (xhr.status === 200 || xhr.status === 400) {
-            // 400 means the API key is valid but request was malformed (expected for ping)
-            self.connected = true;
-            SundayBrain.useAPI = true;
-            if (callback) callback(true);
-          } else if (xhr.status === 401) {
-            console.warn('Sunday: API key invalid');
-            self.connected = false;
-            SundayBrain.useAPI = false;
-            if (callback) callback(false);
-          } else {
-            self.connected = true;
-            SundayBrain.useAPI = true;
-            if (callback) callback(true);
-          }
+          var ok = false;
+          try {
+            var body = JSON.parse(xhr.responseText);
+            ok = xhr.status === 200 && body.status === 'ok' && body.has_key === true;
+            if (!ok && body.has_key === false) {
+              console.warn('Sunday: Worker is up but ANTHROPIC_API_KEY is not set');
+            }
+          } catch(e) { /* fall through to false */ }
+          self.connected = ok;
+          SundayBrain.useAPI = ok;
+          if (callback) callback(ok);
         };
         xhr.onerror = function() {
           self.checking = false;
@@ -4954,12 +4956,7 @@
         };
         xhr.ontimeout = xhr.onerror;
 
-        // Send a minimal request just to check the key
-        xhr.send(JSON.stringify({
-          model: self.model,
-          max_tokens: 1,
-          messages: [{ role: 'user', content: 'ping' }]
-        }));
+        xhr.send();
       },
 
       // Build the system prompt with dynamic context
@@ -5251,12 +5248,12 @@
           messages: messages
         });
 
+        // Sends to the Sunday Worker (/chat). The Worker injects the
+        // ANTHROPIC_API_KEY and the anthropic-version header server-side —
+        // browser stays clean.
         var xhr = new XMLHttpRequest();
         xhr.open('POST', this.apiUrl, true);
         xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.setRequestHeader('x-api-key', this.apiKey);
-        xhr.setRequestHeader('anthropic-version', '2023-06-01');
-        xhr.setRequestHeader('anthropic-dangerous-direct-browser-access', 'true');
         xhr.timeout = file ? 45000 : 20000;
 
         xhr.onload = function() {
