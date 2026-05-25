@@ -5115,7 +5115,7 @@
         var pastorName = '';
         try { pastorName = localStorage.getItem('sunday_pastor') || heroState.pastorName || 'the pastor'; } catch(e) { pastorName = 'the pastor'; }
 
-        var prompt = 'You are Sunny — the worship pastor\'s right hand at ' + (heroState.churchName || 'The Local Church') + '. You work alongside ' + pastorName + '.\n\n';
+        var prompt = 'You are Sunny — the worship pastor\'s right hand at ' + (heroState.churchName || 'Run Worship') + '. You work alongside ' + pastorName + '.\n\n';
         prompt += 'WHO YOU ARE: Warm, organised, efficient. Like a trusted friend who\'s great at this. You use first names. Short sentences. Contractions. You notice burnout before they do. You celebrate well ("Love that"). You never over-explain.\n\n';
 
         prompt += 'ROSTERING RULES (read these — they prevent embarrassing mistakes):\n';
@@ -8742,7 +8742,7 @@
       if (!card) return;
 
       // Gather data
-      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Selah Worship';
+      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Run Worship';
       var totalMins = Math.round(state.set.reduce(function(a, s) { return a + (s.mins || 4.5); }, 0));
       var allSongs = state.set.concat(state.ministrySongs || []);
 
@@ -8829,7 +8829,7 @@
     };
 
     window.shareSetWhatsApp = function() {
-      var lines = ['\u{1F3B5} *' + ((typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Sunday') + ' \u2014 Set List*\n'];
+      var lines = ['\u{1F3B5} *' + ((typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Run Worship') + ' \u2014 Set List*\n'];
       state.set.forEach(function(s, i) {
         lines.push((i+1) + '. ' + s.title + (s.key ? ' (' + s.key + ')' : ''));
       });
@@ -8843,7 +8843,7 @@
     };
 
     window.shareSetEmail = function() {
-      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Sunday';
+      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Run Worship';
       var subject = churchName + ' \u2014 Sunday Set List';
       var lines = [churchName + ' \u2014 Sunday Set List\n'];
       state.set.forEach(function(s, i) {
@@ -9931,7 +9931,7 @@
     /* ==================== HERO LANDING / ONBOARDING ==================== */
     var heroState = {
       step: 0, // 0=greeting, 1=church name, 2=services, 3=team, 4=songs, 5=done
-      churchName: '',
+      churchName: 'Run Worship',
       services: 'AM',
       teamMembers: [],
       songs: [],
