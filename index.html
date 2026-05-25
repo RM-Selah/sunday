@@ -5099,6 +5099,39 @@
         prompt += '=== RECURRING SERVICES ===\n' + svcSummary + '\n\n';
         prompt += '=== ONE-OFF EVENTS ===\n' + eventSummary + '\n\n';
         prompt += '=== TEAM ===\n' + teamSummary + '\n\n';
+
+        // Per-person roster history from past months — gives Sunny long memory.
+        // Computed from state.roster across ALL months (not just current).
+        try {
+          var __personStats = {};
+          Object.keys(state.roster || {}).forEach(function(__rkey) {
+            var __entry = state.roster[__rkey] || {};
+            Object.keys(__entry).forEach(function(__role) {
+              var __name = __entry[__role];
+              if (!__name) return;
+              if (!__personStats[__name]) __personStats[__name] = { total: 0, roles: {}, dates: [] };
+              __personStats[__name].total++;
+              __personStats[__name].roles[__role] = (__personStats[__name].roles[__role] || 0) + 1;
+              __personStats[__name].dates.push(__rkey);
+            });
+          });
+          var __ordered = Object.keys(__personStats).sort(function(a, b) {
+            return __personStats[b].total - __personStats[a].total;
+          });
+          var __historyText = __ordered.map(function(n) {
+            var ps = __personStats[n];
+            var roleParts = Object.keys(ps.roles)
+              .sort(function(a, b) { return ps.roles[b] - ps.roles[a]; })
+              .map(function(r) { return r + '×' + ps.roles[r]; })
+              .join(', ');
+            var latest = ps.dates.sort().slice(-1)[0] || '';
+            return n + ': ' + ps.total + ' services · ' + roleParts + ' · most recent ' + latest;
+          }).join('\n');
+          if (__historyText) {
+            prompt += '=== ROSTER HISTORY (per-person frequency, all known months) ===\n' + __historyText + '\n\n';
+          }
+        } catch(e) { /* history block skipped on error */ }
+
         prompt += '=== SONG LIBRARY ===\n' + songSummary + '\n\n';
         prompt += '=== ROSTER — ' + state.rosterMonth + ' ===\n' + (rosterSummary || '(empty — nothing rostered yet)') + '\n\n';
         prompt += '=== CURRENT SET ===\n' + setSummary + '\nMinistry song: ' + ministrySummary + '\n\n';
@@ -6088,13 +6121,15 @@
     //    so the new seed takes effect (NOTE: removes only seedable lists,
     //    not roster assignments). Remove this whole block when real
     //    onboarding ships.
-    var SEED_VERSION = 'demo-2026-05-25-b-strip-songs';
+    var SEED_VERSION = 'demo-2026-05-25-c-pco-history';
     try {
       var savedSeedVersion = localStorage.getItem('sunday_seed_version');
       if (savedSeedVersion !== SEED_VERSION) {
         localStorage.removeItem('sunday_team');
         localStorage.removeItem('sunday_songs');
         localStorage.removeItem('sunday_services');
+          localStorage.removeItem('sunday_roster');
+          localStorage.removeItem('sunday_roster_because');
         localStorage.setItem('sunday_seed_version', SEED_VERSION);
       }
     } catch(e) {}
@@ -6212,11 +6247,75 @@
       rosterMonth: (function() { var n = new Date(); var months = ['January','February','March','April','May','June','July','August','September','October','November','December']; return months[n.getMonth()] + ' ' + n.getFullYear(); })(),
       rosterWeek: 1,
       rosterService: '', // active service ID (first in services array)
-      roster: {},
+      roster: {
+        'April 2026-1-sun-am': {'BASS':'Dean Ngugi', 'CO-WL':'Ezra Morgan', 'DRUMS':'Jones Morgan', 'FLV1':'Edmond Phiri', 'FLV2':'Dani Marchio', 'FLV3':'Jade Jeyaratnam', 'FOH':'Andrew Howell', 'GUITAR1':'Bella Mangunson', 'KEYS1':'Nick Paton', 'MD':'Nick Paton', 'WL':'Reuben Morgan'},
+        'April 2026-2-sun-am': {'ACOUSTIC':'Reuben Morgan', 'BASS':'Dean Ngugi', 'CO-WL':'Vivienne Williams', 'DRUMS':'Johnny Abraham', 'FLV1':'Maddie Byrne', 'FLV2':'Immie Morgan', 'FLV3':'Tiff Randall', 'FOH':'Brett Randall', 'GUITAR1':'Reuben Morgan', 'KEYS1':'Tim Whincop', 'KEYS2':'Hazzel De Leon', 'MD':'Dean Ngugi', 'WL':'Reuben Morgan'},
+        'April 2026-3-sun-am': {'ACOUSTIC':'Vivienne Williams', 'BASS':'Eric Hutchens', 'CO-WL':'Jake Schultz', 'DRUMS':'Johnny Abraham', 'FLV1':'John De Leon', 'FLV2':'Edmond Phiri', 'FLV3':'Johanna Barker', 'FOH':'Kelvin Williams', 'GUITAR1':'Reuben Morgan', 'KEYS1':'Hazzel De Leon', 'MD':'Eric Hutchens', 'WL':'Vivienne Williams'},
+        'April 2026-4-sun-am': {'ACOUSTIC':'Jonas R', 'BASS':'Tim Dawson', 'CO-WL':'John De Leon', 'DRUMS':'Johnny Abraham', 'FLV1':'Shara Kinney', 'FLV2':'Maddie Byrne', 'FLV3':'Ezra Morgan', 'FOH':'Kelvin Williams', 'GUITAR1':'Winston Ng', 'KEYS1':'Hazzel De Leon', 'MD':'Hazzel De Leon', 'WL':'Georgia Gourlay'},
+        'August 2025-1-sun-am': {'ACOUSTIC':'Ezra Morgan', 'BASS':'Dean Ngugi', 'CO-WL':'Ezra Morgan', 'DRUMS':'Jones Morgan', 'FLV1':'Keira Dawson', 'FLV2':'Tim Dawson', 'FLV3':'Ash Wilson', 'FOH':'Brett Randall', 'KEYS1':'Issac Hananiah', 'MD':'Dean Ngugi', 'WL':'Jade Jeyaratnam'},
+        'August 2025-2-sun-am': {'ACOUSTIC':'Vivienne Williams', 'BASS':'Eric Hutchens', 'DRUMS':'Johnny Abraham', 'FLV1':'Maddie Byrne', 'FLV2':'John De Leon', 'FLV3':'Kayleigh Alexandre', 'FLV4':'Edmond Phiri', 'FOH':'Steve Pippet', 'KEYS1':'Tim Whincop', 'KEYS2':'Hazzel De Leon', 'MD':'Eric Hutchens', 'WL':'Vivienne Williams'},
+        'August 2025-3-sun-am': {'BASS':'Bella Mangunson', 'CO-WL':'Dani Marchio', 'DRUMS':'Jones Morgan', 'FLV1':'Josh O', 'FLV2':'Maddie Byrne', 'FLV3':'Keira Dawson', 'FOH':'Jonas Whincop', 'GUITAR1':'Winston Ng', 'KEYS1':'Ben Hurrell', 'KEYS2':'Nick Paton', 'MD':'Nick Paton', 'WL':'Ezra Morgan'},
+        'August 2025-4-sun-am': {'ACOUSTIC':'Reuben Morgan', 'BASS':'Eric Hutchens', 'CO-WL':'Charli-Rose Whincop', 'DRUMS':'Johnny Abraham', 'FLV1':'Georgia Gourlay', 'FLV2':'Jones Morgan', 'FLV3':'Johanna Barker', 'FOH':'Brett Randall', 'KEYS1':'Issac Hananiah', 'KEYS2':'Ben Hurrell', 'MD':'Eric Hutchens', 'WL':'Reuben Morgan'},
+        'August 2025-5-sun-am': {'ACOUSTIC':'Josh O', 'BASS':'Dean Ngugi', 'DRUMS':'Jones Morgan', 'FLV1':'Ash Wilson', 'FLV2':'Darren Venter', 'FLV3':'Tiff Randall', 'FLV4':'Josh O', 'FOH':'Andrew Howell', 'KEYS1':'Hazzel De Leon', 'KEYS2':'Nick Paton', 'MD':'Dean Ngugi', 'WL':'Dani Marchio'},
+        'December 2025-1-sun-am': {'ACOUSTIC':'Reuben Morgan', 'BASS':'Bella Mangunson', 'CO-WL':'Charli-Rose Whincop', 'DRUMS':'Johnny Abraham', 'FLV2':'Josh O', 'FLV3':'Jake Schultz', 'FLV4':'Kayleigh Alexandre', 'FOH':'Brett Randall', 'GUITAR2':'Tim Dawson', 'KEYS1':'Tim Whincop', 'MD':'Tim Whincop'},
+        'December 2025-2-sun-am': {'ACOUSTIC':'Jonas R', 'BASS':'Dean Ngugi', 'CO-WL':'Ezra Morgan', 'DRUMS':'Jones Morgan', 'FLV2':'Maddie Byrne', 'FLV3':'John De Leon', 'FLV4':'Darren Venter', 'FOH':'Kelvin Williams', 'KEYS1':'Ben Hurrell', 'KEYS2':'Hazzel De Leon', 'WL':'Georgia Gourlay'},
+        'December 2025-3-sun-am': {'BASS':'Dean Ngugi', 'FOH':'Kelvin Williams', 'GUITAR2':'Bella Mangunson', 'KEYS1':'Nick Paton', 'KEYS2':'Tim Whincop', 'MD':'Nick Paton'},
+        'February 2026-1-sun-am': {'ACOUSTIC':'Vivienne Williams', 'BASS':'Dean Ngugi', 'DRUMS':'Jones Morgan', 'FLV1':'Vivienne Williams', 'FLV2':'Josh O', 'FLV3':'John De Leon', 'FLV4':'Immie Morgan', 'KEYS1':'Hazzel De Leon', 'MD':'Dean Ngugi', 'WL':'Georgia Gourlay'},
+        'February 2026-2-sun-am': {'ACOUSTIC':'Reuben Morgan', 'BASS':'Bella Mangunson', 'DRUMS':'Johnny Abraham', 'FLV1':'Dani Marchio', 'FLV2':'Edmond Phiri', 'FLV3':'Charli-Rose Whincop', 'FLV4':'Nick Paton', 'KEYS1':'Ben Hurrell', 'KEYS2':'Nick Paton', 'MD':'Tim Whincop', 'WL':'Reuben Morgan'},
+        'February 2026-3-sun-am': {'ACOUSTIC':'Jake Schultz', 'BASS':'Dean Ngugi', 'DRUMS':'Johnny Abraham', 'FLV1':'Jake Schultz', 'FLV2':'Tiff Randall', 'FLV3':'Immie Morgan', 'FLV4':'Darren Venter', 'KEYS1':'Tim Whincop', 'MD':'Dean Ngugi', 'WL':'Vivienne Williams'},
+        'February 2026-4-sun-am': {'ACOUSTIC':'Ezra Morgan', 'BASS':'Bella Mangunson', 'DRUMS':'Jones Morgan', 'FLV1':'Edmond Phiri', 'FLV2':'Keira Dawson', 'FLV3':'Johanna Barker', 'FLV4':'Tim Dawson', 'KEYS1':'Hazzel De Leon', 'KEYS2':'Issac Hananiah', 'MD':'Hazzel De Leon', 'WL':'Ezra Morgan'},
+        'March 2026-1-sun-am': {'ACOUSTIC':'Reuben Morgan', 'BASS':'Dean Ngugi', 'DRUMS':'Jones Morgan', 'FLV1':'Edmond Phiri', 'FLV2':'Keira Dawson', 'FLV3':'Jade Jeyaratnam', 'FLV4':'Josh O', 'FOH':'Brett Randall', 'GUITAR1':'Winston Ng', 'KEYS1':'Nick Paton', 'MD':'Reuben Morgan', 'WL':'Georgia Gourlay'},
+        'March 2026-2-sun-am': {'BASS':'Eric Hutchens', 'CO-WL':'Charli-Rose Whincop', 'DRUMS':'Johnny Abraham', 'FLV1':'John De Leon', 'FOH':'Jonas Whincop', 'KEYS1':'Hazzel De Leon', 'MD':'Hazzel De Leon', 'WL':'Reuben Morgan'},
+        'March 2026-3-sun-am': {'BASS':'Dean Ngugi', 'CO-WL':'Jake Schultz', 'DRUMS':'Jones Morgan', 'FOH':'Andrew Howell', 'KEYS1':'Nick Paton', 'MD':'Nick Paton', 'WL':'Dani Marchio'},
+        'March 2026-4-sun-am': {'BASS':'Bella Mangunson', 'DRUMS':'Johnny Abraham', 'FLV1':'Edmond Phiri', 'FOH':'Scott Haslem', 'KEYS1':'Hazzel De Leon', 'MD':'Hazzel De Leon', 'WL':'Georgia Gourlay'},
+        'March 2026-5-sun-am': {'ACOUSTIC':'Jake Schultz', 'BASS':'Eric Hutchens', 'CO-WL':'Dani Marchio', 'DRUMS':'Jones Morgan', 'FLV1':'John De Leon', 'FOH':'Kelvin Williams', 'KEYS1':'Issac Hananiah', 'MD':'Jake Schultz', 'WL':'Ezra Morgan'},
+        'May 2026-1-sun-am': {'ACOUSTIC':'Jake Schultz', 'BASS':'Dean Ngugi', 'CO-WL':'Jade Jeyaratnam', 'DRUMS':'Johnny Abraham', 'FLV1':'Jake Schultz', 'FLV2':'Georgia Gourlay', 'FLV3':'John De Leon', 'FOH':'Kelvin Williams', 'GUITAR1':'Reuben Morgan', 'KEYS1':'Ben Hurrell', 'KEYS2':'Chloe R', 'MD':'Dean Ngugi', 'WL':'Reuben Morgan'},
+        'May 2026-2-sun-am': {'ACOUSTIC':'Jonas R', 'BASS':'Eric Hutchens', 'CO-WL':'Edmond Phiri', 'DRUMS':'Marius Kruger', 'FLV1':'Vivienne Williams', 'FLV2':'Maddie Byrne', 'FLV3':'Ezra Morgan', 'FOH':'Brett Randall', 'GUITAR1':'Bella Mangunson', 'KEYS1':'Tim Whincop', 'MD':'Tim Whincop', 'WL':'Georgia Gourlay'},
+        'May 2026-3-sun-am': {'ACOUSTIC':'John De Leon', 'BASS':'Dean Ngugi', 'CO-WL':'John De Leon', 'DRUMS':'Johnny Abraham', 'FLV1':'Johanna Barker', 'FLV2':'Tim Dawson', 'FLV3':'Tiff Randall', 'FOH':'Kelvin Williams', 'KEYS1':'Hazzel De Leon', 'MD':'Hazzel De Leon', 'WL':'Jade Jeyaratnam'},
+        'May 2026-4-sun-am': {'ACOUSTIC':'Jonas R', 'BASS':'Tim Whincop', 'CO-WL':'Edmond Phiri', 'DRUMS':'Johnny Abraham', 'FLV1':'Maddie Byrne', 'FLV2':'John De Leon', 'FLV3':'Nicole R', 'FOH':'Scott Haslem', 'KEYS1':'Hazzel De Leon', 'KEYS2':'Chloe R', 'MD':'Hazzel De Leon', 'WL':'Georgia Gourlay'},
+        'May 2026-5-sun-am': {'ACOUSTIC':'Jake Schultz', 'BASS':'Dean Ngugi', 'CO-WL':'Jake Schultz', 'DRUMS':'Johnny Abraham', 'FLV1':'John De Leon', 'FLV2':'Kayleigh Alexandre', 'FLV3':'Tim Dawson', 'FLV4':'Ezra Morgan', 'FOH':'Andrew Howell', 'GUITAR1':'Winston Ng', 'KEYS1':'Hazzel De Leon', 'MD':'Hazzel De Leon', 'WL':'Vivienne Williams'},
+        'November 2025-1-sun-am': {'BASS':'Dean Ngugi', 'DRUMS':'Johnny Abraham', 'FLV1':'Jake Schultz', 'FLV2':'Tim Dawson', 'FOH':'Andrew Howell', 'GUITAR1':'Bella Mangunson', 'KEYS1':'Issac Hananiah', 'KEYS2':'Hazzel De Leon', 'MD':'Dean Ngugi', 'WL':'Georgia Gourlay'},
+        'November 2025-2-sun-am': {'ACOUSTIC':'Reuben Morgan', 'DRUMS':'Jones Morgan', 'FLV1':'Josh O', 'FLV2':'Edmond Phiri', 'FLV3':'Immie Morgan', 'FLV4':'Johanna Barker', 'FOH':'Kelvin Williams', 'KEYS1':'Tim Whincop', 'KEYS2':'Ben Hurrell', 'MD':'Reuben Morgan', 'WL':'Vivienne Williams'},
+        'November 2025-3-sun-am': {'ACOUSTIC':'Ezra Morgan', 'BASS':'Bella Mangunson', 'CO-WL':'Dani Marchio', 'DRUMS':'Jones Morgan', 'FLV1':'Ash Wilson', 'FLV2':'John De Leon', 'FLV3':'Keira Dawson', 'FOH':'Scott Haslem', 'GUITAR2':'Winston Ng', 'KEYS1':'Nick Paton', 'MD':'Nick Paton', 'WL':'Ezra Morgan'},
+        'November 2025-4-sun-am': {'ACOUSTIC':'Jake Schultz', 'BASS':'Eric Hutchens', 'CO-WL':'Edmond Phiri', 'DRUMS':'Johnny Abraham', 'FLV1':'Jake Schultz', 'FLV2':'Tiff Randall', 'FLV3':'Maddie Byrne', 'FOH':'Jonas Whincop', 'KEYS1':'Ben Hurrell', 'KEYS2':'Hazzel De Leon', 'MD':'Eric Hutchens', 'WL':'Jade Jeyaratnam'},
+        'October 2025-1-sun-am': {'BASS':'Bella Mangunson', 'DRUMS':'Johnny Abraham', 'FLV1':'Maddie Byrne', 'FLV2':'John De Leon', 'FLV3':'Georgia Gourlay', 'FLV4':'Jones Morgan', 'FOH':'Andrew Howell', 'KEYS1':'Tim Whincop', 'KEYS2':'Hazzel De Leon', 'MD':'Tim Whincop', 'WL':'Reuben Morgan'},
+        'October 2025-2-sun-am': {'BASS':'Dean Ngugi', 'CO-WL':'Charli-Rose Whincop', 'DRUMS':'Jones Morgan', 'FLV1':'Maddie Byrne', 'FLV2':'Josh O', 'FLV3':'Keira Dawson', 'FOH':'Jonas Whincop', 'GUITAR1':'Tim Dawson', 'KEYS1':'Ben Hurrell', 'MD':'Dean Ngugi', 'WL':'Ezra Morgan'},
+        'October 2025-3-sun-am': {'ACOUSTIC':'Reuben Morgan', 'BASS':'Dean Ngugi', 'DRUMS':'Johnny Abraham', 'FLV1':'Tiff Randall', 'FLV2':'Tim Dawson', 'FLV3':'Ezra Morgan', 'FLV4':'Kayleigh Alexandre', 'FOH':'Kelvin Williams', 'GUITAR1':'Bella Mangunson', 'KEYS1':'Tim Whincop', 'MD':'Reuben Morgan', 'WL':'Georgia Gourlay'},
+        'October 2025-4-sun-am': {'BASS':'Eric Hutchens', 'DRUMS':'Jones Morgan', 'FLV1':'Jake Schultz', 'FLV2':'Johanna Barker', 'FLV3':'Edmond Phiri', 'FLV4':'Immie Morgan', 'FOH':'Brett Randall', 'GUITAR1':'Winston Ng', 'KEYS1':'Issac Hananiah', 'KEYS2':'Hazzel De Leon', 'MD':'Issac Hananiah', 'WL':'Reuben Morgan'},
+        'September 2025-1-sun-am': {'ACOUSTIC':'Ezra Morgan', 'BASS':'Bella Mangunson', 'DRUMS':'Jones Morgan', 'FLV1':'Edmond Phiri', 'FLV2':'Samantha Dadd', 'FLV3':'Chris Assanti', 'FOH':'Steve Pippet', 'KEYS1':'Ben Hurrell', 'KEYS2':'Tim Whincop', 'MD':'Tim Whincop', 'WL':'Ezra Morgan'},
+        'September 2025-2-sun-am': {'ACOUSTIC':'Vivienne Williams', 'BASS':'Bella Mangunson', 'DRUMS':'Geonwoo Kim', 'FLV1':'John De Leon', 'FLV2':'Johnny Abraham', 'FLV3':'Tiff Randall', 'FOH':'Kelvin Williams', 'GUITAR1':'Jake Schultz', 'KEYS1':'Hazzel De Leon', 'KEYS2':'Tim Whincop', 'MD':'Tim Whincop', 'WL':'Vivienne Williams'},
+        'September 2025-3-sun-am': {'ACOUSTIC':'Reuben Morgan', 'BASS':'Dean Ngugi', 'DRUMS':'Jones Morgan', 'FLV1':'Ash Wilson', 'FLV2':'Tim Dawson', 'FLV3':'Georgia Gourlay', 'FOH':'Scott Haslem', 'GUITAR1':'Winston Ng', 'KEYS1':'Nick Paton', 'KEYS2':'Issac Hananiah', 'MD':'Reuben Morgan', 'WL':'Dani Marchio'},
+        'September 2025-4-sun-am': {'ACOUSTIC':'Ezra Morgan', 'BASS':'Eric Hutchens', 'DRUMS':'Johnny Abraham', 'FLV1':'Johanna Barker', 'FLV2':'Keira Dawson', 'FLV3':'Darren Venter', 'FOH':'Kelvin Williams', 'GUITAR1':'Tim Dawson', 'KEYS1':'Ben Hurrell', 'KEYS2':'Hazzel De Leon', 'MD':'Eric Hutchens', 'WL':'Jade Jeyaratnam'}
+      },
       // Parallel store of "why" text for each assignment. Keyed the same as state.roster:
       // state.rosterBecause[<month>-<week>-<service>][role] = "because Sunny said so"
       // Populated when an AI ASSIGN action carries a `because` param; surfaced on slot hover.
-      rosterBecause: {},
+      rosterBecause: {
+        'April 2026-1-sun-am': {'BASS':'Easter Sunday', 'CO-WL':'Easter Sunday', 'DRUMS':'Easter Sunday', 'FLV1':'Easter Sunday', 'FLV2':'Easter Sunday', 'FLV3':'Easter Sunday', 'FOH':'Easter Sunday', 'GUITAR1':'Easter Sunday', 'KEYS1':'Easter Sunday', 'MD':'Easter Sunday', 'WL':'Easter Sunday'},
+        'August 2025-1-sun-am': {'ACOUSTIC':'Communion', 'BASS':'Communion', 'CO-WL':'Communion', 'DRUMS':'Communion', 'FLV1':'Communion', 'FLV2':'Communion', 'FLV3':'Communion', 'FOH':'Communion', 'KEYS1':'Communion', 'MD':'Communion', 'WL':'Communion'},
+        'August 2025-3-sun-am': {'BASS':'Youth Fundraiser Dinner', 'CO-WL':'Youth Fundraiser Dinner', 'DRUMS':'Youth Fundraiser Dinner', 'FLV1':'Youth Fundraiser Dinner', 'FLV2':'Youth Fundraiser Dinner', 'FLV3':'Youth Fundraiser Dinner', 'FOH':'Youth Fundraiser Dinner', 'GUITAR1':'Youth Fundraiser Dinner', 'KEYS1':'Youth Fundraiser Dinner', 'KEYS2':'Youth Fundraiser Dinner', 'MD':'Youth Fundraiser Dinner', 'WL':'Youth Fundraiser Dinner'},
+        'August 2025-4-sun-am': {'ACOUSTIC':'Baby Dedications', 'BASS':'Baby Dedications', 'CO-WL':'Baby Dedications', 'DRUMS':'Baby Dedications', 'FLV1':'Baby Dedications', 'FLV2':'Baby Dedications', 'FLV3':'Baby Dedications', 'FOH':'Baby Dedications', 'KEYS1':'Baby Dedications', 'KEYS2':'Baby Dedications', 'MD':'Baby Dedications', 'WL':'Baby Dedications'},
+        'December 2025-1-sun-am': {'ACOUSTIC':'Kids Nativity', 'BASS':'Kids Nativity', 'CO-WL':'Kids Nativity', 'DRUMS':'Kids Nativity', 'FLV2':'Kids Nativity', 'FLV3':'Kids Nativity', 'FLV4':'Kids Nativity', 'FOH':'Kids Nativity', 'GUITAR2':'Kids Nativity', 'KEYS1':'Kids Nativity', 'MD':'Kids Nativity'},
+        'December 2025-2-sun-am': {'ACOUSTIC':'Christmas Dinner/Glenhaven Carols', 'BASS':'Christmas Dinner/Glenhaven Carols', 'CO-WL':'Christmas Dinner/Glenhaven Carols', 'DRUMS':'Christmas Dinner/Glenhaven Carols', 'FLV2':'Christmas Dinner/Glenhaven Carols', 'FLV3':'Christmas Dinner/Glenhaven Carols', 'FLV4':'Christmas Dinner/Glenhaven Carols', 'FOH':'Christmas Dinner/Glenhaven Carols', 'KEYS1':'Christmas Dinner/Glenhaven Carols', 'KEYS2':'Christmas Dinner/Glenhaven Carols', 'WL':'Christmas Dinner/Glenhaven Carols'},
+        'December 2025-3-sun-am': {'BASS':'Christmas Worship Night', 'FOH':'Christmas Worship Night', 'GUITAR2':'Christmas Worship Night', 'KEYS1':'Christmas Worship Night', 'KEYS2':'Christmas Worship Night', 'MD':'Christmas Worship Night'},
+        'February 2026-1-sun-am': {'ACOUSTIC':'Pursuit Week 2026', 'BASS':'Pursuit Week 2026', 'DRUMS':'Pursuit Week 2026', 'FLV1':'Pursuit Week 2026', 'FLV2':'Pursuit Week 2026', 'FLV3':'Pursuit Week 2026', 'FLV4':'Pursuit Week 2026', 'KEYS1':'Pursuit Week 2026', 'MD':'Pursuit Week 2026', 'WL':'Pursuit Week 2026'},
+        'February 2026-2-sun-am': {'ACOUSTIC':'Pursuit Week 2026', 'BASS':'Pursuit Week 2026', 'DRUMS':'Pursuit Week 2026', 'FLV1':'Pursuit Week 2026', 'FLV2':'Pursuit Week 2026', 'FLV3':'Pursuit Week 2026', 'FLV4':'Pursuit Week 2026', 'KEYS1':'Pursuit Week 2026', 'KEYS2':'Pursuit Week 2026', 'MD':'Pursuit Week 2026', 'WL':'Pursuit Week 2026'},
+        'February 2026-3-sun-am': {'ACOUSTIC':'Baptism Sunday', 'BASS':'Baptism Sunday', 'DRUMS':'Baptism Sunday', 'FLV1':'Baptism Sunday', 'FLV2':'Baptism Sunday', 'FLV3':'Baptism Sunday', 'FLV4':'Baptism Sunday', 'KEYS1':'Baptism Sunday', 'MD':'Baptism Sunday', 'WL':'Baptism Sunday'},
+        'February 2026-4-sun-am': {'ACOUSTIC':'Ruth- the way of redemptIOn', 'BASS':'Ruth- the way of redemptIOn', 'DRUMS':'Ruth- the way of redemptIOn', 'FLV1':'Ruth- the way of redemptIOn', 'FLV2':'Ruth- the way of redemptIOn', 'FLV3':'Ruth- the way of redemptIOn', 'FLV4':'Ruth- the way of redemptIOn', 'KEYS1':'Ruth- the way of redemptIOn', 'KEYS2':'Ruth- the way of redemptIOn', 'MD':'Ruth- the way of redemptIOn', 'WL':'Ruth- the way of redemptIOn'},
+        'March 2026-1-sun-am': {'ACOUSTIC':'Pursuit Week 2026', 'BASS':'Pursuit Week 2026', 'DRUMS':'Pursuit Week 2026', 'FLV1':'Pursuit Week 2026', 'FLV2':'Pursuit Week 2026', 'FLV3':'Pursuit Week 2026', 'FLV4':'Pursuit Week 2026', 'FOH':'Pursuit Week 2026', 'GUITAR1':'Pursuit Week 2026', 'KEYS1':'Pursuit Week 2026', 'MD':'Pursuit Week 2026', 'WL':'Pursuit Week 2026'},
+        'March 2026-2-sun-am': {'BASS':'Pursuit Week 2026', 'CO-WL':'Pursuit Week 2026', 'DRUMS':'Pursuit Week 2026', 'FLV1':'Pursuit Week 2026', 'FOH':'Pursuit Week 2026', 'KEYS1':'Pursuit Week 2026', 'MD':'Pursuit Week 2026', 'WL':'Pursuit Week 2026'},
+        'March 2026-3-sun-am': {'BASS':'Baptism Sunday', 'CO-WL':'Baptism Sunday', 'DRUMS':'Baptism Sunday', 'FOH':'Baptism Sunday', 'KEYS1':'Baptism Sunday', 'MD':'Baptism Sunday', 'WL':'Baptism Sunday'},
+        'March 2026-4-sun-am': {'BASS':'Ruth- the way of redemptIOn', 'DRUMS':'Ruth- the way of redemptIOn', 'FLV1':'Ruth- the way of redemptIOn', 'FOH':'Ruth- the way of redemptIOn', 'KEYS1':'Ruth- the way of redemptIOn', 'MD':'Ruth- the way of redemptIOn', 'WL':'Ruth- the way of redemptIOn'},
+        'November 2025-1-sun-am': {'BASS':'Communion', 'DRUMS':'Communion', 'FLV1':'Communion', 'FLV2':'Communion', 'FOH':'Communion', 'GUITAR1':'Communion', 'KEYS1':'Communion', 'KEYS2':'Communion', 'MD':'Communion', 'WL':'Communion'},
+        'October 2025-1-sun-am': {'BASS':'Communion (Long Weekend)', 'DRUMS':'Communion (Long Weekend)', 'FLV1':'Communion (Long Weekend)', 'FLV2':'Communion (Long Weekend)', 'FLV3':'Communion (Long Weekend)', 'FLV4':'Communion (Long Weekend)', 'FOH':'Communion (Long Weekend)', 'KEYS1':'Communion (Long Weekend)', 'KEYS2':'Communion (Long Weekend)', 'MD':'Communion (Long Weekend)', 'WL':'Communion (Long Weekend)'},
+        'October 2025-2-sun-am': {'BASS':'Youth Takeover/Youth Fundraiser Dinner', 'CO-WL':'Youth Takeover/Youth Fundraiser Dinner', 'DRUMS':'Youth Takeover/Youth Fundraiser Dinner', 'FLV1':'Youth Takeover/Youth Fundraiser Dinner', 'FLV2':'Youth Takeover/Youth Fundraiser Dinner', 'FLV3':'Youth Takeover/Youth Fundraiser Dinner', 'FOH':'Youth Takeover/Youth Fundraiser Dinner', 'GUITAR1':'Youth Takeover/Youth Fundraiser Dinner', 'KEYS1':'Youth Takeover/Youth Fundraiser Dinner', 'MD':'Youth Takeover/Youth Fundraiser Dinner', 'WL':'Youth Takeover/Youth Fundraiser Dinner'},
+        'October 2025-3-sun-am': {'ACOUSTIC':'A Night of Gratitude', 'BASS':'A Night of Gratitude', 'DRUMS':'A Night of Gratitude', 'FLV1':'A Night of Gratitude', 'FLV2':'A Night of Gratitude', 'FLV3':'A Night of Gratitude', 'FLV4':'A Night of Gratitude', 'FOH':'A Night of Gratitude', 'GUITAR1':'A Night of Gratitude', 'KEYS1':'A Night of Gratitude', 'MD':'A Night of Gratitude', 'WL':'A Night of Gratitude'},
+        'October 2025-4-sun-am': {'BASS':'Baptisms', 'DRUMS':'Baptisms', 'FLV1':'Baptisms', 'FLV2':'Baptisms', 'FLV3':'Baptisms', 'FLV4':'Baptisms', 'FOH':'Baptisms', 'GUITAR1':'Baptisms', 'KEYS1':'Baptisms', 'KEYS2':'Baptisms', 'MD':'Baptisms', 'WL':'Baptisms'},
+        'September 2025-1-sun-am': {'ACOUSTIC':'Fathers Day', 'BASS':'Fathers Day', 'DRUMS':'Fathers Day', 'FLV1':'Fathers Day', 'FLV2':'Fathers Day', 'FLV3':'Fathers Day', 'FOH':'Fathers Day', 'KEYS1':'Fathers Day', 'KEYS2':'Fathers Day', 'MD':'Fathers Day', 'WL':'Fathers Day'},
+        'September 2025-2-sun-am': {'ACOUSTIC':'The Kingdom of God', 'BASS':'The Kingdom of God', 'DRUMS':'The Kingdom of God', 'FLV1':'The Kingdom of God', 'FLV2':'The Kingdom of God', 'FLV3':'The Kingdom of God', 'FOH':'The Kingdom of God', 'GUITAR1':'The Kingdom of God', 'KEYS1':'The Kingdom of God', 'KEYS2':'The Kingdom of God', 'MD':'The Kingdom of God', 'WL':'The Kingdom of God'},
+        'September 2025-3-sun-am': {'ACOUSTIC':'The Kingdom of God', 'BASS':'The Kingdom of God', 'DRUMS':'The Kingdom of God', 'FLV1':'The Kingdom of God', 'FLV2':'The Kingdom of God', 'FLV3':'The Kingdom of God', 'FOH':'The Kingdom of God', 'GUITAR1':'The Kingdom of God', 'KEYS1':'The Kingdom of God', 'KEYS2':'The Kingdom of God', 'MD':'The Kingdom of God', 'WL':'The Kingdom of God'},
+        'September 2025-4-sun-am': {'ACOUSTIC':'The Kingdom of God', 'BASS':'The Kingdom of God', 'DRUMS':'The Kingdom of God', 'FLV1':'The Kingdom of God', 'FLV2':'The Kingdom of God', 'FLV3':'The Kingdom of God', 'FOH':'The Kingdom of God', 'GUITAR1':'The Kingdom of God', 'KEYS1':'The Kingdom of God', 'KEYS2':'The Kingdom of God', 'MD':'The Kingdom of God', 'WL':'The Kingdom of God'}
+      },
     };
 
     const catColors = { praise: '#e06858', current: '#5888d8', homegrown: '#68b878', classic: '#9878c8', custom: '#e09a2d' };
