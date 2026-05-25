@@ -3400,7 +3400,10 @@
         display: none;
       }
 
-      /* Sidebar — becomes slide-up overlay on mobile */
+      /* Sidebar — becomes a bottom sheet on mobile.
+         Closed (default): the input area peeks ~78px above viewport bottom,
+                           so Sunny is always one tap away.
+         Open (.mobile-open): full 75vh sheet with conversation visible. */
       .sidebar {
         position: fixed;
         bottom: 0;
@@ -3413,8 +3416,8 @@
         border-right: none;
         border-top: 1px solid var(--gb);
         border-radius: 16px 16px 0 0;
-        transform: translateY(100%);
-        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(calc(100% - 78px));
+        transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
       }
 
@@ -3440,10 +3443,29 @@
         background: var(--gb2);
       }
 
+      /* Tiny grabber on the peeked input bar — hints the sheet can be lifted. */
+      .sidebar-chat-input-area {
+        position: relative;
+      }
+      .sidebar-chat-input-area::before {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--gb2);
+        opacity: 0.7;
+      }
+      .sidebar.mobile-open .sidebar-chat-input-area::before {
+        display: none;
+      }
+
+      /* FAB toggle no longer needed — the peeked input bar IS the tap target. */
       .mobile-sunday-toggle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        display: none !important;
       }
 
       /* Main content — full width */
@@ -11315,26 +11337,57 @@
       if (menu) menu.style.display = 'none';
     };
 
-    // ─── Mobile sidebar toggle ─────────────────────────────────────
+    // ─── Mobile sidebar — bottom-sheet behaviour ───────────────────────
+    // The sidebar is a peek-and-expand bottom sheet on mobile. Closed
+    // state shows just the input bar (~78px). Tapping the input or the
+    // grabber handle expands it; tapping outside collapses it back to
+    // the peek state.
     (function() {
-      var toggle = document.getElementById('mobile-sunday-toggle');
       var sidebar = document.querySelector('.sidebar');
-      if (!toggle || !sidebar) return;
+      if (!sidebar) return;
 
-      toggle.addEventListener('click', function() {
-        sidebar.classList.toggle('mobile-open');
-        toggle.style.display = sidebar.classList.contains('mobile-open') ? 'none' : '';
-      });
+      function openSheet()  { sidebar.classList.add('mobile-open'); }
+      function closeSheet() { sidebar.classList.remove('mobile-open'); }
 
-      // Close sidebar when tapping outside on mobile
+      // Focus on the chat input → expand the sheet so messages are visible.
+      var chatInput = document.getElementById('sidebar-chat-input');
+      if (chatInput) {
+        chatInput.addEventListener('focus', openSheet);
+        // Also handle the tap before focus on iOS where input may lag.
+        chatInput.addEventListener('click', openSheet);
+      }
+
+      // Tapping the peeked input row (anywhere in the input area, not just
+      // the input field itself) should expand too.
+      var inputArea = sidebar.querySelector('.sidebar-chat-input-area');
+      if (inputArea) {
+        inputArea.addEventListener('click', function(e) {
+          if (!sidebar.classList.contains('mobile-open')) {
+            openSheet();
+            // If they tapped the field, native focus kicks in. Otherwise
+            // pull focus onto the input as a soft affordance.
+            if (chatInput && e.target !== chatInput) {
+              setTimeout(function() { chatInput.focus(); }, 50);
+            }
+          }
+        });
+      }
+
+      // Legacy: a remaining mobile-sunday-toggle button if present (now
+      // hidden via CSS, but kept defensively for any older markup).
+      var toggle = document.getElementById('mobile-sunday-toggle');
+      if (toggle) {
+        toggle.addEventListener('click', function() {
+          sidebar.classList.toggle('mobile-open');
+        });
+      }
+
+      // Tap outside (main content area) collapses the sheet back to peek.
       document.querySelector('.main-content').addEventListener('click', function() {
-        if (sidebar.classList.contains('mobile-open')) {
-          sidebar.classList.remove('mobile-open');
-          toggle.style.display = '';
-        }
+        if (sidebar.classList.contains('mobile-open')) closeSheet();
       });
 
-      // Swipe-down to close sidebar on mobile
+      // Swipe-down on the header grabber collapses the sheet.
       var startY = 0;
       var sidebarHeader = sidebar.querySelector('.sidebar-chat-header');
       if (sidebarHeader) {
@@ -11343,10 +11396,7 @@
         }, { passive: true });
         sidebarHeader.addEventListener('touchmove', function(e) {
           var dy = e.touches[0].clientY - startY;
-          if (dy > 60) {
-            sidebar.classList.remove('mobile-open');
-            toggle.style.display = '';
-          }
+          if (dy > 60) closeSheet();
         }, { passive: true });
       }
     })();
