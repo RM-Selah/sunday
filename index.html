@@ -7351,12 +7351,12 @@
       var activeYear = parseInt(activeParts[1]);
       var activeMonthIdx = MONTH_FULL.indexOf(activeMonthName);
 
-      // Fixed window of 9 months centered on the active month: 3 back + active + 5 forward.
-      // Keeps the strip predictable — no matter how much roster history is on
-      // disk, the user always sees the same small, focused range. To dig
-      // further back, the ← arrow above the strip steps one month at a time.
-      var WINDOW_BACK = 3;
-      var WINDOW_FORWARD = 5;
+      // Fixed window of 9 months, biased forward: 1 back + active + 7 forward.
+      // Worship pastors plan ahead — they need to see through year-end at a
+      // glance more than they need to revisit January. For older months, the
+      // ← arrow above the strip steps one month at a time.
+      var WINDOW_BACK = 1;
+      var WINDOW_FORWARD = 7;
 
       // Walk back / forward from the active month, normalising year rollover.
       function offsetMonth(yr, mi, delta) {
