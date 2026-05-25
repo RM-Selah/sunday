@@ -3866,18 +3866,24 @@
             <div style="display:flex; align-items:center; gap:10px;">
               <div style="position:relative;">
                 <button class="btn-suggest" onclick="window.toggleRosterShareMenu(event)" style="padding:6px 12px; font-size:10px; opacity:0.85;" title="Share this roster">Share ↗</button>
-                <div id="roster-share-menu" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:#1c1c1e; border:1px solid rgba(255,255,255,0.12); border-radius:12px; min-width:240px; z-index:200; box-shadow:0 8px 32px rgba(0,0,0,0.6); overflow:hidden;">
-                  <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:10px 14px 4px;">This week</div>
-                  <button onclick="window.shareRosterAs('image')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-                    <span style="font-size:20px;">📸</span> Share image
+                <div id="roster-share-menu" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:#1c1c1e; border:1px solid rgba(255,255,255,0.12); border-radius:12px; min-width:260px; z-index:200; box-shadow:0 8px 32px rgba(0,0,0,0.6); overflow:hidden;">
+                  <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:10px 14px 4px;">Send this week</div>
+                  <button onclick="window.shareRosterAs('imessage')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+                    <span style="font-size:20px;">💬</span> iMessage
+                  </button>
+                  <button onclick="window.shareRosterAs('whatsapp')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+                    <span style="font-size:20px;">🟢</span> WhatsApp
+                  </button>
+                  <button onclick="window.shareRosterAs('email')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+                    <span style="font-size:20px;">✉️</span> Email
                   </button>
                   <button onclick="window.shareRosterAs('pdf')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-                    <span style="font-size:20px;">📄</span> Share PDF
+                    <span style="font-size:20px;">📄</span> PDF
                   </button>
                   <div style="height:1px; background:rgba(255,255,255,0.08); margin:6px 0;"></div>
                   <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:6px 14px 4px;">Whole month</div>
                   <button onclick="window.shareRosterAs('month-pdf')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-                    <span style="font-size:20px;">🗓</span> Share month PDF
+                    <span style="font-size:20px;">🗓</span> Month overview PDF
                   </button>
                   <div style="height:1px; background:rgba(255,255,255,0.08); margin:6px 0;"></div>
                   <button onclick="window.shareRosterAs('text')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:rgba(255,255,255,0.6); cursor:pointer; text-align:left;">
@@ -11366,6 +11372,13 @@
     // clipboard (image) or download (PDFs). We never auto-open a target
     // app — same reasoning as the set-list share.
 
+    // Platform-specific share for the roster.
+    // - 'imessage' / 'whatsapp' / 'email': generate image, copy to clipboard,
+    //   then open the target app so the user pastes (⌘V) into the
+    //   conversation. On iPhone / Mac Safari we use the native share sheet
+    //   instead, which lands in the same apps with the image attached.
+    // - 'pdf' / 'month-pdf': native share sheet on iPhone, download elsewhere.
+    // - 'text': plain text clipboard.
     window.shareRosterAs = function(format) {
       window.closeRosterShareMenu();
       var hint = document.getElementById('roster-share-hint');
@@ -11375,22 +11388,6 @@
         navigator.clipboard.writeText(built.text)
           .then(function() { flashRosterHint(hint, 'Text copied ✓ — paste anywhere (⌘V)'); })
           .catch(function() { flashRosterHint(hint, 'Copy failed — try again'); });
-        return;
-      }
-
-      if (format === 'image') {
-        flashRosterHint(hint, 'Preparing image…', 0);
-        var imgResult = SundayPDF.generateRosterImage(undefined, undefined, true);
-        if (imgResult && typeof imgResult.then === 'function') {
-          imgResult.then(function(r) {
-            if (!r || !r.blob) { flashRosterHint(hint, 'Image generation failed'); return; }
-            dispatchRosterImage(r.blob, r.filename, hint);
-          });
-        } else if (imgResult && imgResult.blob) {
-          dispatchRosterImage(imgResult.blob, imgResult.filename, hint);
-        } else {
-          flashRosterHint(hint, 'Image generation failed');
-        }
         return;
       }
 
@@ -11407,44 +11404,92 @@
           return;
         }
         dispatchRosterPDF(result.blob, result.filename, hint);
+        return;
       }
+
+      // Everything else is image-based: 'imessage', 'whatsapp', 'email'.
+      var targetApp = (format === 'imessage' || format === 'whatsapp' || format === 'email') ? format : null;
+
+      flashRosterHint(hint, 'Preparing image…', 0);
+      var imgResult = SundayPDF.generateRosterImage(undefined, undefined, true);
+      Promise.resolve(imgResult).then(function(r) {
+        if (!r || !r.blob) { flashRosterHint(hint, 'Image generation failed'); return; }
+        dispatchRosterImage(r.blob, r.filename, hint, targetApp);
+      });
     };
 
-    function dispatchRosterImage(blob, filename, hint) {
+    // Open the chosen messaging / mail app. We never auto-fill text or
+    // recipient — the user picks their contact / chat and pastes the
+    // image from the clipboard. The sms:?body= form is the iOS-8+ syntax;
+    // an earlier sms:&body= bug made macOS Messages land on a random
+    // recent contact (the "Georgia bug" we hit on the set-list share).
+    function openRosterTarget(targetApp) {
+      var churchName = (typeof heroState !== 'undefined' && heroState.churchName)
+        ? heroState.churchName : 'The Local';
+      if (targetApp === 'imessage') {
+        window.open('sms:?body=', '_blank');
+      } else if (targetApp === 'whatsapp') {
+        window.open('https://web.whatsapp.com/', '_blank');
+      } else if (targetApp === 'email') {
+        window.open('mailto:?subject=' + encodeURIComponent(churchName + ' — Roster'), '_blank');
+      }
+    }
+
+    function rosterHintForTarget(targetApp) {
+      if (targetApp === 'imessage') return 'Image copied ✓ — paste into Messages (⌘V)';
+      if (targetApp === 'whatsapp') return 'Image copied ✓ — pick a chat in WhatsApp and paste (⌘V)';
+      if (targetApp === 'email')    return 'Image copied ✓ — paste into Mail (⌘V)';
+      return 'Image copied ✓ — paste anywhere (⌘V)';
+    }
+
+    function dispatchRosterImage(blob, filename, hint, targetApp) {
       var file = new File([blob], filename, { type: 'image/png' });
-      if (typeof canShareFiles === 'function' && canShareFiles([file])) {
+
+      // 1. Native share sheet — iPhone, iPad, Mac Safari.
+      // This is the cleanest experience: the OS picker shows iMessage /
+      // WhatsApp / Mail / AirDrop with the image already attached. We
+      // don't need to open the target app separately.
+      if (typeof window.canShareFiles === 'function' && window.canShareFiles([file])) {
         navigator.share({ files: [file], title: 'Roster' })
           .then(function() { flashRosterHint(hint, 'Shared ✓'); })
           .catch(function() { hint && (hint.style.display = 'none'); });
         return;
       }
-      if (typeof canWriteClipboardImage === 'function' && canWriteClipboardImage()) {
+
+      // 2. Mac Chrome / Edge — copy image to clipboard, open target app,
+      // tell the user to paste.
+      if (typeof window.canWriteClipboardImage === 'function' && window.canWriteClipboardImage()) {
         var item = new ClipboardItem({ 'image/png': blob });
         navigator.clipboard.write([item])
           .then(function() {
-            flashRosterHint(hint, 'Image copied ✓ — paste into Messages / WhatsApp / Mail (⌘V)', 6000);
+            if (targetApp) openRosterTarget(targetApp);
+            flashRosterHint(hint, rosterHintForTarget(targetApp), 7000);
           })
           .catch(function(e) {
             console.warn('Roster image clipboard write failed:', e);
-            downloadBlob(blob, filename);
-            flashRosterHint(hint, 'Image downloaded — drag into your message');
+            if (targetApp) openRosterTarget(targetApp);
+            window.downloadBlob && window.downloadBlob(blob, filename);
+            flashRosterHint(hint, 'Couldn\'t copy to clipboard — image saved instead');
           });
         return;
       }
-      downloadBlob(blob, filename);
-      flashRosterHint(hint, 'Image downloaded — drag into your message');
+
+      // 3. Last resort — download.
+      window.downloadBlob && window.downloadBlob(blob, filename);
+      if (targetApp) openRosterTarget(targetApp);
+      flashRosterHint(hint, 'Image saved — drag into your message');
     }
 
     function dispatchRosterPDF(blob, filename, hint) {
       var file = new File([blob], filename, { type: 'application/pdf' });
-      if (typeof canShareFiles === 'function' && canShareFiles([file])) {
+      if (typeof window.canShareFiles === 'function' && window.canShareFiles([file])) {
         navigator.share({ files: [file], title: filename })
           .then(function() { flashRosterHint(hint, 'Shared ✓'); })
           .catch(function() { hint && (hint.style.display = 'none'); });
         return;
       }
-      downloadBlob(blob, filename);
-      flashRosterHint(hint, 'PDF downloaded — attach to Messages / WhatsApp / Mail');
+      window.downloadBlob && window.downloadBlob(blob, filename);
+      flashRosterHint(hint, 'PDF downloaded — attach to your message');
     }
 
     function flashRosterHint(hint, text, ms) {
@@ -11455,11 +11500,11 @@
       setTimeout(function() { hint.style.display = 'none'; }, ms || 4000);
     }
 
-    // Legacy shims — old call sites still reference these names. They route
-    // through the new unified flow so behaviour is consistent everywhere.
-    window.shareRosterImage = function() { window.shareRosterAs('image'); };
-    window.shareRosterWhatsApp = function() { window.shareRosterAs('text'); };
-    window.shareRosterEmail = function() { window.shareRosterAs('text'); };
+    // Legacy shims — old call sites (and any Sunny action that still
+    // emits these) route through the new unified flow.
+    window.shareRosterImage = function() { window.shareRosterAs('imessage'); };
+    window.shareRosterWhatsApp = function() { window.shareRosterAs('whatsapp'); };
+    window.shareRosterEmail = function() { window.shareRosterAs('email'); };
     window.exportMonthOverviewPDF = function() { window.shareRosterAs('month-pdf'); };
     window.exportRosterPDF = function() { window.shareRosterAs('pdf'); };
 
