@@ -11373,10 +11373,13 @@
     // app — same reasoning as the set-list share.
 
     // Platform-specific share for the roster.
-    // - 'imessage' / 'whatsapp' / 'email': generate image, copy to clipboard,
-    //   then open the target app so the user pastes (⌘V) into the
-    //   conversation. On iPhone / Mac Safari we use the native share sheet
-    //   instead, which lands in the same apps with the image attached.
+    // - 'imessage' / 'whatsapp' / 'email': SYNCHRONOUSLY open the target app
+    //   inside the user-gesture window (so the popup blocker stays happy),
+    //   then generate the image and copy it to the clipboard in the
+    //   background. By the time the app finishes opening, the image is
+    //   already on the clipboard for ⌘V. On iPhone / Mac Safari we'd
+    //   prefer the native share sheet, but URL-scheme + paste is more
+    //   reliable across browsers and we keep behaviour consistent.
     // - 'pdf' / 'month-pdf': native share sheet on iPhone, download elsewhere.
     // - 'text': plain text clipboard.
     window.shareRosterAs = function(format) {
@@ -11407,16 +11410,48 @@
         return;
       }
 
-      // Everything else is image-based: 'imessage', 'whatsapp', 'email'.
+      // Image-based platform shares: 'imessage' / 'whatsapp' / 'email'.
       var targetApp = (format === 'imessage' || format === 'whatsapp' || format === 'email') ? format : null;
 
+      // STEP 1 (synchronous, inside the click): open the target app now,
+      // before any async work, so window.open isn't blocked.
+      if (targetApp) openRosterTarget(targetApp);
+
+      // STEP 2: generate image + copy to clipboard in the background.
       flashRosterHint(hint, 'Preparing image…', 0);
-      var imgResult = SundayPDF.generateRosterImage(undefined, undefined, true);
-      Promise.resolve(imgResult).then(function(r) {
+      Promise.resolve(SundayPDF.generateRosterImage(undefined, undefined, true)).then(function(r) {
         if (!r || !r.blob) { flashRosterHint(hint, 'Image generation failed'); return; }
-        dispatchRosterImage(r.blob, r.filename, hint, targetApp);
+        copyImageToClipboard(r.blob, hint, targetApp, r.filename);
       });
     };
+
+    // Image → clipboard. After the user gesture has ended (we're inside an
+    // async chain), browsers still allow clipboard.write so long as the
+    // tab has focus. If the user switched to Messages already, the write
+    // can fail — in that case we silently fall back to a download so the
+    // image isn't lost.
+    function copyImageToClipboard(blob, hint, targetApp, filename) {
+      if (typeof window.canWriteClipboardImage === 'function' && window.canWriteClipboardImage()) {
+        try {
+          var item = new ClipboardItem({ 'image/png': blob });
+          navigator.clipboard.write([item])
+            .then(function() {
+              flashRosterHint(hint, rosterHintForTarget(targetApp), 7000);
+            })
+            .catch(function(e) {
+              console.warn('Clipboard write failed:', e);
+              window.downloadBlob && window.downloadBlob(blob, filename);
+              flashRosterHint(hint, 'Couldn\'t copy — image saved instead. Drag it into your message.');
+            });
+          return;
+        } catch (e) {
+          console.warn('ClipboardItem unsupported:', e);
+        }
+      }
+      // No clipboard support — download as last resort.
+      window.downloadBlob && window.downloadBlob(blob, filename);
+      flashRosterHint(hint, 'Image saved — drag into your message');
+    }
 
     // Open the chosen messaging / mail app. We never auto-fill text or
     // recipient — the user picks their contact / chat and pastes the
@@ -11440,44 +11475,6 @@
       if (targetApp === 'whatsapp') return 'Image copied ✓ — pick a chat in WhatsApp and paste (⌘V)';
       if (targetApp === 'email')    return 'Image copied ✓ — paste into Mail (⌘V)';
       return 'Image copied ✓ — paste anywhere (⌘V)';
-    }
-
-    function dispatchRosterImage(blob, filename, hint, targetApp) {
-      var file = new File([blob], filename, { type: 'image/png' });
-
-      // 1. Native share sheet — iPhone, iPad, Mac Safari.
-      // This is the cleanest experience: the OS picker shows iMessage /
-      // WhatsApp / Mail / AirDrop with the image already attached. We
-      // don't need to open the target app separately.
-      if (typeof window.canShareFiles === 'function' && window.canShareFiles([file])) {
-        navigator.share({ files: [file], title: 'Roster' })
-          .then(function() { flashRosterHint(hint, 'Shared ✓'); })
-          .catch(function() { hint && (hint.style.display = 'none'); });
-        return;
-      }
-
-      // 2. Mac Chrome / Edge — copy image to clipboard, open target app,
-      // tell the user to paste.
-      if (typeof window.canWriteClipboardImage === 'function' && window.canWriteClipboardImage()) {
-        var item = new ClipboardItem({ 'image/png': blob });
-        navigator.clipboard.write([item])
-          .then(function() {
-            if (targetApp) openRosterTarget(targetApp);
-            flashRosterHint(hint, rosterHintForTarget(targetApp), 7000);
-          })
-          .catch(function(e) {
-            console.warn('Roster image clipboard write failed:', e);
-            if (targetApp) openRosterTarget(targetApp);
-            window.downloadBlob && window.downloadBlob(blob, filename);
-            flashRosterHint(hint, 'Couldn\'t copy to clipboard — image saved instead');
-          });
-        return;
-      }
-
-      // 3. Last resort — download.
-      window.downloadBlob && window.downloadBlob(blob, filename);
-      if (targetApp) openRosterTarget(targetApp);
-      flashRosterHint(hint, 'Image saved — drag into your message');
     }
 
     function dispatchRosterPDF(blob, filename, hint) {
