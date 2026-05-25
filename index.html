@@ -4600,7 +4600,7 @@
       };
       if (aliases[s]) return aliases[s];
       // Already a canonical code? Match case-insensitively against the value set.
-      var canon = ['WL','CO-WL','FLV','Keys','Drums','Bass','Guitar','Acoustic','MD','FOH'];
+      var canon = ['WL','CO-WL','FLV','Keys','Drums','Bass','Guitar','Acoustic','FOH'];
       for (var i = 0; i < canon.length; i++) {
         if (canon[i].toLowerCase() === s) return canon[i];
       }
@@ -5291,7 +5291,7 @@
         prompt += '{"type":"SET_ROSTER_MONTH","params":{"month":"May 2026"}} — switch active roster to a different month. Always do this BEFORE BUILD_MONTH if the user asks for a different month.\n';
         prompt += '{"type":"BUILD_MONTH"} — fill entire CURRENT roster month automatically across all recurring services. Chain after SET_ROSTER_MONTH if switching months.\n';
         prompt += '{"type":"FILL_WEEK","params":{"week":1,"service":"sun-am"}} — auto-fill one service slot. For events: {"week":"evt-easter-sunday","service":"easter-sunday"}\n';
-        prompt += '{"type":"ASSIGN","params":{"person":"Name","role":"SLOT","week":1,"service":"sun-am","because":"one short sentence on why"}} — Slots: WL CO-WL DRUMS BASS KEYS1 KEYS2 GUITAR1 ACOUSTIC MD FOH FLV1 FLV2 FLV3 FLV4 PROD LYRICS VISION. For events: week="evt-EVENT_ID" service="EVENT_ID". The `because` field is your one-line reasoning — it appears when the pastor hovers the slot. Examples: "Drew\'s been on every week — finally a rest." / "Marcus originated this song." / "Pairing Sam with Jordan, you said they sound great together." Always include `because` when you can name a reason. Skip it if there really is no reason (e.g. only one option available).\n';
+        prompt += '{"type":"ASSIGN","params":{"person":"Name","role":"SLOT","week":1,"service":"sun-am","because":"one short sentence on why"}} — Slots: WL CO-WL DRUMS BASS KEYS1 KEYS2 GUITAR1 ACOUSTIC FOH FLV1 FLV2 FLV3 FLV4 PROD LYRICS VISION (MD slot disabled for now — do not assign it). For events: week="evt-EVENT_ID" service="EVENT_ID". The `because` field is your one-line reasoning — it appears when the pastor hovers the slot. Examples: "Drew\'s been on every week — finally a rest." / "Marcus originated this song." / "Pairing Sam with Jordan, you said they sound great together." Always include `because` when you can name a reason. Skip it if there really is no reason (e.g. only one option available).\n';
         prompt += '{"type":"REMOVE_PERSON","params":{"person":"Name","week":1,"service":"sun-am"}}\n';
         prompt += '{"type":"REST_PERSON","params":{"person":"Name","scope":"month"}} or scope:"week" with week:1\n';
         prompt += '{"type":"CLEAR_WEEK","params":{"week":1}}\n';
@@ -6296,7 +6296,7 @@
       // Quality filter — fill remaining with tier 1-2 only
       if (entities.wantQuality) {
         var rosteredNames = new Set(Object.values(roster));
-        var emptySlots = ['WL','CO-WL','MD','DRUMS','BASS','KEYS1','KEYS2','ACOUSTIC','GUITAR1','FLV1','FLV2','FLV3','FLV4','FOH','PROD','LYRICS','VISION']
+        var emptySlots = ['WL','CO-WL','DRUMS','BASS','KEYS1','KEYS2','ACOUSTIC','GUITAR1','FLV1','FLV2','FLV3','FLV4','FOH','PROD','LYRICS','VISION']
           .filter(function(s) { return !roster[s]; });
 
         // Tight eligibility — auto-fill won't put a non-leader on WL/CO-WL.
@@ -6360,12 +6360,13 @@
     //    so the new seed takes effect (NOTE: removes only seedable lists,
     //    not roster assignments). Remove this whole block when real
     //    onboarding ships.
-    var SEED_VERSION = 'demo-2026-05-26-sun-am-pm';
+    var SEED_VERSION = 'demo-2026-05-26-drop-md';
     try {
       var savedSeedVersion = localStorage.getItem('sunday_seed_version');
       if (savedSeedVersion !== SEED_VERSION) {
-        // Refresh songs + services so seed updates land. Team and roster
-        // (the data users actually customise) are preserved.
+        // Refresh team + songs + services so seed updates land (MD role
+        // dropped from active team tags). Roster history is preserved.
+        localStorage.removeItem('sunday_team');
         localStorage.removeItem('sunday_songs');
         localStorage.removeItem('sunday_services');
         localStorage.setItem('sunday_seed_version', SEED_VERSION);
@@ -6428,17 +6429,17 @@
       {name:'Ezra Morgan',         roles:['Acoustic','WL','CO-WL'],                       tier:1, avail:[1,2,3,4,5], color:'#7ab89a'},
       {name:'Georgia Gourlay',     roles:['WL','CO-WL'],                                  tier:1, avail:[1,2,3,4,5], color:'#c89a4a'},
       {name:'Jade Jeyaratnam',     roles:['WL','CO-WL'],                                  tier:1, avail:[1,2,3,4,5], color:'#a878b8'},
-      {name:'Jake Schultz',        roles:['Acoustic','MD','WL','CO-WL'],                  tier:1, avail:[1,2,3,4,5], color:'#9ab870'},
+      {name:'Jake Schultz',        roles:['Acoustic','WL','CO-WL'],                  tier:1, avail:[1,2,3,4,5], color:'#9ab870'},
       {name:'John De Leon',        roles:['WL','CO-WL'],                                  tier:1, avail:[1,2,3,4,5], color:'#7878b8'},
-      {name:'Nick Paton',          roles:['Keys','MD','WL','CO-WL'],                      tier:1, avail:[1,2,3,4,5], color:'#d49ab8'},
-      {name:'Reuben Morgan',       roles:['Acoustic','Guitar','MD','WL','CO-WL'],         tier:1, avail:[1,2,3,4,5], color:'#b89a78'},
+      {name:'Nick Paton',          roles:['Keys','WL','CO-WL'],                      tier:1, avail:[1,2,3,4,5], color:'#d49ab8'},
+      {name:'Reuben Morgan',       roles:['Acoustic','Guitar','WL','CO-WL'],         tier:1, avail:[1,2,3,4,5], color:'#b89a78'},
       {name:'Tim Dawson',          roles:['Acoustic','Bass','FLV','Guitar','WL','CO-WL'], tier:1, avail:[1,2,3,4,5], color:'#9ab8c8'},
       {name:'Vivienne Williams',   roles:['Acoustic','WL','CO-WL'],                       tier:1, avail:[1,2,3,4,5], color:'#c8a878'},
       // Everyone else (tier 2) — alphabetical for easy scan
       {name:'Aaron',               roles:['Keys'],                                        tier:2, avail:[1,2,3,4,5], color:'#788ab8'},
       {name:'Andrew Howell',       roles:['FOH'],                                         tier:2, avail:[1,2,3,4,5], color:'#b878a8'},
       {name:'Ash Wilson',          roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#78b89a'},
-      {name:'Bella Mangunson',     roles:['Bass','Guitar','MD'],                          tier:2, avail:[1,2,3,4,5], color:'#c89a8a'},
+      {name:'Bella Mangunson',     roles:['Bass','Guitar'],                          tier:2, avail:[1,2,3,4,5], color:'#c89a8a'},
       {name:'Ben Hurrell',         roles:['Keys'],                                        tier:2, avail:[1,2,3,4,5], color:'#b88878'},
       {name:'Brett Randall',       roles:['FOH'],                                         tier:2, avail:[1,2,3,4,5], color:'#7898b8'},
       {name:'Calvin',              roles:['Bass'],                                        tier:2, avail:[1,2,3,4,5], color:'#9a78b8'},
@@ -6446,11 +6447,11 @@
       {name:'Corri Byrne',         roles:['Vision'],                                      tier:2, avail:[1,2,3,4,5], color:'#a8c878'},
       {name:'Darren Venter',       roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#7ab8a8'},
       {name:'David Hughes',        roles:['Bass'],                                        tier:2, avail:[1,2,3,4,5], color:'#b89a8a'},
-      {name:'Dean Ngugi',          roles:['Bass','MD'],                                   tier:2, avail:[1,2,3,4,5], color:'#7878a8'},
-      {name:'Eric Hutchens',       roles:['Bass','MD'],                                   tier:2, avail:[1,2,3,4,5], color:'#a8a878'},
+      {name:'Dean Ngugi',          roles:['Bass'],                                   tier:2, avail:[1,2,3,4,5], color:'#7878a8'},
+      {name:'Eric Hutchens',       roles:['Bass'],                                   tier:2, avail:[1,2,3,4,5], color:'#a8a878'},
       {name:'Flynn McManus',       roles:['Vision'],                                      tier:2, avail:[1,2,3,4,5], color:'#a87878'},
       {name:'George Whippy',       roles:['Bass'],                                        tier:2, avail:[1,2,3,4,5], color:'#c878a8'},
-      {name:'Hazzel De Leon',      roles:['Keys','MD'],                                   tier:2, avail:[1,2,3,4,5], color:'#78b8c8'},
+      {name:'Hazzel De Leon',      roles:['Keys'],                                   tier:2, avail:[1,2,3,4,5], color:'#78b8c8'},
       {name:'Immie Morgan',        roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#b8c878'},
       {name:'Issac Hananiah',      roles:['Keys'],                                        tier:2, avail:[1,2,3,4,5], color:'#a89ac8'},
       {name:'Johanna Barker',      roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#c89878'},
@@ -6474,7 +6475,7 @@
       {name:'Shara Kinney',        roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#b88878'},
       {name:'Steve Pippet',        roles:['FOH'],                                         tier:2, avail:[1,2,3,4,5], color:'#9ab870'},
       {name:'Tiff Randall',        roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#7ab89a'},
-      {name:'Tim Whincop',         roles:['Keys','MD'],                                   tier:2, avail:[1,2,3,4,5], color:'#c89a4a'},
+      {name:'Tim Whincop',         roles:['Keys'],                                   tier:2, avail:[1,2,3,4,5], color:'#c89a4a'},
       {name:'Tom',                 roles:['Guitar'],                                      tier:2, avail:[1,2,3,4,5], color:'#a878b8'},
       {name:'Winston Ng',          roles:['Guitar'],                                      tier:2, avail:[1,2,3,4,5], color:'#9ab870'}
     ];
@@ -7032,7 +7033,7 @@
 
     /* ==================== TEAM DATABASE SCREEN ==================== */
 
-    var ALL_ROLES = ['WL','CO-WL','FLV','Keys','Drums','Bass','Guitar','Acoustic','MD','FOH'];
+    var ALL_ROLES = ['WL','CO-WL','FLV','Keys','Drums','Bass','Guitar','Acoustic','FOH'];
     var ROLE_COLORS = { WL:'#e09a2d', 'CO-WL':'#c07820', FLV:'#5888d8', Keys:'#7890e8', Drums:'#d86858', Bass:'#8870d0', Guitar:'#48a878', Acoustic:'#68b8a8', MD:'#e09a2d', FOH:'#5888d8' };
 
     var _editingMemberId = null;
@@ -7627,7 +7628,9 @@
       midCenter.style.gap = '20px';
       midCenter.style.alignItems = 'center';
       midCenter.style.justifyContent = 'center';
-      ['KEYS1', 'MD', 'KEYS2'].forEach(role => {
+      // MD slot hidden for now — historical assignments still in state.roster
+      // but the slot isn't surfaced in the UI. Re-enable by restoring 'MD'.
+      ['KEYS1', 'KEYS2'].forEach(role => {
         midCenter.appendChild(createPositionSlot(role, currentRoster));
       });
       midContainer.appendChild(midCenter);
@@ -8190,10 +8193,10 @@
 
       pickBest(['WL'], 'WL');
       pickBest(['WL','CO-WL','FLV'], 'CO-WL');
-      pickBest(['MD','Keys'], 'MD');
+      // MD slot disabled for now — skip the auto-fill.
       pickBest(['Drums'], 'DRUMS');
-      pickBest(['Bass','MD'], 'BASS');
-      pickBest(['Keys','MD'], 'KEYS1');
+      pickBest(['Bass'], 'BASS');
+      pickBest(['Keys'], 'KEYS1');
       pickBest(['Keys'], 'KEYS2');
       pickBest(['Acoustic','Guitar','WL'], 'ACOUSTIC');
       pickBest(['Guitar','Acoustic'], 'GUITAR1');
@@ -8951,7 +8954,7 @@
       var slots = (state.roster && state.roster[rKey]) ? state.roster[rKey] : {};
       var wl = slots['WL'] || slots['CO-WL'] || '';
       var teamEntries = [];
-      var teamSlots = ['Drums','Bass','Keys1','Keys2','Guitar1','Acoustic','FLV1','FLV2','MD','FOH'];
+      var teamSlots = ['Drums','Bass','Keys1','Keys2','Guitar1','Acoustic','FLV1','FLV2','FOH'];
       var slotLabels = {Drums:'Drums',Bass:'Bass',Keys1:'Keys',Keys2:'Keys 2',Guitar1:'Guitar',Acoustic:'Acoustic',FLV1:'Vocals',FLV2:'Vocals',MD:'MD',FOH:'FOH'};
       teamSlots.forEach(function(sl) { if (slots[sl]) teamEntries.push({ label: slotLabels[sl] || sl, name: slots[sl] }); });
 
@@ -10715,7 +10718,6 @@
           { id: 'BASS', label: 'Bass', icon: '🎸' },
           { id: 'GUITAR1', label: 'Guitar', icon: '🎸' },
           { id: 'ACOUSTIC', label: 'Acoustic', icon: '🎸' },
-          { id: 'MD', label: 'Music Director', icon: '🎼' },
           { id: 'FOH', label: 'Sound / FOH', icon: '🎛️' },
           { id: 'PROD', label: 'Production', icon: '💡' },
           { id: 'LYRICS', label: 'Lyrics', icon: '📺' },
@@ -10888,7 +10890,6 @@
         var slotDefs = [
           { id: 'WL',       label: 'Worship Lead' },
           { id: 'CO-WL',    label: 'Co-Lead' },
-          { id: 'MD',       label: 'MD' },
           { id: 'KEYS1',    label: 'Keys' },
           { id: 'KEYS2',    label: 'Keys 2' },
           { id: 'DRUMS',    label: 'Drums' },
@@ -11287,7 +11288,6 @@
       var slots = [
         ['WL',       'WL'],
         ['CO-WL',    'Co-WL'],
-        ['MD',       'MD'],
         ['KEYS1',    'Keys'],
         ['KEYS2',    'Keys 2'],
         ['DRUMS',    'Drums'],
