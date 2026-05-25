@@ -6088,7 +6088,7 @@
     //    so the new seed takes effect (NOTE: removes only seedable lists,
     //    not roster assignments). Remove this whole block when real
     //    onboarding ships.
-    var SEED_VERSION = 'demo-2026-05-25-a-pco';
+    var SEED_VERSION = 'demo-2026-05-25-b-strip-songs';
     try {
       var savedSeedVersion = localStorage.getItem('sunday_seed_version');
       if (savedSeedVersion !== SEED_VERSION) {
@@ -6099,41 +6099,11 @@
       }
     } catch(e) {}
 
-    // ── SEED: Selah master song library (demo data — May 2026)
-    //    localStorage overrides this on subsequent loads (see SundayData.load below).
-    var SONGS = window.SONGS = [
-      // Praise
-      {id:1,  title:'I Thank God',            artist:'Housefires',              cat:'praise',    key:'G',  bpm:128, mins:4.5},
-      {id:2,  title:'Trust in God',           artist:'Elevation Worship',       cat:'praise',    key:'A',  bpm:120, mins:4.5},
-      {id:3,  title:'Praise',                 artist:'Elevation Worship',       cat:'praise',    key:'B',  bpm:124, mins:4.5},
-      {id:4,  title:'Joy',                    artist:'Bethel Music',            cat:'praise',    key:'D',  bpm:135, mins:4.5},
-      {id:5,  title:'Run to the Father',      artist:'Cody Carnes',             cat:'praise',    key:'A',  bpm:118, mins:4.5},
-      // Worship
-      {id:6,  title:'Goodness of God',        artist:'Bethel',                  cat:'worship',   key:'A',  bpm:64,  mins:5.0},
-      {id:7,  title:'Bless God',              artist:'Brooke Ligertwood',       cat:'worship',   key:'C',  bpm:72,  mins:5.0},
-      {id:8,  title:'A Thousand Hallelujahs', artist:'Brooke Ligertwood',       cat:'worship',   key:'D',  bpm:74,  mins:5.0},
-      {id:9,  title:'King of Kings',          artist:'Hillsong Worship',        cat:'worship',   key:'D',  bpm:73,  mins:5.0},
-      {id:10, title:'Jireh',                  artist:'Elevation/Maverick City', cat:'worship',   key:'F#', bpm:76,  mins:5.5},
-      {id:11, title:'Holy Forever',           artist:'Chris Tomlin',            cat:'worship',   key:'G',  bpm:75,  mins:5.0},
-      {id:12, title:'Build My Life',          artist:'Pat Barrett',             cat:'worship',   key:'E',  bpm:68,  mins:5.0},
-      {id:13, title:'The Blessing',           artist:'Elevation/Kari Jobe',     cat:'worship',   key:'A',  bpm:69,  mins:5.5},
-      {id:14, title:'Yes I Will',             artist:'Vertical Worship',        cat:'worship',   key:'A',  bpm:74,  mins:5.0},
-      {id:15, title:'Same God',               artist:'Elevation Worship',       cat:'worship',   key:'A',  bpm:78,  mins:5.0},
-      // Homegrown
-      {id:16, title:'Doorkeeper',             artist:'COMMONS',                 cat:'homegrown', key:'C',  bpm:72,  mins:5.0},
-      {id:17, title:'Act Justly Love Mercy',  artist:'COMMONS',                 cat:'homegrown', key:'D',  bpm:80,  mins:4.5},
-      {id:18, title:'King of Calvary',        artist:'COMMONS',                 cat:'homegrown', key:'A',  bpm:74,  mins:5.0},
-      {id:19, title:"The Father's House",     artist:'The Local',               cat:'homegrown', key:'G',  bpm:70,  mins:5.0},
-      // Classics
-      {id:20, title:'Mighty to Save',         artist:'Hillsong',                cat:'classic',   key:'A',  bpm:75,  mins:5.0},
-      {id:21, title:'Cornerstone',            artist:'Hillsong',                cat:'classic',   key:'C',  bpm:73,  mins:5.0},
-      {id:22, title:'Forever Reign',          artist:'Hillsong',                cat:'classic',   key:'D',  bpm:76,  mins:5.0},
-      {id:23, title:'I Give You My Heart',    artist:'Reuben Morgan',           cat:'classic',   key:'D',  bpm:68,  mins:4.5},
-      {id:24, title:'How Great is Our God',   artist:'Chris Tomlin',            cat:'classic',   key:'A',  bpm:79,  mins:5.0},
-      {id:25, title:'10000 Reasons',          artist:'Matt Redman',             cat:'classic',   key:'G',  bpm:72,  mins:4.5},
-      {id:26, title:'What a Beautiful Name',  artist:'Hillsong',                cat:'classic',   key:'D',  bpm:68,  mins:5.0},
-      {id:27, title:'Oceans',                 artist:'Hillsong United',         cat:'classic',   key:'B',  bpm:72,  mins:6.5}
-    ];
+    // Song library starts empty — Reuben's master set list will be loaded once
+    // he provides it (not fabricating songs). Categories (praise / worship /
+    // homegrown / classic / current) still work — the library just has no entries
+    // until real data arrives.
+    var SONGS = window.SONGS = [];
 
     // avail: array of week numbers (1-5) this person is available for the current month
     // (In production, the AI agent gathers this from each team member via chat)
@@ -6210,16 +6180,7 @@
     // Load saved data AFTER defaults are declared (so localStorage can override them)
     SundayData.load();
 
-    // Seed Returning if not already in library, or fix artist if wrong
-    (function() {
-      var exists = SONGS.find(function(s) { return s.title.toLowerCase() === 'returning'; });
-      if (!exists) {
-        SundayData.addSong({ title: 'Returning', artist: 'Reuben Morgan', cat: 'homegrown', key: 'A', bpm: 68, mins: 5 });
-      } else if (exists.artist !== 'Reuben Morgan') {
-        exists.artist = 'Reuben Morgan';
-        SundayData.save();
-      }
-    })();
+    // (Removed the auto-seed of 'Returning' — songs only added by Reuben directly.)
 
     /* ==================== STATE ==================== */
     // Dynamic services — Sunday creates these conversationally
