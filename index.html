@@ -6079,7 +6079,7 @@
     //    so the new seed takes effect (NOTE: removes only seedable lists,
     //    not roster assignments). Remove this whole block when real
     //    onboarding ships.
-    var SEED_VERSION = 'demo-2026-05-23-d';
+    var SEED_VERSION = 'demo-2026-05-25-a-pco';
     try {
       var savedSeedVersion = localStorage.getItem('sunday_seed_version');
       if (savedSeedVersion !== SEED_VERSION) {
@@ -6128,69 +6128,70 @@
 
     // avail: array of week numbers (1-5) this person is available for the current month
     // (In production, the AI agent gathers this from each team member via chat)
-    // ── SEED: Selah team (demo data — May 2026). Role mapping from source:
-    //    worship_leader→WL+CO-WL (interchangeable pool — both slot pickers
-    //    show the same people), vocals→FLV, electric→Guitar, acoustic→Acoustic,
-    //    keys→Keys, drums→Drums, bass→Bass, md→MD, audio→FOH.
-    //    Production/Vision kept as tags (no slot in the roster matcher).
+    // ── SEED: Run Worship team — sourced from Reuben's Planning Center sheet
+    //    (May 2026). 54 unique people, 12 worship leaders (tier 1), 42 others.
+    //    Roles mapped from the sheet columns: Vocals→FLV, Electric→Guitar,
+    //    Accoustic→Acoustic, Audio→FOH, Lyrics→Vision. All WLs also tagged CO-WL
+    //    (interchangeable pool). Defaults: avail=[1,2,3,4,5], tier 1 for WLs / 2 for others.
+    //    Jake Schultz/Schulz/Shultz merged to single 'Jake Schultz'.
     //    localStorage overrides this on subsequent loads.
     var TEAM = [
       // Worship Leaders (tier 1) — tagged WL + CO-WL so they appear in either slot
-      {name:'Reuben Morgan',        roles:['WL','CO-WL','MD','Acoustic'],   tier:1, avail:[1,2,3,4,5], color:'#d4922a'},
-      {name:'Charli-Rose Whincop',  roles:['WL','CO-WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#b88878'},
-      {name:'Dani Marchio',         roles:['WL','CO-WL','FLV','Keys'],      tier:1, avail:[1,2,3,4,5], color:'#9ab870'},
-      {name:'Ezra Morgan',          roles:['WL','CO-WL','Acoustic'],        tier:1, avail:[1,2,3,4,5], color:'#7ab89a'},
-      {name:'Georgia Gourlay',      roles:['WL','CO-WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#c89a4a'},
-      {name:'Vivienne Williams',    roles:['WL','CO-WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#a878b8'},
-      {name:'Jade Jeyaratnam',      roles:['WL','CO-WL','FLV'],             tier:1, avail:[1,2,3,4,5], color:'#9ab870'},
-      {name:'Josh Osborne',         roles:['WL','CO-WL','Acoustic','FLV'],  tier:1, avail:[1,2,3,4,5], color:'#7878b8'},
-      // Vocals
-      {name:'Sarah Morgan',         roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#d49ab8'},
-      {name:'Hannah Stewart',       roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#b89a78'},
-      {name:'Mia Carter',           roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#9ab8c8'},
-      {name:'Lucy Dean',            roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#c8a878'},
-      {name:'Ben Tipo',             roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#788ab8'},
-      {name:'Maddy Klein',          roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#b878a8'},
-      {name:'Tim Walker',           roles:['FLV','Acoustic'],       tier:2, avail:[1,2,3,4,5], color:'#78b89a'},
-      {name:'Nina Adler',           roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#c89a8a'},
-      // Electric
-      {name:'Jones Morgan',         roles:['Guitar','Drums'],       tier:2, avail:[1,2,3,4,5], color:'#b88878'},
-      {name:'Sam Reid',             roles:['Guitar'],               tier:2, avail:[1,2,3,4,5], color:'#7898b8'},
-      {name:'Jake Mathers',         roles:['Guitar','Acoustic'],    tier:2, avail:[1,2,3,4,5], color:'#9a78b8'},
-      {name:'Will Hartman',         roles:['Guitar'],               tier:2, avail:[1,2,3,4,5], color:'#b8a878'},
-      // Acoustic
-      {name:'Tom Bryant',           roles:['Acoustic','FLV'],       tier:2, avail:[1,2,3,4,5], color:'#a8c878'},
-      {name:'Eli Marshall',         roles:['Acoustic'],             tier:2, avail:[1,2,3,4,5], color:'#7ab8a8'},
-      {name:'Caleb Wood',           roles:['Acoustic'],             tier:2, avail:[1,2,3,4,5], color:'#b89a8a'},
-      // Bass
-      {name:'Drew Phillips',        roles:['Bass'],                 tier:2, avail:[1,2,3,4,5], color:'#7878a8'},
-      {name:'Marcus Lim',           roles:['Bass'],                 tier:2, avail:[1,2,3,4,5], color:'#a8a878'},
-      {name:'Theo Singh',           roles:['Bass','Keys'],          tier:2, avail:[1,2,3,4,5], color:'#a87878'},
-      // Keys
-      {name:'Naomi Bell',           roles:['Keys','FLV'],           tier:2, avail:[1,2,3,4,5], color:'#c878a8'},
-      {name:'Owen Foster',          roles:['Keys'],                 tier:2, avail:[1,2,3,4,5], color:'#78b8c8'},
-      {name:'Ruth Zhang',           roles:['Keys','FLV'],           tier:2, avail:[1,2,3,4,5], color:'#b8c878'},
-      {name:'Ash Quinn',            roles:['Keys'],                 tier:2, avail:[1,2,3,4,5], color:'#a89ac8'},
-      // Drums
-      {name:'Levi Brooks',          roles:['Drums'],                tier:2, avail:[1,2,3,4,5], color:'#c89878'},
-      {name:'Toby Hayes',           roles:['Drums'],                tier:2, avail:[1,2,3,4,5], color:'#789ab8'},
-      {name:'Joel Park',            roles:['Drums'],                tier:2, avail:[1,2,3,4,5], color:'#b878c8'},
-      // Production / FOH / Vision
-      {name:'Pete Davies',          roles:['Production'],           tier:2, avail:[1,2,3,4,5], color:'#9aa8b8'},
-      {name:'Dan Cole',             roles:['Production','FOH'],     tier:2, avail:[1,2,3,4,5], color:'#a8b89a'},
-      {name:'Ash Turner',           roles:['Production','Vision'],  tier:2, avail:[1,2,3,4,5], color:'#b8a89a'},
-      {name:'Maya Robins',          roles:['Production'],           tier:2, avail:[1,2,3,4,5], color:'#9ab8b8'},
-      {name:'Chris Yeo',            roles:['FOH'],                  tier:2, avail:[1,2,3,4,5], color:'#a89a78'},
-      {name:'Lila Beck',            roles:['FOH'],                  tier:2, avail:[1,2,3,4,5], color:'#a878b8'},
-      {name:'Jack Ahern',           roles:['Vision'],               tier:2, avail:[1,2,3,4,5], color:'#78a8a8'},
-      {name:'Holly Ross',           roles:['Vision'],               tier:2, avail:[1,2,3,4,5], color:'#c8a89a'},
-      {name:'Sam Vega',             roles:['Vision'],               tier:2, avail:[1,2,3,4,5], color:'#9a78a8'},
-      // Extras
-      {name:'Anna Doyle',           roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#b89aa8'},
-      {name:'Riley Park',           roles:['FLV','Keys'],           tier:2, avail:[1,2,3,4,5], color:'#7898a8'},
-      {name:'Cass Hill',            roles:['FLV'],                  tier:2, avail:[1,2,3,4,5], color:'#a8b878'},
-      {name:'Finn Bates',           roles:['Acoustic','FLV'],       tier:2, avail:[1,2,3,4,5], color:'#a89a78'},
-      {name:'Jess Ko',              roles:['Drums','FLV'],          tier:2, avail:[1,2,3,4,5], color:'#c89ab8'}
+      {name:'Charli-Rose Whincop', roles:['WL','CO-WL'],                                  tier:1, avail:[1,2,3,4,5], color:'#d4922a'},
+      {name:'Dani Marchio',        roles:['WL','CO-WL'],                                  tier:1, avail:[1,2,3,4,5], color:'#b88878'},
+      {name:'Edmond Phiri',        roles:['WL','CO-WL'],                                  tier:1, avail:[1,2,3,4,5], color:'#9ab870'},
+      {name:'Ezra Morgan',         roles:['Acoustic','WL','CO-WL'],                       tier:1, avail:[1,2,3,4,5], color:'#7ab89a'},
+      {name:'Georgia Gourlay',     roles:['WL','CO-WL'],                                  tier:1, avail:[1,2,3,4,5], color:'#c89a4a'},
+      {name:'Jade Jeyaratnam',     roles:['WL','CO-WL'],                                  tier:1, avail:[1,2,3,4,5], color:'#a878b8'},
+      {name:'Jake Schultz',        roles:['Acoustic','MD','WL','CO-WL'],                  tier:1, avail:[1,2,3,4,5], color:'#9ab870'},
+      {name:'John De Leon',        roles:['WL','CO-WL'],                                  tier:1, avail:[1,2,3,4,5], color:'#7878b8'},
+      {name:'Nick Paton',          roles:['Keys','MD','WL','CO-WL'],                      tier:1, avail:[1,2,3,4,5], color:'#d49ab8'},
+      {name:'Reuben Morgan',       roles:['Acoustic','Guitar','MD','WL','CO-WL'],         tier:1, avail:[1,2,3,4,5], color:'#b89a78'},
+      {name:'Tim Dawson',          roles:['Acoustic','Bass','FLV','Guitar','WL','CO-WL'], tier:1, avail:[1,2,3,4,5], color:'#9ab8c8'},
+      {name:'Vivienne Williams',   roles:['Acoustic','WL','CO-WL'],                       tier:1, avail:[1,2,3,4,5], color:'#c8a878'},
+      // Everyone else (tier 2) — alphabetical for easy scan
+      {name:'Aaron',               roles:['Keys'],                                        tier:2, avail:[1,2,3,4,5], color:'#788ab8'},
+      {name:'Andrew Howell',       roles:['FLV','FOH'],                                   tier:2, avail:[1,2,3,4,5], color:'#b878a8'},
+      {name:'Ash Wilson',          roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#78b89a'},
+      {name:'Bella Mangunson',     roles:['Bass','Guitar','MD'],                          tier:2, avail:[1,2,3,4,5], color:'#c89a8a'},
+      {name:'Ben Hurrell',         roles:['FLV','Keys'],                                  tier:2, avail:[1,2,3,4,5], color:'#b88878'},
+      {name:'Brett Randall',       roles:['FOH'],                                         tier:2, avail:[1,2,3,4,5], color:'#7898b8'},
+      {name:'Calvin',              roles:['Bass'],                                        tier:2, avail:[1,2,3,4,5], color:'#9a78b8'},
+      {name:'Chloe R',             roles:['Keys'],                                        tier:2, avail:[1,2,3,4,5], color:'#b8a878'},
+      {name:'Corri Byrne',         roles:['Vision'],                                      tier:2, avail:[1,2,3,4,5], color:'#a8c878'},
+      {name:'Darren Venter',       roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#7ab8a8'},
+      {name:'David Hughes',        roles:['Bass'],                                        tier:2, avail:[1,2,3,4,5], color:'#b89a8a'},
+      {name:'Dean Ngugi',          roles:['Bass','MD'],                                   tier:2, avail:[1,2,3,4,5], color:'#7878a8'},
+      {name:'Eric Hutchens',       roles:['Bass','MD'],                                   tier:2, avail:[1,2,3,4,5], color:'#a8a878'},
+      {name:'Flynn McManus',       roles:['Vision'],                                      tier:2, avail:[1,2,3,4,5], color:'#a87878'},
+      {name:'George Whippy',       roles:['Bass'],                                        tier:2, avail:[1,2,3,4,5], color:'#c878a8'},
+      {name:'Hazzel De Leon',      roles:['Keys','MD'],                                   tier:2, avail:[1,2,3,4,5], color:'#78b8c8'},
+      {name:'Immie Morgan',        roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#b8c878'},
+      {name:'Issac Hananiah',      roles:['Keys'],                                        tier:2, avail:[1,2,3,4,5], color:'#a89ac8'},
+      {name:'Johanna Barker',      roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#c89878'},
+      {name:'Johnny Abraham',      roles:['Drums','FLV'],                                 tier:2, avail:[1,2,3,4,5], color:'#789ab8'},
+      {name:'Jonas R',             roles:['Acoustic'],                                    tier:2, avail:[1,2,3,4,5], color:'#b878c8'},
+      {name:'Jonas Whincop',       roles:['FOH'],                                         tier:2, avail:[1,2,3,4,5], color:'#9aa8b8'},
+      {name:'Jones Morgan',        roles:['Drums','FLV'],                                 tier:2, avail:[1,2,3,4,5], color:'#a8b89a'},
+      {name:'Josh O',              roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#b8a89a'},
+      {name:'Kayleigh Alexandre',  roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#9ab8b8'},
+      {name:'Keira Dawson',        roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#a89a78'},
+      {name:'Kelvin Williams',     roles:['FOH'],                                         tier:2, avail:[1,2,3,4,5], color:'#a878b8'},
+      {name:'Lara Soas',           roles:['Vision'],                                      tier:2, avail:[1,2,3,4,5], color:'#78a8a8'},
+      {name:'Lilly Langton',       roles:['Vision'],                                      tier:2, avail:[1,2,3,4,5], color:'#c8a89a'},
+      {name:'Maddie Byrne',        roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#9a78a8'},
+      {name:'Marius Kruger',       roles:['Drums'],                                       tier:2, avail:[1,2,3,4,5], color:'#b89aa8'},
+      {name:'Mia Assanti',         roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#7898a8'},
+      {name:'Nicole R',            roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#a8b878'},
+      {name:'Paul Cox',            roles:['Drums'],                                       tier:2, avail:[1,2,3,4,5], color:'#a89a78'},
+      {name:'Samantha Dadd',       roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#c89ab8'},
+      {name:'Scott Haslem',        roles:['FOH'],                                         tier:2, avail:[1,2,3,4,5], color:'#d4922a'},
+      {name:'Shara Kinney',        roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#b88878'},
+      {name:'Steve Pippet',        roles:['FOH'],                                         tier:2, avail:[1,2,3,4,5], color:'#9ab870'},
+      {name:'Tiff Randall',        roles:['FLV'],                                         tier:2, avail:[1,2,3,4,5], color:'#7ab89a'},
+      {name:'Tim Whincop',         roles:['Keys','MD'],                                   tier:2, avail:[1,2,3,4,5], color:'#c89a4a'},
+      {name:'Tom',                 roles:['Guitar'],                                      tier:2, avail:[1,2,3,4,5], color:'#a878b8'},
+      {name:'Winston Ng',          roles:['Guitar'],                                      tier:2, avail:[1,2,3,4,5], color:'#9ab870'}
     ];
 
     var PEOPLE = {};
