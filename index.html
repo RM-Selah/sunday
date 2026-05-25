@@ -7351,14 +7351,28 @@
       var activeYear = parseInt(activeParts[1]);
       var activeMonthIdx = MONTH_FULL.indexOf(activeMonthName);
 
-      // Helper: convert (year, monthIdx) → absolute month number (so we can do arithmetic).
-      function mnum(y, mi) { return y * 12 + mi; }
-      var activeM = mnum(activeYear, activeMonthIdx);
+      // Fixed window of 9 months centered on the active month: 3 back + active + 5 forward.
+      // Keeps the strip predictable — no matter how much roster history is on
+      // disk, the user always sees the same small, focused range. To dig
+      // further back, the ← arrow above the strip steps one month at a time.
+      var WINDOW_BACK = 3;
+      var WINDOW_FORWARD = 5;
 
-      // Months with roster data, derived from the roster keys.
-      var dataMonths = {}; // key: "Year-monthIdx" → true
+      // Walk back / forward from the active month, normalising year rollover.
+      function offsetMonth(yr, mi, delta) {
+        var total = yr * 12 + mi + delta;
+        return { yr: Math.floor(total / 12), mi: ((total % 12) + 12) % 12 };
+      }
+
+      // Build the chronological list of months to render.
+      var shown = [];
+      for (var d = -WINDOW_BACK; d <= WINDOW_FORWARD; d++) {
+        shown.push(offsetMonth(activeYear, activeMonthIdx, d));
+      }
+
+      // Months with roster data, so we can dot the pills that already have a build.
+      var dataMonths = {};
       Object.keys(state.roster).forEach(function(key) {
-        // Key format: "MonthName YYYY-..." (e.g. "May 2026-1-sun-am" or "April 2026-evt-...").
         var m = key.match(/^([A-Z][a-z]+)\s(\d{4})-/);
         if (!m) return;
         var midx = MONTH_FULL.indexOf(m[1]);
@@ -7367,24 +7381,8 @@
         dataMonths[m[2] + '-' + midx] = true;
       });
 
-      // Build the set of months to show: any month with data, the active month,
-      // and one month forward of the active month for planning ahead.
-      var showSet = {};
-      Object.keys(dataMonths).forEach(function(k) { showSet[k] = true; });
-      showSet[activeYear + '-' + activeMonthIdx] = true;
-      var nextIdx = activeMonthIdx + 1;
-      var nextYr = activeYear;
-      if (nextIdx > 11) { nextIdx = 0; nextYr += 1; }
-      showSet[nextYr + '-' + nextIdx] = true;
-
-      // Sort chronologically.
-      var shown = Object.keys(showSet)
-        .map(function(k) { var p = k.split('-'); return { yr: parseInt(p[0]), mi: parseInt(p[1]) }; })
-        .sort(function(a, b) { return mnum(a.yr, a.mi) - mnum(b.yr, b.mi); });
-
       var prevYr = null;
       shown.forEach(function(item) {
-        // Render year label when the year changes.
         if (item.yr !== prevYr) {
           if (prevYr !== null) {
             var div = document.createElement('div');
@@ -7400,7 +7398,7 @@
 
         var fullName = MONTH_FULL[item.mi];
         var abbr = MONTH_SHORT[item.mi];
-        var isActive = (fullName === activeMonthName && item.yr === activeYear);
+        var isActive = (item.mi === activeMonthIdx && item.yr === activeYear);
         var hasData = !!dataMonths[item.yr + '-' + item.mi];
 
         var pill = document.createElement('button');
