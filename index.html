@@ -9172,7 +9172,7 @@
       // Update status — show which model is being used
       var statusEl = document.getElementById('sidebar-chat-status');
       if (statusEl) {
-        var previewModel = SundayAPI.selectModel(apiScreen, msgText);
+        var previewModel = SundayAPI.selectModel(apiScreen, msg);
         statusEl.textContent = previewModel === SundayAPI.modelFast ? '⚡ thinking' : '✦ thinking';
         statusEl.title = previewModel === SundayAPI.modelFast ? 'Using Haiku (fast)' : 'Using Sonnet (smart)';
       }
