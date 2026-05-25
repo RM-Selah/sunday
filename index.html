@@ -5163,6 +5163,14 @@
         var prompt = 'You are Sunny — the worship pastor\'s right hand at ' + (heroState.churchName || 'The Local') + '. You work alongside ' + pastorName + '.\n\n';
         prompt += 'WHO YOU ARE: Warm, organised, efficient. Like a trusted friend who\'s great at this. You use first names. Short sentences. Contractions. You notice burnout before they do. You celebrate well ("Love that"). You never over-explain.\n\n';
 
+        prompt += 'BE DECISIVE — ACTIONS, NOT PROMISES:\n';
+        prompt += '- When the pastor asks you to change something concrete (add, remove, move, edit, update, rename, swap, rest, build, fill, promote, demote, mark, set), DO IT THIS TURN by emitting the matching JSON actions. Saying "On it" or "I\'ll do that" without actions = nothing happens. The JSON is what makes change land.\n';
+        prompt += '- For bulk asks ("move all the singers from Other to Vocal", "tier up Sam, Jordan, and Drew"), emit one action PER affected person/song in the SAME response. Don\'t batch across turns.\n';
+        prompt += '- Pick the right verb for the right object: UPDATE_PERSON to change someone\'s roles/tier/avail, DELETE_TEAM_MEMBER to remove from the team, REMOVE_PERSON to take out of one roster slot, REST_PERSON to give them a break across a week/month. They\'re NOT interchangeable.\n';
+        prompt += '- If a request genuinely needs no actions (a question, a hello, a "what do you think"), reply briefly in prose only. Use prose + actions together when announcing what you\'re doing ("Moving Ben to Keys" + UPDATE_PERSON).\n';
+        prompt += '- If the action you need doesn\'t exist in the toolkit below, say so plainly: "I can\'t do X yet — would you do that one manually?" Don\'t pretend or invent action types.\n';
+        prompt += '- If a name/song is ambiguous, ask ONE clarifying question instead of guessing. But if it\'s clear, just act.\n\n';
+
         prompt += 'ROSTERING RULES (read these — they prevent embarrassing mistakes):\n';
         prompt += '1. HISTORY IS GROUND TRUTH. Each team member\'s line shows two things: "tagged: X, Y" (what they could in theory do) and "HISTORY: X×n" (what they have actually been rostered for in 9 months of past data). When the two disagree, ALWAYS prefer history. If someone has 8+ services and never played a tagged role, treat that tag as aspirational, not real — don\'t put them in that slot.\n';
         prompt += '2. If someone\'s HISTORY shows ONE role exclusively (e.g. Ben Hurrell: Keys×12, no other history), that is their role. Don\'t experiment by putting them somewhere else.\n';
@@ -7335,59 +7343,78 @@
       if (!container) return;
       container.innerHTML = '';
 
+      var MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      var MONTH_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
       var activeParts = state.rosterMonth.split(' ');
       var activeMonthName = activeParts[0];
       var activeYear = parseInt(activeParts[1]);
+      var activeMonthIdx = MONTH_FULL.indexOf(activeMonthName);
 
-      // Collect all years that have any roster data (plus current year)
-      var yearsWithData = {};
+      // Helper: convert (year, monthIdx) → absolute month number (so we can do arithmetic).
+      function mnum(y, mi) { return y * 12 + mi; }
+      var activeM = mnum(activeYear, activeMonthIdx);
+
+      // Months with roster data, derived from the roster keys.
+      var dataMonths = {}; // key: "Year-monthIdx" → true
       Object.keys(state.roster).forEach(function(key) {
-        var m = key.match(/\s(\d{4})-/);
-        if (m) yearsWithData[parseInt(m[1])] = true;
+        // Key format: "MonthName YYYY-..." (e.g. "May 2026-1-sun-am" or "April 2026-evt-...").
+        var m = key.match(/^([A-Z][a-z]+)\s(\d{4})-/);
+        if (!m) return;
+        var midx = MONTH_FULL.indexOf(m[1]);
+        if (midx < 0) return;
+        if (!state.roster[key] || Object.keys(state.roster[key]).length === 0) return;
+        dataMonths[m[2] + '-' + midx] = true;
       });
-      yearsWithData[activeYear] = true;
-      // Also include next year if we're in Q4
-      if (new Date().getMonth() >= 9) yearsWithData[activeYear + 1] = true;
 
-      var years = Object.keys(yearsWithData).map(Number).sort();
-      var MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      var MONTH_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      // Build the set of months to show: any month with data, the active month,
+      // and one month forward of the active month for planning ahead.
+      var showSet = {};
+      Object.keys(dataMonths).forEach(function(k) { showSet[k] = true; });
+      showSet[activeYear + '-' + activeMonthIdx] = true;
+      var nextIdx = activeMonthIdx + 1;
+      var nextYr = activeYear;
+      if (nextIdx > 11) { nextIdx = 0; nextYr += 1; }
+      showSet[nextYr + '-' + nextIdx] = true;
 
-      years.forEach(function(yr, yi) {
-        if (yi > 0) {
-          var div = document.createElement('div');
-          div.className = 'month-strip-divider';
-          container.appendChild(div);
+      // Sort chronologically.
+      var shown = Object.keys(showSet)
+        .map(function(k) { var p = k.split('-'); return { yr: parseInt(p[0]), mi: parseInt(p[1]) }; })
+        .sort(function(a, b) { return mnum(a.yr, a.mi) - mnum(b.yr, b.mi); });
+
+      var prevYr = null;
+      shown.forEach(function(item) {
+        // Render year label when the year changes.
+        if (item.yr !== prevYr) {
+          if (prevYr !== null) {
+            var div = document.createElement('div');
+            div.className = 'month-strip-divider';
+            container.appendChild(div);
+          }
+          var yearLabel = document.createElement('span');
+          yearLabel.className = 'month-strip-year';
+          yearLabel.textContent = item.yr;
+          container.appendChild(yearLabel);
+          prevYr = item.yr;
         }
 
-        var yearLabel = document.createElement('span');
-        yearLabel.className = 'month-strip-year';
-        yearLabel.textContent = yr;
-        container.appendChild(yearLabel);
+        var fullName = MONTH_FULL[item.mi];
+        var abbr = MONTH_SHORT[item.mi];
+        var isActive = (fullName === activeMonthName && item.yr === activeYear);
+        var hasData = !!dataMonths[item.yr + '-' + item.mi];
 
-        MONTH_SHORT.forEach(function(abbr, idx) {
-          var fullName = MONTH_FULL[idx];
-          var monthKey = fullName + ' ' + yr;
-          var isActive = (fullName === activeMonthName && yr === activeYear);
-
-          // Check if this month has any roster data
-          var hasData = Object.keys(state.roster).some(function(k) {
-            return k.indexOf(monthKey + '-') === 0 && Object.keys(state.roster[k]).length > 0;
-          });
-
-          var pill = document.createElement('button');
-          pill.className = 'month-pill' + (isActive ? ' active' : '') + (hasData ? ' has-data' : '');
-          pill.textContent = abbr;
-          pill.title = fullName + ' ' + yr + (hasData ? ' — has roster data' : '');
-          pill.onclick = (function(mn, y) {
-            return function() {
-              state.rosterMonth = mn + ' ' + y;
-              state.rosterWeek = 1;
-              renderRoster();
-            };
-          })(fullName, yr);
-          container.appendChild(pill);
-        });
+        var pill = document.createElement('button');
+        pill.className = 'month-pill' + (isActive ? ' active' : '') + (hasData ? ' has-data' : '');
+        pill.textContent = abbr;
+        pill.title = fullName + ' ' + item.yr + (hasData ? ' — has roster data' : '');
+        pill.onclick = (function(mn, y) {
+          return function() {
+            state.rosterMonth = mn + ' ' + y;
+            state.rosterWeek = 1;
+            renderRoster();
+          };
+        })(fullName, item.yr);
+        container.appendChild(pill);
       });
     }
 
