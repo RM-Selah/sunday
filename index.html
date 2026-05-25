@@ -3864,18 +3864,27 @@
               <button class="month-nav-btn" id="next-month" onclick="window.nextMonth()">→</button>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
-              <button class="btn-suggest" onclick="window.exportRosterPDF()" style="padding:6px 12px; font-size:10px; opacity:0.7;" title="Export roster as PDF">PDF ↓</button>
               <div style="position:relative;">
-                <button class="btn-suggest" onclick="window.toggleRosterShareMenu(event)" style="padding:6px 12px; font-size:10px; opacity:0.7;" title="Share this roster">Share ↗</button>
-                <div id="roster-share-menu" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:rgba(15,15,22,0.96); border:1px solid var(--gb); border-radius:8px; padding:6px; min-width:220px; z-index:200; box-shadow:0 12px 32px rgba(0,0,0,0.45); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);">
-                  <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:6px 12px 4px;">This week</div>
-                  <button onclick="window.shareRosterImage(); window.closeRosterShareMenu();" style="display:block; width:100%; text-align:left; background:none; border:none; padding:9px 12px; font-size:12px; color:rgba(255,255,255,0.9); cursor:pointer; border-radius:5px; font-family:var(--font-display);" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'">📸 &nbsp; Share as image</button>
-                  <button onclick="window.shareRosterWhatsApp(); window.closeRosterShareMenu();" style="display:block; width:100%; text-align:left; background:none; border:none; padding:9px 12px; font-size:12px; color:rgba(255,255,255,0.9); cursor:pointer; border-radius:5px; font-family:var(--font-display);" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'">💬 &nbsp; WhatsApp (text)</button>
-                  <button onclick="window.shareRosterEmail(); window.closeRosterShareMenu();" style="display:block; width:100%; text-align:left; background:none; border:none; padding:9px 12px; font-size:12px; color:rgba(255,255,255,0.9); cursor:pointer; border-radius:5px; font-family:var(--font-display);" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'">📧 &nbsp; Email</button>
-                  <div style="height:1px; background:rgba(255,255,255,0.08); margin:6px 8px;"></div>
-                  <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:6px 12px 4px;">Whole month</div>
-                  <button onclick="window.exportMonthOverviewPDF(); window.closeRosterShareMenu();" style="display:block; width:100%; text-align:left; background:none; border:none; padding:9px 12px; font-size:12px; color:rgba(255,255,255,0.9); cursor:pointer; border-radius:5px; font-family:var(--font-display);" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'">🗓 &nbsp; Month overview PDF</button>
+                <button class="btn-suggest" onclick="window.toggleRosterShareMenu(event)" style="padding:6px 12px; font-size:10px; opacity:0.85;" title="Share this roster">Share ↗</button>
+                <div id="roster-share-menu" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:#1c1c1e; border:1px solid rgba(255,255,255,0.12); border-radius:12px; min-width:240px; z-index:200; box-shadow:0 8px 32px rgba(0,0,0,0.6); overflow:hidden;">
+                  <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:10px 14px 4px;">This week</div>
+                  <button onclick="window.shareRosterAs('image')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+                    <span style="font-size:20px;">📸</span> Share image
+                  </button>
+                  <button onclick="window.shareRosterAs('pdf')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+                    <span style="font-size:20px;">📄</span> Share PDF
+                  </button>
+                  <div style="height:1px; background:rgba(255,255,255,0.08); margin:6px 0;"></div>
+                  <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:6px 14px 4px;">Whole month</div>
+                  <button onclick="window.shareRosterAs('month-pdf')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+                    <span style="font-size:20px;">🗓</span> Share month PDF
+                  </button>
+                  <div style="height:1px; background:rgba(255,255,255,0.08); margin:6px 0;"></div>
+                  <button onclick="window.shareRosterAs('text')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:rgba(255,255,255,0.6); cursor:pointer; text-align:left;">
+                    <span style="font-size:20px;">📋</span> Copy as text
+                  </button>
                 </div>
+                <div id="roster-share-hint" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:rgba(0,0,0,0.85); color:rgba(255,255,255,0.9); padding:10px 14px; border-radius:8px; font-size:11px; font-family:var(--font-display); white-space:nowrap; z-index:201; pointer-events:none;"></div>
               </div>
               <button class="btn-suggest" onclick="window.startBuildMonth()" style="padding:6px 14px; font-size:11px;">✦ Build month</button>
               <div class="service-toggle" id="service-toggle"></div>
@@ -10635,20 +10644,26 @@
         ctx.closePath();
       },
 
-      // Generate Roster PDF — thin wrapper over the shared renderer
-      generateRosterPDF: function(weekId, serviceId) {
-        this._renderRoster(weekId, serviceId, 'pdf');
+      // Generate Roster PDF — thin wrapper over the shared renderer.
+      // Pass returnBlob=true to get { blob, filename } back instead of
+      // triggering a download (used by the unified share flow).
+      generateRosterPDF: function(weekId, serviceId, returnBlob) {
+        return this._renderRoster(weekId, serviceId, 'pdf', returnBlob);
       },
 
-      // Generate a PNG of the current roster and share/download it.
-      // Uses the Web Share API on mobile (lands in WhatsApp / iMessage / etc.
-      // share sheet) and falls back to a download elsewhere.
-      generateRosterImage: function(weekId, serviceId) {
-        this._renderRoster(weekId, serviceId, 'image');
+      // Generate a PNG of the current roster.
+      // - returnBlob=false (default): use Web Share API, else download.
+      // - returnBlob=true: return a Promise resolving to { blob, filename }
+      //   so the caller can route it through the unified share flow.
+      generateRosterImage: function(weekId, serviceId, returnBlob) {
+        return this._renderRoster(weekId, serviceId, 'image', returnBlob);
       },
 
       // Shared roster card renderer. output = 'pdf' | 'image'.
-      _renderRoster: function(weekId, serviceId, output) {
+      // When returnBlob is true, returns:
+      //   - PDF:   { blob, filename } synchronously
+      //   - image: Promise resolving to { blob, filename }
+      _renderRoster: function(weekId, serviceId, output, returnBlob) {
         var self = this;
         var svcId = serviceId || state.rosterService || 'default';
         var wk = weekId || state.rosterWeek;
@@ -10817,9 +10832,18 @@
         ctx.font = '300 10px "DM Sans", sans-serif';
         ctx.fillText('Generated by Sunday  ·  ' + new Date().toLocaleDateString(), 50, footerY);
 
-        // Output: PDF (download) or PNG (share via Web Share API / download)
+        // Output: PDF or PNG. When returnBlob is true the caller wants the
+        // blob so it can hand it to navigator.share() — used by the unified
+        // share flow. Otherwise, fall back to the legacy share/download path.
         var baseName = (churchName || 'Sunday') + ' — ' + serviceName + ' Roster — ' + weekLabel;
         if (output === 'image') {
+          if (returnBlob) {
+            return new Promise(function(resolve) {
+              canvas.toBlob(function(blob) {
+                resolve(blob ? { blob: blob, filename: baseName + '.png' } : null);
+              }, 'image/png');
+            });
+          }
           canvas.toBlob(function(blob) {
             if (!blob) return;
             var file = new File([blob], baseName + '.png', { type: 'image/png' });
@@ -10834,15 +10858,16 @@
               setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
             }
           }, 'image/png');
-        } else {
-          self._canvasToPDF(canvas, baseName);
+          return null;
         }
+        return self._canvasToPDF(canvas, baseName, returnBlob);
       },
 
       // Generate a Month Overview PDF: every Sunday of the current month
       // for the current service, as a grid of role × week. Single page,
       // designed to be the artifact you share after a rostering meeting.
-      generateMonthOverviewPDF: function(monthName, serviceId) {
+      // Pass returnBlob=true to get back { blob, filename } for the share flow.
+      generateMonthOverviewPDF: function(monthName, serviceId, returnBlob) {
         var self = this;
         var month = monthName || state.rosterMonth;
         var svcId = serviceId || state.rosterService || (services[0] && services[0].id) || 'default';
@@ -10855,8 +10880,8 @@
 
         var weeks = getSundaysForMonth(month); // [{num, date}, ...]
         if (weeks.length === 0) {
-          alert('No weeks found for ' + month);
-          return;
+          if (!returnBlob) alert('No weeks found for ' + month);
+          return null;
         }
 
         // Slots in display order (all slots; empty rows auto-trimmed below)
@@ -11016,7 +11041,7 @@
         ctx.font = '300 10px "DM Sans", sans-serif';
         ctx.fillText('Generated by Sunday  ·  ' + new Date().toLocaleDateString(), 50, H - 25);
 
-        self._canvasToPDF(canvas, (churchName || 'Sunday') + ' — ' + month + ' — ' + serviceName + ' (Month Overview)');
+        return self._canvasToPDF(canvas, (churchName || 'Sunday') + ' — ' + month + ' — ' + serviceName + ' (Month Overview)', returnBlob);
       },
 
       // Generate Set List PDF. Pass returnBlob=true to return { blob, filename }
@@ -11299,23 +11324,111 @@
       return { text: lines.join('\n'), subject: churchName + ' — ' + serviceName + ' — ' + (weekLabel || state.rosterMonth) };
     }
 
-    window.shareRosterWhatsApp = function() {
-      var built = buildRosterShareText();
-      window.open('https://wa.me/?text=' + encodeURIComponent(built.text), '_blank');
+    // ── Roster share — unified flow, mirrors shareSetAs ────────────────
+    // Formats: 'image' (this week PNG), 'pdf' (this week PDF),
+    //          'month-pdf' (whole-month overview PDF), 'text' (clipboard).
+    // Each format tries the native share sheet first (iPhone, iPad,
+    // Mac Safari) so the user lands in iMessage / WhatsApp / Mail /
+    // AirDrop with the file attached. On Mac Chrome we fall back to
+    // clipboard (image) or download (PDFs). We never auto-open a target
+    // app — same reasoning as the set-list share.
+
+    window.shareRosterAs = function(format) {
+      window.closeRosterShareMenu();
+      var hint = document.getElementById('roster-share-hint');
+
+      if (format === 'text') {
+        var built = buildRosterShareText();
+        navigator.clipboard.writeText(built.text)
+          .then(function() { flashRosterHint(hint, 'Text copied ✓ — paste anywhere (⌘V)'); })
+          .catch(function() { flashRosterHint(hint, 'Copy failed — try again'); });
+        return;
+      }
+
+      if (format === 'image') {
+        flashRosterHint(hint, 'Preparing image…', 0);
+        var imgResult = SundayPDF.generateRosterImage(undefined, undefined, true);
+        if (imgResult && typeof imgResult.then === 'function') {
+          imgResult.then(function(r) {
+            if (!r || !r.blob) { flashRosterHint(hint, 'Image generation failed'); return; }
+            dispatchRosterImage(r.blob, r.filename, hint);
+          });
+        } else if (imgResult && imgResult.blob) {
+          dispatchRosterImage(imgResult.blob, imgResult.filename, hint);
+        } else {
+          flashRosterHint(hint, 'Image generation failed');
+        }
+        return;
+      }
+
+      if (format === 'pdf' || format === 'month-pdf') {
+        flashRosterHint(hint, 'Generating PDF…', 0);
+        var result;
+        try {
+          result = (format === 'pdf')
+            ? SundayPDF.generateRosterPDF(undefined, undefined, true)
+            : SundayPDF.generateMonthOverviewPDF(undefined, undefined, true);
+        } catch (e) { console.error('Roster PDF failed:', e); }
+        if (!result || !result.blob) {
+          flashRosterHint(hint, 'PDF generation failed');
+          return;
+        }
+        dispatchRosterPDF(result.blob, result.filename, hint);
+      }
     };
 
-    window.shareRosterEmail = function() {
-      var built = buildRosterShareText();
-      window.location.href = 'mailto:?subject=' + encodeURIComponent(built.subject) + '&body=' + encodeURIComponent(built.text);
-    };
+    function dispatchRosterImage(blob, filename, hint) {
+      var file = new File([blob], filename, { type: 'image/png' });
+      if (typeof canShareFiles === 'function' && canShareFiles([file])) {
+        navigator.share({ files: [file], title: 'Roster' })
+          .then(function() { flashRosterHint(hint, 'Shared ✓'); })
+          .catch(function() { hint && (hint.style.display = 'none'); });
+        return;
+      }
+      if (typeof canWriteClipboardImage === 'function' && canWriteClipboardImage()) {
+        var item = new ClipboardItem({ 'image/png': blob });
+        navigator.clipboard.write([item])
+          .then(function() {
+            flashRosterHint(hint, 'Image copied ✓ — paste into Messages / WhatsApp / Mail (⌘V)', 6000);
+          })
+          .catch(function(e) {
+            console.warn('Roster image clipboard write failed:', e);
+            downloadBlob(blob, filename);
+            flashRosterHint(hint, 'Image downloaded — drag into your message');
+          });
+        return;
+      }
+      downloadBlob(blob, filename);
+      flashRosterHint(hint, 'Image downloaded — drag into your message');
+    }
 
-    window.shareRosterImage = function() {
-      SundayPDF.generateRosterImage();
-    };
+    function dispatchRosterPDF(blob, filename, hint) {
+      var file = new File([blob], filename, { type: 'application/pdf' });
+      if (typeof canShareFiles === 'function' && canShareFiles([file])) {
+        navigator.share({ files: [file], title: filename })
+          .then(function() { flashRosterHint(hint, 'Shared ✓'); })
+          .catch(function() { hint && (hint.style.display = 'none'); });
+        return;
+      }
+      downloadBlob(blob, filename);
+      flashRosterHint(hint, 'PDF downloaded — attach to Messages / WhatsApp / Mail');
+    }
 
-    window.exportMonthOverviewPDF = function() {
-      SundayPDF.generateMonthOverviewPDF();
-    };
+    function flashRosterHint(hint, text, ms) {
+      if (!hint) return;
+      hint.textContent = text;
+      hint.style.display = 'block';
+      if (ms === 0) return; // persistent ("Preparing…")
+      setTimeout(function() { hint.style.display = 'none'; }, ms || 4000);
+    }
+
+    // Legacy shims — old call sites still reference these names. They route
+    // through the new unified flow so behaviour is consistent everywhere.
+    window.shareRosterImage = function() { window.shareRosterAs('image'); };
+    window.shareRosterWhatsApp = function() { window.shareRosterAs('text'); };
+    window.shareRosterEmail = function() { window.shareRosterAs('text'); };
+    window.exportMonthOverviewPDF = function() { window.shareRosterAs('month-pdf'); };
+    window.exportRosterPDF = function() { window.shareRosterAs('pdf'); };
 
     // Dropdown toggle for the roster Share menu
     window.toggleRosterShareMenu = function(evt) {
@@ -11536,15 +11649,19 @@
       flashHint(hint, 'PDF downloaded — attach to Messages, WhatsApp, or Mail');
     }
 
+    // Exposed on window so the roster share flow in the main app script
+    // can reuse them (the helpers are defined in a different <script>).
     function canShareFiles(files) {
       return !!(navigator.share && navigator.canShare && navigator.canShare({ files: files }));
     }
+    window.canShareFiles = canShareFiles;
 
     function canWriteClipboardImage() {
       return typeof ClipboardItem !== 'undefined'
           && !!navigator.clipboard
           && typeof navigator.clipboard.write === 'function';
     }
+    window.canWriteClipboardImage = canWriteClipboardImage;
 
     function downloadBlob(blob, filename) {
       var url = URL.createObjectURL(blob);
@@ -11552,6 +11669,7 @@
       a.href = url; a.download = filename; a.click();
       URL.revokeObjectURL(url);
     }
+    window.downloadBlob = downloadBlob;
 
     function flashHint(hint, text, ms) {
       hint.textContent = text;
