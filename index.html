@@ -3822,6 +3822,9 @@
             <button onclick="window.shareVia('email')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
               <span style="font-size:20px;">✉️</span> Email
             </button>
+            <button onclick="window.shareVia('pdf')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+              <span style="font-size:20px;">📄</span> Download PDF
+            </button>
             <button onclick="window.shareVia('copy-image')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
               <span style="font-size:20px;">📸</span> Copy image
             </button>
@@ -11299,6 +11302,19 @@
           hint.style.display = 'block';
           setTimeout(function() { hint.style.display = 'none'; }, 4000);
         });
+        return;
+      }
+
+      if (method === 'pdf') {
+        hint.textContent = 'Generating PDF…';
+        hint.style.display = 'block';
+        try {
+          window.exportSetPDF();
+          hint.textContent = 'PDF downloaded — attach it to iMessage, WhatsApp, or email';
+          setTimeout(function() { hint.style.display = 'none'; }, 5000);
+        } catch (e) {
+          hint.textContent = 'PDF failed: ' + e.message;
+        }
         return;
       }
 
