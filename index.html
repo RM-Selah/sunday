@@ -1423,9 +1423,9 @@
       background: transparent;
       font-family: var(--font-display);
       font-size: 11px;
-      font-weight: 500;
+      font-weight: 600;
       letter-spacing: 0.3px;
-      color: var(--dim);
+      color: var(--mid);
       cursor: pointer;
       transition: all 0.15s;
       flex-shrink: 0;
@@ -6329,13 +6329,14 @@
     //    so the new seed takes effect (NOTE: removes only seedable lists,
     //    not roster assignments). Remove this whole block when real
     //    onboarding ships.
-    var SEED_VERSION = 'demo-2026-05-26-the-local-list';
+    var SEED_VERSION = 'demo-2026-05-26-sun-am-pm';
     try {
       var savedSeedVersion = localStorage.getItem('sunday_seed_version');
       if (savedSeedVersion !== SEED_VERSION) {
-        // Surgical wipe — only refresh songs, preserve team, services,
-        // and any roster work the user has started.
+        // Refresh songs + services so seed updates land. Team and roster
+        // (the data users actually customise) are preserved.
         localStorage.removeItem('sunday_songs');
+        localStorage.removeItem('sunday_services');
         localStorage.setItem('sunday_seed_version', SEED_VERSION);
       }
     } catch(e) {}
@@ -6462,7 +6463,8 @@
     // ── SEED: one recurring Sunday service so the roster page is usable on first visit.
     //    Remove or override when real onboarding ships.
     var services = window.services = [
-      { id: 'sun-am', name: 'Sunday AM', day: 'Sunday', time: '9:30am', recurring: true, sort_order: 0 }
+      { id: 'sun-am', name: 'Sunday AM', day: 'Sunday', time: '9:30am', recurring: true, sort_order: 0 },
+      { id: 'sun-pm', name: 'Sunday PM', day: 'Sunday', time: '6:00pm', recurring: true, sort_order: 1 }
     ];
 
     var state = window.state = {
