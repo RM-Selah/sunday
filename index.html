@@ -3667,7 +3667,7 @@
   <div id="app">
     <!-- TOPBAR -->
     <div class="topbar">
-      <div class="logo">Run <span class="logo-practice">Worship</span></div>
+      <div class="logo">The <span class="logo-practice">Local</span></div>
       <span style="font-size:10px; color:var(--dim); font-family:var(--font-display); letter-spacing:1px; opacity:0.4; margin-left:-8px;">v3.6</span>
       <span id="api-status" style="font-size:9px; font-family:var(--font-display); font-weight:500; letter-spacing:0.8px; margin-left:8px; padding:3px 10px; border-radius:20px; opacity:0.6; background:rgba(255,255,255,0.04); color:var(--dim);">local</span>
       <div class="divider-v"></div>
@@ -5138,7 +5138,7 @@
         var pastorName = '';
         try { pastorName = localStorage.getItem('sunday_pastor') || heroState.pastorName || 'the pastor'; } catch(e) { pastorName = 'the pastor'; }
 
-        var prompt = 'You are Sunny — the worship pastor\'s right hand at ' + (heroState.churchName || 'Run Worship') + '. You work alongside ' + pastorName + '.\n\n';
+        var prompt = 'You are Sunny — the worship pastor\'s right hand at ' + (heroState.churchName || 'The Local') + '. You work alongside ' + pastorName + '.\n\n';
         prompt += 'WHO YOU ARE: Warm, organised, efficient. Like a trusted friend who\'s great at this. You use first names. Short sentences. Contractions. You notice burnout before they do. You celebrate well ("Love that"). You never over-explain.\n\n';
 
         prompt += 'ROSTERING RULES (read these — they prevent embarrassing mistakes):\n';
@@ -6259,7 +6259,7 @@
 
     // avail: array of week numbers (1-5) this person is available for the current month
     // (In production, the AI agent gathers this from each team member via chat)
-    // ── SEED: Run Worship team — sourced from Reuben's Planning Center sheet
+    // ── SEED: The Local team — sourced from Reuben's Planning Center sheet
     //    (May 2026). 54 unique people, 12 worship leaders (tier 1), 42 others.
     //    Roles mapped from the sheet columns: Vocals→FLV, Electric→Guitar,
     //    Accoustic→Acoustic, Audio→FOH, Lyrics→Vision. All WLs also tagged CO-WL
@@ -8765,7 +8765,7 @@
       if (!card) return;
 
       // Gather data
-      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Run Worship';
+      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'The Local';
       var totalMins = Math.round(state.set.reduce(function(a, s) { return a + (s.mins || 4.5); }, 0));
       var allSongs = state.set.concat(state.ministrySongs || []);
 
@@ -8852,7 +8852,7 @@
     };
 
     window.shareSetWhatsApp = function() {
-      var lines = ['\u{1F3B5} *' + ((typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Run Worship') + ' \u2014 Set List*\n'];
+      var lines = ['\u{1F3B5} *' + ((typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'The Local') + ' \u2014 Set List*\n'];
       state.set.forEach(function(s, i) {
         lines.push((i+1) + '. ' + s.title + (s.key ? ' (' + s.key + ')' : ''));
       });
@@ -8866,7 +8866,7 @@
     };
 
     window.shareSetEmail = function() {
-      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Run Worship';
+      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'The Local';
       var subject = churchName + ' \u2014 Sunday Set List';
       var lines = [churchName + ' \u2014 Sunday Set List\n'];
       state.set.forEach(function(s, i) {
@@ -8882,7 +8882,7 @@
     };
 
     window.shareSetIMessage = function() {
-      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Run Worship';
+      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'The Local';
       var lines = ['🎵 ' + churchName + ' — Set List\n'];
       state.set.forEach(function(s, i) {
         lines.push((i+1) + '. ' + s.title + (s.key ? ' (' + s.key + ')' : ''));
@@ -9954,7 +9954,7 @@
     /* ==================== HERO LANDING / ONBOARDING ==================== */
     var heroState = {
       step: 0, // 0=greeting, 1=church name, 2=services, 3=team, 4=songs, 5=done
-      churchName: 'Run Worship',
+      churchName: 'The Local',
       services: 'AM',
       teamMembers: [],
       songs: [],
@@ -11251,7 +11251,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
     function buildSetText() {
-      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Run Worship';
+      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'The Local';
       var lines = ['🎵 ' + churchName + ' — Set List\n'];
       state.set.forEach(function(s, i) {
         lines.push((i+1) + '. ' + s.title + (s.key ? ' (' + s.key + ')' : ''));
@@ -11280,7 +11280,7 @@
     }
 
     function openTargetApp(method) {
-      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Run Worship';
+      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'The Local';
       if (method === 'imessage') {
         window.open('sms:&body=', '_blank');
       } else if (method === 'whatsapp') {
