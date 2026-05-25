@@ -5573,12 +5573,36 @@
 
             case 'ASSIGN':
               if (p.person && p.role) {
+                // Hard guard: reject the assignment if the person isn't on the
+                // team OR doesn't have a role eligible for the slot. Belts AND
+                // braces — the AI is told the rules in the system prompt, but
+                // we enforce them in code so a hallucinated ASSIGN never lands.
+                var __slotEligibility = {
+                  WL: ['WL','CO-WL'], 'CO-WL': ['WL','CO-WL'],
+                  FLV1: ['FLV'], FLV2: ['FLV'], FLV3: ['FLV'], FLV4: ['FLV'],
+                  MD: ['MD'], KEYS1: ['Keys'], KEYS2: ['Keys'],
+                  ACOUSTIC: ['Acoustic'], GUITAR1: ['Guitar'], GUITAR2: ['Guitar'],
+                  BASS: ['Bass'], DRUMS: ['Drums'],
+                  FOH: ['FOH'], LYRICS: ['Vision','FOH'],
+                  PROD: ['Production'], VISION: ['Vision']
+                };
+                var __member = TEAM.find(function(t) { return t.name === p.person; });
+                if (!__member) {
+                  console.warn('Sunday: rejected ASSIGN — unknown person:', p.person);
+                  try { addSidebarMsg('Hmm — I don\'t know <strong>' + esc(p.person) + '</strong>. Could you double-check the name?', 'sunday'); } catch(e) {}
+                  break;
+                }
+                var __eligibleRoles = __slotEligibility[p.role];
+                if (__eligibleRoles && !__member.roles.some(function(r) { return __eligibleRoles.indexOf(r) >= 0; })) {
+                  console.warn('Sunday: rejected ASSIGN — role mismatch:', p.person, 'tagged', __member.roles, 'cannot fill', p.role);
+                  try { addSidebarMsg('Hmm — <strong>' + esc(p.person) + '</strong> isn\'t on ' + esc(p.role) + ' (their roles: ' + esc(__member.roles.join(', ')) + '). Skipping that one.', 'sunday'); } catch(e) {}
+                  break;
+                }
                 var aWeek = p.week || state.rosterWeek;
                 var aSvc = p.service || state.rosterService || 'default';
                 var aKey = state.rosterMonth + '-' + aWeek + '-' + aSvc;
                 if (!state.roster[aKey]) state.roster[aKey] = {};
                 state.roster[aKey][p.role] = p.person;
-                // Capture Sunny's one-line reasoning if provided. Surfaced on slot hover.
                 if (p.because && String(p.because).trim()) {
                   if (!state.rosterBecause) state.rosterBecause = {};
                   if (!state.rosterBecause[aKey]) state.rosterBecause[aKey] = {};
@@ -7560,11 +7584,15 @@
         '<div class="position-initials">' + (filled ? firstName : label) + '</div>' +
         '<div class="position-name">' + (filled ? label : '') + '</div>';
 
-      // Add load dots ring around the circle — 10 positions, lit = rostered
+      // Add load dots ring around the circle. Each lit dot = one service this
+      // person is rostered on THIS MONTH. Total = (weeks in month × services).
       if (filled && person) {
         var loadCounts = getMonthLoadCounts();
         var count = loadCounts[person] || 0;
-        var totalSlots = 10; // 5 weeks × 2 services
+        // Dynamic total — actually achievable rostering count this month
+        var __weeksThisMonth = getSundaysForMonth(state.rosterMonth).length || 4;
+        var __svcCount = (services && services.length) ? services.length : 1;
+        var totalSlots = Math.max(count, __weeksThisMonth * __svcCount);
         var dotSize = 5;
         var radius = 35; // just outside the 64px circle
         var cx = 32; var cy = 32;
@@ -7773,12 +7801,33 @@
     function generateMonthRoster(month, week, excludeNames) {
       var roster = {};
       var used = new Set();
-      // Seed used set with names from other service so we don't double-book
       if (excludeNames) {
         excludeNames.forEach(function(n) { used.add(n); });
       }
 
-      // Helper: find best available person for a role this week
+      // Pre-compute historical role frequency for ALL people from state.roster.
+      // We use this to bias picks toward people who've actually played the role
+      // before — Hazzel (Keys×13) beats a brand-new Keys player with the same tier.
+      var __slotToRole = { 'WL':'WL','CO-WL':'CO-WL',
+        'FLV1':'FLV','FLV2':'FLV','FLV3':'FLV','FLV4':'FLV',
+        'MD':'MD','KEYS1':'Keys','KEYS2':'Keys',
+        'ACOUSTIC':'Acoustic','GUITAR1':'Guitar','GUITAR2':'Guitar',
+        'BASS':'Bass','DRUMS':'Drums','FOH':'FOH','LYRICS':'Vision','VISION':'Vision','PROD':'Production' };
+      var __histRoleByPerson = {};
+      Object.keys(state.roster || {}).forEach(function(__rk) {
+        var __e = state.roster[__rk] || {};
+        Object.keys(__e).forEach(function(__slot) {
+          var __n = __e[__slot];
+          if (!__n) return;
+          var __r = __slotToRole[__slot] || __slot;
+          if (!__histRoleByPerson[__n]) __histRoleByPerson[__n] = {};
+          __histRoleByPerson[__n][__r] = (__histRoleByPerson[__n][__r] || 0) + 1;
+        });
+      });
+
+      // Helper: find best available person for a role this week.
+      // Sort key: (1) lower tier first (worship-leaders before developing), then
+      // (2) MORE historical experience in this exact role first.
       function pickAvailable(roleFilter, exclude) {
         var candidates = TEAM
           .filter(function(m) {
@@ -7787,14 +7836,28 @@
               m.avail.indexOf(week) >= 0 &&
               m.roles.some(function(r) { return roleFilter.indexOf(r) >= 0; });
           })
-          .sort(function(a, b) { return a.tier - b.tier; });
+          .sort(function(a, b) {
+            if (a.tier !== b.tier) return a.tier - b.tier;
+            // History tie-break: best matching role frequency across the filter
+            var ah = __histRoleByPerson[a.name] || {};
+            var bh = __histRoleByPerson[b.name] || {};
+            var aScore = roleFilter.reduce(function(s, r) { return s + (ah[r] || 0); }, 0);
+            var bScore = roleFilter.reduce(function(s, r) { return s + (bh[r] || 0); }, 0);
+            return bScore - aScore;
+          });
         return candidates.length > 0 ? candidates[0].name : null;
       }
 
       // Fill slots in priority order
-      // 1. Worship Leader — rotate through available WLs, offset for PM so different leader
+      // 1. Worship Leader — rotate through available WLs, offset for PM so
+      //    different leader. Tier first, then historical WL appearances.
       var wlPool = TEAM.filter(function(m) { return m.roles.indexOf('WL') >= 0 && !used.has(m.name) && m.avail.indexOf(week) >= 0; })
-        .sort(function(a, b) { return a.tier - b.tier; });
+        .sort(function(a, b) {
+          if (a.tier !== b.tier) return a.tier - b.tier;
+          var ah = (__histRoleByPerson[a.name] || {}).WL || 0;
+          var bh = (__histRoleByPerson[b.name] || {}).WL || 0;
+          return bh - ah;
+        });
       var wlIdx = (week - 1) % Math.max(wlPool.length, 1);
       if (wlPool.length > 0) {
         roster.WL = wlPool[wlIdx].name;
