@@ -4540,6 +4540,7 @@
           localStorage.setItem('sunday_songs', JSON.stringify(SONGS));
           localStorage.setItem('sunday_services', JSON.stringify(services));
           localStorage.setItem('sunday_roster', JSON.stringify(state.roster));
+          if (state.rosterBecause) localStorage.setItem('sunday_roster_because', JSON.stringify(state.rosterBecause));
         } catch(e) {}
       },
       load: function() {
@@ -4563,6 +4564,8 @@
           }
           var r = localStorage.getItem('sunday_roster');
           if (r) { state.roster = JSON.parse(r); }
+          var rb = localStorage.getItem('sunday_roster_because');
+          if (rb) { try { state.rosterBecause = JSON.parse(rb) || {}; } catch(e2) { state.rosterBecause = {}; } }
         } catch(e) {}
       },
       hasTeam: function() {
@@ -5128,7 +5131,7 @@
         prompt += '{"type":"SET_ROSTER_MONTH","params":{"month":"May 2026"}} — switch active roster to a different month. Always do this BEFORE BUILD_MONTH if the user asks for a different month.\n';
         prompt += '{"type":"BUILD_MONTH"} — fill entire CURRENT roster month automatically across all recurring services. Chain after SET_ROSTER_MONTH if switching months.\n';
         prompt += '{"type":"FILL_WEEK","params":{"week":1,"service":"sun-am"}} — auto-fill one service slot. For events: {"week":"evt-easter-sunday","service":"easter-sunday"}\n';
-        prompt += '{"type":"ASSIGN","params":{"person":"Name","role":"SLOT","week":1,"service":"sun-am"}} — Slots: WL CO-WL DRUMS BASS KEYS1 KEYS2 GUITAR1 ACOUSTIC MD FOH FLV1 FLV2 FLV3 FLV4. For events: week="evt-EVENT_ID" service="EVENT_ID"\n';
+        prompt += '{"type":"ASSIGN","params":{"person":"Name","role":"SLOT","week":1,"service":"sun-am","because":"one short sentence on why"}} — Slots: WL CO-WL DRUMS BASS KEYS1 KEYS2 GUITAR1 ACOUSTIC MD FOH FLV1 FLV2 FLV3 FLV4 PROD LYRICS VISION. For events: week="evt-EVENT_ID" service="EVENT_ID". The `because` field is your one-line reasoning — it appears when the pastor hovers the slot. Examples: "Drew\'s been on every week — finally a rest." / "Marcus originated this song." / "Pairing Sam with Jordan, you said they sound great together." Always include `because` when you can name a reason. Skip it if there really is no reason (e.g. only one option available).\n';
         prompt += '{"type":"REMOVE_PERSON","params":{"person":"Name","week":1,"service":"sun-am"}}\n';
         prompt += '{"type":"REST_PERSON","params":{"person":"Name","scope":"month"}} or scope:"week" with week:1\n';
         prompt += '{"type":"CLEAR_WEEK","params":{"week":1}}\n';
@@ -5196,7 +5199,7 @@
         prompt += 'User: "auto-fill the Easter Sunday roster"\n';
         prompt += '{"response":"Filled it out — have a look and tweak anything.","actions":[{"type":"FILL_WEEK","params":{"week":"evt-easter-sunday","service":"easter-sunday"}}]}\n\n';
         prompt += 'User: "Jordan leading Easter Friday, Sam on bass, fill the rest"\n';
-        prompt += '{"response":"Jordan leading, Sam on bass — filling the rest.","actions":[{"type":"ASSIGN","params":{"person":"Jordan","role":"WL","week":"evt-good-friday","service":"good-friday"}},{"type":"ASSIGN","params":{"person":"Sam","role":"BASS","week":"evt-good-friday","service":"good-friday"}},{"type":"FILL_WEEK","params":{"week":"evt-good-friday","service":"good-friday"}}]}\n\n';
+        prompt += '{"response":"Jordan leading, Sam on bass — filling the rest.","actions":[{"type":"ASSIGN","params":{"person":"Jordan","role":"WL","week":"evt-good-friday","service":"good-friday","because":"Good Friday is the priority — A-team."}},{"type":"ASSIGN","params":{"person":"Sam","role":"BASS","week":"evt-good-friday","service":"good-friday","because":"Sam locks the pocket with Jordan."}},{"type":"FILL_WEEK","params":{"week":"evt-good-friday","service":"good-friday"}}]}\n\n';
         prompt += 'User: "build the whole month"\n';
         prompt += '{"response":"Done — ' + state.rosterMonth + ' built across all services. Have a look through.","actions":[{"type":"BUILD_MONTH"}]}\n\n';
         prompt += 'User: "can you roster the month of May for me please"\n';
@@ -5503,6 +5506,12 @@
                 var aKey = state.rosterMonth + '-' + aWeek + '-' + aSvc;
                 if (!state.roster[aKey]) state.roster[aKey] = {};
                 state.roster[aKey][p.role] = p.person;
+                // Capture Sunny's one-line reasoning if provided. Surfaced on slot hover.
+                if (p.because && String(p.because).trim()) {
+                  if (!state.rosterBecause) state.rosterBecause = {};
+                  if (!state.rosterBecause[aKey]) state.rosterBecause[aKey] = {};
+                  state.rosterBecause[aKey][p.role] = String(p.because).trim();
+                }
               }
               break;
 
@@ -6243,6 +6252,10 @@
       rosterWeek: 1,
       rosterService: '', // active service ID (first in services array)
       roster: {},
+      // Parallel store of "why" text for each assignment. Keyed the same as state.roster:
+      // state.rosterBecause[<month>-<week>-<service>][role] = "because Sunny said so"
+      // Populated when an AI ASSIGN action carries a `because` param; surfaced on slot hover.
+      rosterBecause: {},
     };
 
     const catColors = { praise: '#e06858', current: '#5888d8', homegrown: '#68b878', classic: '#9878c8', custom: '#e09a2d' };
@@ -7467,7 +7480,24 @@
           dot.style.top = dy.toFixed(1) + 'px';
           slot.appendChild(dot);
         }
-        slot.title = person + ': on ' + count + ' of ' + totalSlots + ' services this month' + (!isAvail ? ' (not available this week)' : '');
+        // Pull Sunny's "because" reasoning for this assignment (if she gave one)
+        var becauseText = '';
+        try {
+          var bk = getCurrentRosterKey();
+          becauseText = (state.rosterBecause && state.rosterBecause[bk] && state.rosterBecause[bk][role]) || '';
+        } catch(e) {}
+
+        slot.title = person + ': on ' + count + ' of ' + totalSlots + ' services this month' +
+          (!isAvail ? ' (not available this week)' : '') +
+          (becauseText ? '\n\nSunny — ' + becauseText : '');
+
+        // Visual cue when there's a reason worth reading — small dot in the corner
+        if (becauseText) {
+          var hint = document.createElement('div');
+          hint.className = 'slot-because-hint';
+          hint.style.cssText = 'position:absolute; bottom:4px; right:4px; width:6px; height:6px; border-radius:50%; background:var(--amber); opacity:0.7; pointer-events:none;';
+          slot.appendChild(hint);
+        }
       }
 
       return slot;
@@ -7581,6 +7611,10 @@
       const key = getCurrentRosterKey();
       if (state.roster[key]) {
         delete state.roster[key][role];
+      }
+      // Clear Sunny's reasoning for this slot too — stale once the person is gone.
+      if (state.rosterBecause && state.rosterBecause[key]) {
+        delete state.rosterBecause[key][role];
       }
       renderStageView();
       renderAvailableList();
