@@ -6018,12 +6018,26 @@
         var emptySlots = ['WL','CO-WL','MD','DRUMS','BASS','KEYS1','KEYS2','ACOUSTIC','GUITAR1','FLV1','FLV2','FLV3','FLV4','FOH','PROD','LYRICS','VISION']
           .filter(function(s) { return !roster[s]; });
 
+        // Tight eligibility — auto-fill won't put a non-leader on WL/CO-WL.
+        // Same logic as the slot picker (see openSlotPicker roleMap).
         var roleMapForFill = {
-          WL: ['WL'], 'CO-WL': ['WL','CO-WL','FLV'], MD: ['MD','Keys'], DRUMS: ['Drums'], BASS: ['Bass','MD'],
-          KEYS1: ['Keys','MD'], KEYS2: ['Keys','MD'], ACOUSTIC: ['Acoustic','Guitar','WL'],
-          GUITAR1: ['Guitar','Acoustic'], FLV1: ['FLV','CO-WL','WL'], FLV2: ['FLV','CO-WL'],
-          FLV3: ['FLV','CO-WL'], FLV4: ['FLV'], FOH: ['FOH'],
-          PROD: ['Production','FOH'], VISION: ['Vision','Production'], LYRICS: ['Vision','FOH']
+          WL:       ['WL','CO-WL'],
+          'CO-WL':  ['WL','CO-WL'],
+          MD:       ['MD'],
+          DRUMS:    ['Drums'],
+          BASS:     ['Bass'],
+          KEYS1:    ['Keys'],
+          KEYS2:    ['Keys'],
+          ACOUSTIC: ['Acoustic'],
+          GUITAR1:  ['Guitar'],
+          FLV1:     ['FLV'],
+          FLV2:     ['FLV'],
+          FLV3:     ['FLV'],
+          FLV4:     ['FLV'],
+          FOH:      ['FOH'],
+          PROD:     ['Production'],
+          VISION:   ['Vision'],
+          LYRICS:   ['Vision','FOH']
         };
 
         emptySlots.forEach(function(slot) {
@@ -7474,15 +7488,30 @@
       header.innerHTML = `<span style="display: inline-block; width: 20px;">${icon}</span> ${label}`;
       list.innerHTML = '';
 
-      // Determine eligible people for this role
+      // Eligibility per slot. Kept tight on purpose — pickers now show ONLY
+      // people whose explicit role qualifies for the slot. Worship leaders /
+      // co-leaders are a single pool (any WL can co-lead, any co-lead can
+      // lead). Vocals do NOT bleed into the leader slots — if a vocalist
+      // can also lead, add 'CO-WL' or 'WL' to their roles explicitly.
       const roleMap = {
-        WL: ['WL','CO-WL'], 'CO-WL': ['WL','CO-WL','FLV'],
-        FLV1: ['FLV','CO-WL','WL'], FLV2: ['FLV','CO-WL','WL'], FLV3: ['FLV','CO-WL','WL'], FLV4: ['FLV','CO-WL'],
-        MD: ['MD','Keys'], KEYS1: ['Keys','MD'], KEYS2: ['Keys','MD'],
-        ACOUSTIC: ['Acoustic','Guitar','WL'], GUITAR1: ['Guitar','Acoustic'], GUITAR2: ['Guitar'],
-        BASS: ['Bass','MD'], DRUMS: ['Drums'],
-        FOH: ['FOH'], LYRICS: ['Vision','FOH'],
-        PROD: ['Production','FOH'], VISION: ['Vision','Production'],
+        WL:        ['WL','CO-WL'],
+        'CO-WL':   ['WL','CO-WL'],
+        FLV1:      ['FLV'],
+        FLV2:      ['FLV'],
+        FLV3:      ['FLV'],
+        FLV4:      ['FLV'],
+        MD:        ['MD'],
+        KEYS1:     ['Keys'],
+        KEYS2:     ['Keys'],
+        ACOUSTIC:  ['Acoustic'],
+        GUITAR1:   ['Guitar'],
+        GUITAR2:   ['Guitar'],
+        BASS:      ['Bass'],
+        DRUMS:     ['Drums'],
+        FOH:       ['FOH'],
+        LYRICS:    ['Vision','FOH'],
+        PROD:      ['Production'],
+        VISION:    ['Vision'],
       };
 
       const eligible = TEAM
@@ -7638,8 +7667,8 @@
         used.add(roster.WL);
       }
 
-      // 2. Co-WL
-      var coWl = pickAvailable(['CO-WL', 'WL', 'FLV']);
+      // 2. Co-WL — only worship leaders are eligible (WL+CO-WL pool)
+      var coWl = pickAvailable(['CO-WL', 'WL']);
       if (coWl) { roster['CO-WL'] = coWl; used.add(coWl); }
 
       // 3. MD
@@ -7676,10 +7705,10 @@
       var guitar1 = pickAvailable(['Guitar']);
       if (guitar1) { roster.GUITAR1 = guitar1; used.add(guitar1); }
 
-      // 9. Front-line vocals — fill up to 4
+      // 9. Front-line vocals — fill up to 4 (FLV-tagged only)
       var flvSlots = ['FLV1', 'FLV2', 'FLV3', 'FLV4'];
       flvSlots.forEach(function(slot) {
-        var flv = pickAvailable(['FLV', 'CO-WL']);
+        var flv = pickAvailable(['FLV']);
         if (flv) { roster[slot] = flv; used.add(flv); }
       });
 
