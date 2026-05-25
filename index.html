@@ -3882,8 +3882,17 @@
                   </button>
                   <div style="height:1px; background:rgba(255,255,255,0.08); margin:6px 0;"></div>
                   <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:6px 14px 4px;">Whole month</div>
+                  <button onclick="window.shareRosterAs('month-imessage')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+                    <span style="font-size:20px;">💬</span> iMessage
+                  </button>
+                  <button onclick="window.shareRosterAs('month-whatsapp')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+                    <span style="font-size:20px;">🟢</span> WhatsApp
+                  </button>
+                  <button onclick="window.shareRosterAs('month-email')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+                    <span style="font-size:20px;">✉️</span> Email
+                  </button>
                   <button onclick="window.shareRosterAs('month-pdf')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-                    <span style="font-size:20px;">🗓</span> Month overview PDF
+                    <span style="font-size:20px;">📄</span> PDF
                   </button>
                   <div style="height:1px; background:rgba(255,255,255,0.08); margin:6px 0;"></div>
                   <button onclick="window.shareRosterAs('text')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:rgba(255,255,255,0.6); cursor:pointer; text-align:left;">
@@ -10904,6 +10913,265 @@
         return self._canvasToPDF(canvas, baseName, returnBlob);
       },
 
+      // Generate a vertical Month Overview as image or PDF.
+      // Layout is editorial, not a grid — one block per Sunday with
+      // services stacked AM-on-top, PM-below. Bands inline (Leadership,
+      // Rhythm, Vocals, Tech). Empty services / Sundays are skipped.
+      // Designed to feel like a callsheet you'd skim on your phone, not
+      // a spreadsheet.
+      //   output: 'image' (PNG) or 'pdf'
+      //   returnBlob: true → returns { blob, filename } or a Promise of it
+      generateMonthVertical: function(monthName, output, returnBlob) {
+        var self = this;
+        var month = monthName || state.rosterMonth;
+
+        var churchName = '';
+        try { churchName = localStorage.getItem('sunday_church') || ''; } catch(e) {}
+        if (!churchName && typeof heroState !== 'undefined') churchName = heroState.churchName || '';
+
+        var weeks = getSundaysForMonth(month);
+        if (weeks.length === 0) {
+          if (!returnBlob) alert('No weeks found for ' + month);
+          return null;
+        }
+
+        // Recurring services only (sun-am, sun-pm). One-off events get
+        // their own per-event share.
+        var recurringSvcs = services.filter(function(s) { return s.recurring !== false; });
+
+        // Band groupings + name formatting style:
+        //   names-only  → "Reuben · Vivienne"          (Leadership, Vocals)
+        //   role-prefix → "Drums Johnny · Bass Dean"   (Rhythm, Tech)
+        var BANDS = [
+          { name: 'Leadership', ids: ['WL', 'CO-WL'], style: 'names-only' },
+          { name: 'Rhythm',     ids: ['DRUMS', 'BASS', 'KEYS1', 'KEYS2', 'GUITAR1', 'ACOUSTIC'], style: 'role-prefix' },
+          { name: 'Vocals',     ids: ['FLV1', 'FLV2', 'FLV3', 'FLV4'], style: 'names-only' },
+          { name: 'Tech',       ids: ['FOH', 'PROD', 'LYRICS', 'VISION'], style: 'role-prefix' }
+        ];
+        var ROLE_LABELS = {
+          DRUMS: 'Drums', BASS: 'Bass', KEYS1: 'Keys', KEYS2: 'Keys 2',
+          GUITAR1: 'Guitar', ACOUSTIC: 'Acoustic',
+          FOH: 'FOH', PROD: 'Production', LYRICS: 'Lyrics', VISION: 'Vision'
+        };
+
+        function firstName(n) { return (n || '').split(' ')[0]; }
+
+        function bandLine(roster, band) {
+          var parts = band.ids
+            .filter(function(id) { return roster[id]; })
+            .map(function(id) {
+              return band.style === 'role-prefix'
+                ? ROLE_LABELS[id] + ' ' + firstName(roster[id])
+                : firstName(roster[id]);
+            });
+          return parts.length ? parts.join('  ·  ') : null;
+        }
+
+        // Pre-compute renderable data: Sundays → services → bands
+        var monthData = weeks.map(function(wk) {
+          var svcEntries = recurringSvcs.map(function(svc) {
+            var key = month + '-' + wk.num + '-' + svc.id;
+            var roster = state.roster[key] || {};
+            if (Object.keys(roster).length === 0) return null;
+            var lines = BANDS.map(function(b) {
+              var l = bandLine(roster, b);
+              return l ? { name: b.name, line: l } : null;
+            }).filter(Boolean);
+            if (lines.length === 0) return null;
+            return { svcName: svc.name, svcTime: svc.time || '', lines: lines };
+          }).filter(Boolean);
+          if (svcEntries.length === 0) return null;
+          return { wk: wk, services: svcEntries };
+        }).filter(Boolean);
+
+        // Canvas + layout constants
+        var W = 900;
+        var leftPad = 56;
+        var rightPad = 56;
+
+        // We measure to do simple word wrap on long band lines.
+        var probeCanvas = document.createElement('canvas');
+        var probeCtx = probeCanvas.getContext('2d');
+        var maxLineW = W - leftPad - rightPad;
+
+        function wrap(text, font) {
+          probeCtx.font = font;
+          if (probeCtx.measureText(text).width <= maxLineW) return [text];
+          var parts = text.split('  ·  '); // wrap at the natural dot separator
+          var lines = [], cur = '';
+          parts.forEach(function(p) {
+            var candidate = cur ? cur + '  ·  ' + p : p;
+            if (probeCtx.measureText(candidate).width > maxLineW && cur) {
+              lines.push(cur);
+              cur = p;
+            } else {
+              cur = candidate;
+            }
+          });
+          if (cur) lines.push(cur);
+          return lines;
+        }
+
+        // Layout constants
+        var headerH = 200;
+        var footerH = 60;
+        var dateBlockH = 46;
+        var serviceLabelH = 26;
+        var bandHeaderH = 16;
+        var bandLineH = 22;
+        var bandPad = 6;
+        var serviceGap = 18;
+        var sundayGap = 36;
+
+        // Pre-compute heights so we can size the canvas. We bake the
+        // wrapped line counts into each band entry.
+        var nameFont = '400 15px "DM Sans", sans-serif';
+        monthData.forEach(function(sd) {
+          sd.services.forEach(function(svc) {
+            svc.lines.forEach(function(bl) {
+              bl.wrapped = wrap(bl.line, nameFont);
+            });
+          });
+        });
+
+        var totalH = headerH + footerH;
+        monthData.forEach(function(sd, di) {
+          totalH += dateBlockH;
+          sd.services.forEach(function(svc, si) {
+            totalH += serviceLabelH;
+            svc.lines.forEach(function(bl) {
+              totalH += bandHeaderH + bl.wrapped.length * bandLineH + bandPad;
+            });
+            if (si < sd.services.length - 1) totalH += serviceGap;
+          });
+          if (di < monthData.length - 1) totalH += sundayGap;
+        });
+        totalH = Math.max(totalH, 600); // sensible minimum
+
+        var canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = totalH;
+        var ctx = canvas.getContext('2d');
+
+        // Background + top accent
+        ctx.fillStyle = self.colors.bg;
+        ctx.fillRect(0, 0, W, totalH);
+        var grad = ctx.createLinearGradient(0, 0, W, totalH);
+        grad.addColorStop(0, 'rgba(224,154,45,0.03)');
+        grad.addColorStop(1, 'rgba(122,144,212,0.03)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, totalH);
+        ctx.fillStyle = self.colors.amber;
+        ctx.fillRect(0, 0, W, 3);
+
+        // Header
+        var y = 44;
+        ctx.fillStyle = self.colors.amber;
+        ctx.font = '600 11px "Space Grotesk", sans-serif';
+        ctx.fillText('SUNDAY', leftPad, y);
+
+        y += 36;
+        ctx.fillStyle = self.colors.text;
+        ctx.font = '300 34px "Space Grotesk", sans-serif';
+        ctx.fillText(month, leftPad, y);
+
+        y += 28;
+        ctx.fillStyle = self.colors.mid;
+        ctx.font = '400 14px "DM Sans", sans-serif';
+        var sundayCount = monthData.length;
+        var subtitle = (churchName || 'The Local') + '  ·  ' + sundayCount + (sundayCount === 1 ? ' Sunday' : ' Sundays');
+        ctx.fillText(subtitle, leftPad, y);
+
+        y = headerH; // align to fixed header end
+
+        // Sundays
+        monthData.forEach(function(sd, di) {
+          // Date heading
+          ctx.fillStyle = self.colors.text;
+          ctx.font = '300 26px "Space Grotesk", sans-serif';
+          ctx.fillText('Sunday ' + sd.wk.date, leftPad, y + 28);
+          y += dateBlockH;
+
+          sd.services.forEach(function(svc, si) {
+            // Service label
+            ctx.fillStyle = self.colors.amber;
+            ctx.font = '600 10px "Space Grotesk", sans-serif';
+            var svcLbl = (svc.svcTime ? svc.svcTime.toUpperCase() + '  ·  ' : '') + svc.svcName.toUpperCase();
+            ctx.fillText(svcLbl, leftPad, y + 12);
+            y += serviceLabelH;
+
+            svc.lines.forEach(function(bl) {
+              // Band label with faint rule to the right margin
+              ctx.fillStyle = self.colors.amber;
+              ctx.font = '500 9px "Space Grotesk", sans-serif';
+              ctx.fillText(bl.name.toUpperCase(), leftPad, y + 10);
+              var lw = ctx.measureText(bl.name.toUpperCase()).width;
+              ctx.strokeStyle = 'rgba(224,154,45,0.16)';
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(leftPad + lw + 10, y + 7);
+              ctx.lineTo(W - rightPad, y + 7);
+              ctx.stroke();
+              y += bandHeaderH;
+
+              // Names
+              ctx.fillStyle = self.colors.text;
+              ctx.font = nameFont;
+              bl.wrapped.forEach(function(line) {
+                ctx.fillText(line, leftPad, y + 14);
+                y += bandLineH;
+              });
+              y += bandPad;
+            });
+
+            if (si < sd.services.length - 1) y += serviceGap;
+          });
+
+          if (di < monthData.length - 1) {
+            // Subtle separator
+            y += sundayGap / 2;
+            ctx.strokeStyle = 'rgba(96,96,160,0.18)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(leftPad, y);
+            ctx.lineTo(W - rightPad, y);
+            ctx.stroke();
+            y += sundayGap / 2;
+          }
+        });
+
+        // Footer
+        ctx.fillStyle = self.colors.dim;
+        ctx.font = '300 10px "DM Sans", sans-serif';
+        ctx.fillText('Generated by Sunday  ·  ' + new Date().toLocaleDateString(), leftPad, totalH - 28);
+
+        // Output dispatch
+        var baseName = (churchName || 'Sunday') + ' — ' + month + ' overview';
+        if (output === 'image') {
+          if (returnBlob) {
+            return new Promise(function(resolve) {
+              canvas.toBlob(function(blob) {
+                resolve(blob ? { blob: blob, filename: baseName + '.png' } : null);
+              }, 'image/png');
+            });
+          }
+          canvas.toBlob(function(blob) {
+            if (!blob) return;
+            var file = new File([blob], baseName + '.png', { type: 'image/png' });
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+              navigator.share({ files: [file], title: baseName }).catch(function() {});
+            } else {
+              var url = URL.createObjectURL(blob);
+              var a = document.createElement('a');
+              a.href = url; a.download = baseName + '.png'; a.click();
+              setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+            }
+          }, 'image/png');
+          return null;
+        }
+        return self._canvasToPDF(canvas, baseName, returnBlob);
+      },
+
       // Generate a Month Overview PDF: every Sunday of the current month
       // for the current service, as a grid of role × week. Single page,
       // designed to be the artifact you share after a rostering meeting.
@@ -11400,7 +11668,7 @@
         try {
           result = (format === 'pdf')
             ? SundayPDF.generateRosterPDF(undefined, undefined, true)
-            : SundayPDF.generateMonthOverviewPDF(undefined, undefined, true);
+            : SundayPDF.generateMonthVertical(undefined, 'pdf', true);
         } catch (e) { console.error('Roster PDF failed:', e); }
         if (!result || !result.blob) {
           flashRosterHint(hint, 'PDF generation failed');
@@ -11410,16 +11678,23 @@
         return;
       }
 
-      // Image-based platform shares: 'imessage' / 'whatsapp' / 'email'.
-      var targetApp = (format === 'imessage' || format === 'whatsapp' || format === 'email') ? format : null;
+      // Image-based platform shares.
+      // Single week: 'imessage' / 'whatsapp' / 'email'.
+      // Whole month: 'month-imessage' / 'month-whatsapp' / 'month-email'.
+      var isMonth = format.indexOf('month-') === 0;
+      var targetKey = isMonth ? format.replace('month-', '') : format;
+      var targetApp = (targetKey === 'imessage' || targetKey === 'whatsapp' || targetKey === 'email') ? targetKey : null;
 
       // STEP 1 (synchronous, inside the click): open the target app now,
       // before any async work, so window.open isn't blocked.
       if (targetApp) openRosterTarget(targetApp);
 
       // STEP 2: generate image + copy to clipboard in the background.
-      flashRosterHint(hint, 'Preparing image…', 0);
-      Promise.resolve(SundayPDF.generateRosterImage(undefined, undefined, true)).then(function(r) {
+      flashRosterHint(hint, isMonth ? 'Building month overview…' : 'Preparing image…', 0);
+      var imagePromise = isMonth
+        ? SundayPDF.generateMonthVertical(undefined, 'image', true)
+        : SundayPDF.generateRosterImage(undefined, undefined, true);
+      Promise.resolve(imagePromise).then(function(r) {
         if (!r || !r.blob) { flashRosterHint(hint, 'Image generation failed'); return; }
         copyImageToClipboard(r.blob, hint, targetApp, r.filename);
       });
@@ -11503,6 +11778,8 @@
     window.shareRosterWhatsApp = function() { window.shareRosterAs('whatsapp'); };
     window.shareRosterEmail = function() { window.shareRosterAs('email'); };
     window.exportMonthOverviewPDF = function() { window.shareRosterAs('month-pdf'); };
+    // Sunny may emit a `SHARE_MONTH` action with `target: 'imessage'|'whatsapp'|'email'|'pdf'`.
+    window.shareMonthAs = function(target) { window.shareRosterAs('month-' + (target || 'imessage')); };
     window.exportRosterPDF = function() { window.shareRosterAs('pdf'); };
 
     // Dropdown toggle for the roster Share menu
