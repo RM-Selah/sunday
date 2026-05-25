@@ -3822,8 +3822,11 @@
             <button onclick="window.shareVia('email')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
               <span style="font-size:20px;">✉️</span> Email
             </button>
-            <button onclick="window.shareVia('copy')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-              <span style="font-size:20px;">📋</span> Copy list
+            <button onclick="window.shareVia('copy-image')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+              <span style="font-size:20px;">📸</span> Copy image
+            </button>
+            <button onclick="window.shareVia('copy-text')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:14px 18px; font-family:var(--font-display); font-size:14px; color:rgba(255,255,255,0.6); cursor:pointer; text-align:left;">
+              <span style="font-size:20px;">📋</span> Copy as text
             </button>
           </div>
           <div style="display:flex; gap:10px;">
@@ -11266,35 +11269,80 @@
       dd.style.display = isOpen ? 'none' : 'block';
     };
 
+    function generateSetCardBlob() {
+      var card = document.getElementById('set-card');
+      return html2canvas(card, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
+        .then(function(canvas) {
+          return new Promise(function(resolve) { canvas.toBlob(resolve, 'image/png'); });
+        });
+    }
+
+    function openTargetApp(method) {
+      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Run Worship';
+      if (method === 'imessage') {
+        window.open('sms:&body=', '_blank');
+      } else if (method === 'whatsapp') {
+        window.open('https://web.whatsapp.com/', '_blank');
+      } else if (method === 'email') {
+        window.open('mailto:?subject=' + encodeURIComponent(churchName + ' — Set List'), '_blank');
+      }
+    }
+
     window.shareVia = function(method) {
       document.getElementById('share-dropdown').style.display = 'none';
       var hint = document.getElementById('set-card-share-hint');
-      var text = buildSetText();
-      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'Run Worship';
 
-      if (method === 'imessage') {
-        window.open('sms:&body=' + encodeURIComponent(text), '_blank');
-      } else if (method === 'whatsapp') {
-        window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
-      } else if (method === 'email') {
-        var subject = encodeURIComponent(churchName + ' — Set List');
-        window.open('mailto:?subject=' + subject + '&body=' + encodeURIComponent(text), '_blank');
-      } else if (method === 'copy') {
+      if (method === 'copy-text') {
+        var text = buildSetText();
         navigator.clipboard.writeText(text).then(function() {
-          hint.textContent = 'Copied ✓ — paste into iMessage, WhatsApp, or anywhere';
+          hint.textContent = 'Text copied ✓ — paste into any app (⌘V)';
           hint.style.display = 'block';
-          setTimeout(function() { hint.style.display = 'none'; }, 3000);
-        }).catch(function() {
-          var ta = document.createElement('textarea');
-          ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-          document.body.appendChild(ta); ta.select(); document.execCommand('copy');
-          document.body.removeChild(ta);
-          hint.textContent = 'Copied ✓';
-          hint.style.display = 'block';
-          setTimeout(function() { hint.style.display = 'none'; }, 3000);
+          setTimeout(function() { hint.style.display = 'none'; }, 4000);
         });
+        return;
       }
+
+      hint.textContent = 'Preparing image…';
+      hint.style.display = 'block';
+
+      var blobPromise = generateSetCardBlob();
+
+      // Modern path: copy image to clipboard via ClipboardItem.
+      // Works on Chrome / Safari / Edge on Mac.
+      if (typeof ClipboardItem !== 'undefined' && navigator.clipboard && navigator.clipboard.write) {
+        try {
+          var item = new ClipboardItem({ 'image/png': blobPromise });
+          navigator.clipboard.write([item]).then(function() {
+            openTargetApp(method);
+            if (method === 'imessage')  hint.textContent = 'Image copied ✓ — paste into Messages (⌘V)';
+            else if (method === 'whatsapp') hint.textContent = 'Image copied ✓ — paste into WhatsApp (⌘V)';
+            else if (method === 'email')    hint.textContent = 'Image copied ✓ — paste into Mail (⌘V)';
+            else                            hint.textContent = 'Image copied ✓ — paste anywhere (⌘V)';
+            setTimeout(function() { hint.style.display = 'none'; }, 6000);
+          }).catch(function(e) {
+            console.warn('Clipboard image write failed:', e);
+            downloadFallback(blobPromise, method, hint);
+          });
+          return;
+        } catch (e) {
+          console.warn('ClipboardItem unsupported:', e);
+        }
+      }
+
+      downloadFallback(blobPromise, method, hint);
     };
+
+    function downloadFallback(blobPromise, method, hint) {
+      blobPromise.then(function(blob) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = 'run-worship-set.png'; a.click();
+        URL.revokeObjectURL(url);
+        openTargetApp(method);
+        hint.textContent = 'Image downloaded — drag into your message';
+        setTimeout(function() { hint.style.display = 'none'; }, 5000);
+      });
+    }
 
     window.shareSetImage = function() {}; // kept for any legacy references
   </script>
