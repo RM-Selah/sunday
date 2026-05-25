@@ -6184,7 +6184,7 @@
     //    so the new seed takes effect (NOTE: removes only seedable lists,
     //    not roster assignments). Remove this whole block when real
     //    onboarding ships.
-    var SEED_VERSION = 'demo-2026-05-25-d-history-truth';
+    var SEED_VERSION = 'demo-2026-05-25-e-real-songs';
     try {
       var savedSeedVersion = localStorage.getItem('sunday_seed_version');
       if (savedSeedVersion !== SEED_VERSION) {
@@ -6197,11 +6197,43 @@
       }
     } catch(e) {}
 
-    // Song library starts empty — Reuben's master set list will be loaded once
-    // he provides it (not fabricating songs). Categories (praise / worship /
-    // homegrown / classic / current) still work — the library just has no entries
-    // until real data arrives.
-    var SONGS = window.SONGS = [];
+    // ── SEED: Run Worship master set list (sourced from Reuben directly,
+    //    2026-05-25). 27 songs across 4 categories: praise, homegrown,
+    //    current, classic. Keys/BPMs intentionally blank (`?` / 0) so they
+    //    don't carry false data — fill them in via the song-edit UI.
+    var SONGS = window.SONGS = [
+      // PRAISE
+      {id:1,  title:'I Thank God',            artist:'Housefires',          cat:'praise',    key:'?', bpm:0, mins:5},
+      {id:2,  title:'Washed',                 artist:'Elevation Rhythm',    cat:'praise',    key:'?', bpm:0, mins:5},
+      {id:3,  title:'Praise',                 artist:'Maverick City',       cat:'praise',    key:'?', bpm:0, mins:5},
+      {id:4,  title:'Goodbye Yesterday',      artist:'Elevation Rhythm',    cat:'praise',    key:'?', bpm:0, mins:5},
+      {id:5,  title:'Great Awakening',        artist:'Alexander Pappas',    cat:'praise',    key:'?', bpm:0, mins:5},
+      {id:6,  title:'Take You At Your Word',  artist:'',                    cat:'praise',    key:'?', bpm:0, mins:5},
+      {id:7,  title:'A Thousand Hallelujahs', artist:'Brooke Ligertwood',   cat:'praise',    key:'?', bpm:0, mins:5},
+      // HOMEGROWN
+      {id:8,  title:'Rock',                   artist:'Ezra & Jones',        cat:'homegrown', key:'?', bpm:0, mins:5},
+      {id:9,  title:'I Belong to Jesus',      artist:'',                    cat:'homegrown', key:'?', bpm:0, mins:5},
+      {id:10, title:'Gratitude',              artist:'Brandon Lake',        cat:'homegrown', key:'?', bpm:0, mins:5},
+      {id:11, title:'Bless God',              artist:'Brooke Ligertwood',   cat:'homegrown', key:'?', bpm:0, mins:5},
+      {id:12, title:'Doorkeeper',             artist:'CXMMXNS',             cat:'homegrown', key:'?', bpm:0, mins:5},
+      {id:13, title:'Returning',              artist:'Reuben Morgan',       cat:'homegrown', key:'?', bpm:0, mins:5},
+      {id:14, title:'King of Calvary',        artist:'Reuben Morgan',       cat:'homegrown', key:'?', bpm:0, mins:5},
+      {id:15, title:'Praise Belongs',         artist:'CXMMXNS',             cat:'homegrown', key:'?', bpm:0, mins:5},
+      // CURRENT
+      {id:16, title:'Stand Firm',             artist:'CXMMXNS',             cat:'current',   key:'?', bpm:0, mins:5},
+      {id:17, title:'Trust in God',           artist:'Elevation',           cat:'current',   key:'?', bpm:0, mins:5},
+      {id:18, title:'Way Maker',              artist:'Leeland',             cat:'current',   key:'?', bpm:0, mins:5},
+      {id:19, title:'Firm Foundation',        artist:'Maverick City',       cat:'current',   key:'?', bpm:0, mins:5},
+      {id:20, title:'Still',                  artist:'CXMMXNS',             cat:'current',   key:'?', bpm:0, mins:5},
+      {id:21, title:'Jesus Be the Name',      artist:'Elevation',           cat:'current',   key:'?', bpm:0, mins:5},
+      {id:22, title:'King of Kings',          artist:'Hillsong',            cat:'current',   key:'?', bpm:0, mins:5},
+      {id:23, title:'Centre',                 artist:'Bethel',              cat:'current',   key:'?', bpm:0, mins:5, notes:'tag only'},
+      {id:24, title:'The Blood',              artist:'Bethel',              cat:'current',   key:'?', bpm:0, mins:5},
+      // CLASSIC
+      {id:25, title:'Goodness of God',        artist:'Bethel',              cat:'classic',   key:'?', bpm:0, mins:5},
+      {id:26, title:'Holy Forever',           artist:'Chris Tomlin',        cat:'classic',   key:'?', bpm:0, mins:5},
+      {id:27, title:'Here I Am to Worship',   artist:'Reuben Morgan',       cat:'classic',   key:'?', bpm:0, mins:5}
+    ];
 
     // avail: array of week numbers (1-5) this person is available for the current month
     // (In production, the AI agent gathers this from each team member via chat)
