@@ -3810,25 +3810,17 @@
       <div id="set-card-overlay" style="display:none; position:fixed; inset:0; background:rgba(5,5,7,0.85); z-index:500; overflow-y:auto; padding:24px 16px;">
         <div id="set-card" style="background:#fff; border-radius:12px; max-width:440px; margin:0 auto; padding:32px 36px; font-family:var(--font-display); color:#111;"></div>
 
-        <!-- Share dropdown -->
+        <!-- Share dropdown — three formats, each uses the native share
+             sheet (iPhone, Mac Safari) and falls back to clipboard/download. -->
         <div style="max-width:440px; margin:16px auto 0; position:relative;">
           <div id="share-dropdown" style="display:none; position:absolute; bottom:calc(100% + 8px); left:0; right:40px; background:#1c1c1e; border:1px solid rgba(255,255,255,0.12); border-radius:12px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.6);">
-            <button onclick="window.shareVia('imessage')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-              <span style="font-size:20px;">💬</span> iMessage
+            <button onclick="window.shareSetAs('image')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+              <span style="font-size:20px;">📸</span> Share image
             </button>
-            <button onclick="window.shareVia('whatsapp')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-              <span style="font-size:20px;">🟢</span> WhatsApp
+            <button onclick="window.shareSetAs('pdf')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+              <span style="font-size:20px;">📄</span> Share PDF
             </button>
-            <button onclick="window.shareVia('email')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-              <span style="font-size:20px;">✉️</span> Email
-            </button>
-            <button onclick="window.shareVia('pdf')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-              <span style="font-size:20px;">📄</span> Download PDF
-            </button>
-            <button onclick="window.shareVia('copy-image')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-              <span style="font-size:20px;">📸</span> Copy image
-            </button>
-            <button onclick="window.shareVia('copy-text')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:14px 18px; font-family:var(--font-display); font-size:14px; color:rgba(255,255,255,0.6); cursor:pointer; text-align:left;">
+            <button onclick="window.shareSetAs('text')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:14px 18px; font-family:var(--font-display); font-size:14px; color:rgba(255,255,255,0.6); cursor:pointer; text-align:left;">
               <span style="font-size:20px;">📋</span> Copy as text
             </button>
           </div>
@@ -8851,50 +8843,11 @@
       document.getElementById('set-card-overlay').scrollTop = 0;
     };
 
-    window.shareSetWhatsApp = function() {
-      var lines = ['\u{1F3B5} *' + ((typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'The Local') + ' \u2014 Set List*\n'];
-      state.set.forEach(function(s, i) {
-        lines.push((i+1) + '. ' + s.title + (s.key ? ' (' + s.key + ')' : ''));
-      });
-      if (state.ministrySongs && state.ministrySongs.length > 0) {
-        lines.push('\n*Ministry*');
-        state.ministrySongs.forEach(function(ms) { lines.push('\u2014 ' + ms.title); });
-      }
-      var totalMins = Math.round(state.set.reduce(function(a, s) { return a + (s.mins || 4.5); }, 0));
-      lines.push('\n' + state.set.length + ' songs \u00b7 ~' + totalMins + ' min');
-      window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
-    };
-
-    window.shareSetEmail = function() {
-      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'The Local';
-      var subject = churchName + ' \u2014 Sunday Set List';
-      var lines = [churchName + ' \u2014 Sunday Set List\n'];
-      state.set.forEach(function(s, i) {
-        lines.push((i+1) + '. ' + s.title + (s.key ? ' (' + s.key + ')' : '') + (s.artist ? ' \u2014 ' + s.artist : ''));
-      });
-      if (state.ministrySongs && state.ministrySongs.length > 0) {
-        lines.push('\nMinistry');
-        state.ministrySongs.forEach(function(ms) { lines.push('\u2014 ' + ms.title); });
-      }
-      var totalMins = Math.round(state.set.reduce(function(a, s) { return a + (s.mins || 4.5); }, 0));
-      lines.push('\n' + state.set.length + ' songs \u00b7 ~' + totalMins + ' minutes');
-      window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(lines.join('\n'));
-    };
-
-    window.shareSetIMessage = function() {
-      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'The Local';
-      var lines = ['🎵 ' + churchName + ' — Set List\n'];
-      state.set.forEach(function(s, i) {
-        lines.push((i+1) + '. ' + s.title + (s.key ? ' (' + s.key + ')' : ''));
-      });
-      if (state.ministrySongs && state.ministrySongs.length > 0) {
-        lines.push('\nMinistry');
-        state.ministrySongs.forEach(function(ms) { lines.push('— ' + ms.title); });
-      }
-      var totalMins = Math.round(state.set.reduce(function(a, s) { return a + (s.mins || 4.5); }, 0));
-      lines.push('\n' + state.set.length + ' songs · ~' + totalMins + ' min');
-      window.open('sms:&body=' + encodeURIComponent(lines.join('\n')), '_blank');
-    };
+    // shareSetWhatsApp / shareSetEmail / shareSetIMessage removed 2026-05-26.
+    // The unified `shareSetAs(format)` flow below replaces them: image /
+    // pdf / text, each using the native Web Share API with clipboard /
+    // download fallback. The old code's sms:&body= URL was malformed and
+    // caused macOS Messages to pick a random recent contact.
 
     window.handleEditSet = function() {
       window.closeSetCard();
@@ -10895,8 +10848,9 @@
         self._canvasToPDF(canvas, (churchName || 'Sunday') + ' — ' + month + ' — ' + serviceName + ' (Month Overview)');
       },
 
-      // Generate Set List PDF
-      generateSetPDF: function() {
+      // Generate Set List PDF. Pass returnBlob=true to return { blob, filename }
+      // instead of triggering a download — used by the share flow.
+      generateSetPDF: function(returnBlob) {
         var self = this;
         var set = state.set || [];
         var ministry = state.ministrySongs || [];
@@ -11047,16 +11001,18 @@
         ctx.font = '300 10px "DM Sans", sans-serif';
         ctx.fillText('Generated by Sunday  ·  ' + new Date().toLocaleDateString(), 50, footerY);
 
-        self._canvasToPDF(canvas, (churchName || 'Sunday') + ' — Set List');
+        return self._canvasToPDF(canvas, (churchName || 'Sunday') + ' — Set List', returnBlob);
       },
 
-      // Convert canvas to PDF and download
-      _canvasToPDF: function(canvas, filename) {
+      // Convert canvas to PDF. By default saves to disk. Pass returnBlob=true
+      // to get back { blob, filename } instead — used by the share flow so
+      // we can hand the PDF to navigator.share() or a download.
+      _canvasToPDF: function(canvas, filename, returnBlob) {
         try {
           var jsPDF = window.jspdf ? window.jspdf.jsPDF : null;
           if (!jsPDF) {
-            alert('PDF library still loading — try again in a moment.');
-            return;
+            if (!returnBlob) alert('PDF library still loading — try again in a moment.');
+            return null;
           }
 
           var imgData = canvas.toDataURL('image/png', 1.0);
@@ -11071,10 +11027,15 @@
           doc.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
 
           var safeName = (filename || 'Sunday').replace(/[^a-zA-Z0-9\s\-—·]/g, '').trim();
+          if (returnBlob) {
+            return { blob: doc.output('blob'), filename: safeName + '.pdf' };
+          }
           doc.save(safeName + '.pdf');
+          return null;
         } catch(e) {
           console.error('PDF generation failed:', e);
-          alert('PDF generation failed: ' + e.message);
+          if (!returnBlob) alert('PDF generation failed: ' + e.message);
+          return null;
         }
       }
     };
@@ -11265,101 +11226,140 @@
       return lines.join('\n');
     }
 
+    // ── Set list share ────────────────────────────────────────────────
+    // One entry point: shareSetAs(format) where format is 'image', 'pdf',
+    // or 'text'. Each format picks the most direct path available:
+    //   1. Native share sheet via navigator.share with a File
+    //        — iPhone / iPad / Android / Mac Safari 14+. Opens the
+    //          system sheet so the user picks Messages, WhatsApp,
+    //          Mail, Notes, AirDrop, etc.
+    //   2. Clipboard via ClipboardItem (for image) or writeText (for text)
+    //        — Mac Chrome / Edge. User pastes (⌘V) into any app.
+    //   3. Plain download
+    //        — last resort. User attaches the file manually.
+    //
+    // We deliberately do NOT auto-open Messages / WhatsApp / Mail. The
+    // sms: URL on macOS picks the most recent conversation (the bug that
+    // landed every share in a chat with Georgia), and the same URL
+    // schemes can't carry an image/PDF attachment anyway. Cleaner to let
+    // the user open their own app and paste.
+
     window.toggleShareDropdown = function() {
       var dd = document.getElementById('share-dropdown');
-      var isOpen = dd.style.display !== 'none';
-      dd.style.display = isOpen ? 'none' : 'block';
+      dd.style.display = (dd.style.display === 'none' || !dd.style.display) ? 'block' : 'none';
     };
 
-    function generateSetCardBlob() {
-      var card = document.getElementById('set-card');
-      return html2canvas(card, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
-        .then(function(canvas) {
-          return new Promise(function(resolve) { canvas.toBlob(resolve, 'image/png'); });
-        });
-    }
-
-    function openTargetApp(method) {
-      var churchName = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : 'The Local';
-      if (method === 'imessage') {
-        window.open('sms:&body=', '_blank');
-      } else if (method === 'whatsapp') {
-        window.open('https://web.whatsapp.com/', '_blank');
-      } else if (method === 'email') {
-        window.open('mailto:?subject=' + encodeURIComponent(churchName + ' — Set List'), '_blank');
-      }
-    }
-
-    window.shareVia = function(method) {
+    window.shareSetAs = function(format) {
       document.getElementById('share-dropdown').style.display = 'none';
       var hint = document.getElementById('set-card-share-hint');
 
-      if (method === 'copy-text') {
-        var text = buildSetText();
-        navigator.clipboard.writeText(text).then(function() {
-          hint.textContent = 'Text copied ✓ — paste into any app (⌘V)';
-          hint.style.display = 'block';
-          setTimeout(function() { hint.style.display = 'none'; }, 4000);
-        });
-        return;
-      }
-
-      if (method === 'pdf') {
-        hint.textContent = 'Generating PDF…';
-        hint.style.display = 'block';
-        try {
-          window.exportSetPDF();
-          hint.textContent = 'PDF downloaded — attach it to iMessage, WhatsApp, or email';
-          setTimeout(function() { hint.style.display = 'none'; }, 5000);
-        } catch (e) {
-          hint.textContent = 'PDF failed: ' + e.message;
-        }
-        return;
-      }
-
-      hint.textContent = 'Preparing image…';
-      hint.style.display = 'block';
-
-      var blobPromise = generateSetCardBlob();
-
-      // Modern path: copy image to clipboard via ClipboardItem.
-      // Works on Chrome / Safari / Edge on Mac.
-      if (typeof ClipboardItem !== 'undefined' && navigator.clipboard && navigator.clipboard.write) {
-        try {
-          var item = new ClipboardItem({ 'image/png': blobPromise });
-          navigator.clipboard.write([item]).then(function() {
-            openTargetApp(method);
-            if (method === 'imessage')  hint.textContent = 'Image copied ✓ — paste into Messages (⌘V)';
-            else if (method === 'whatsapp') hint.textContent = 'Image copied ✓ — paste into WhatsApp (⌘V)';
-            else if (method === 'email')    hint.textContent = 'Image copied ✓ — paste into Mail (⌘V)';
-            else                            hint.textContent = 'Image copied ✓ — paste anywhere (⌘V)';
-            setTimeout(function() { hint.style.display = 'none'; }, 6000);
-          }).catch(function(e) {
-            console.warn('Clipboard image write failed:', e);
-            downloadFallback(blobPromise, method, hint);
-          });
-          return;
-        } catch (e) {
-          console.warn('ClipboardItem unsupported:', e);
-        }
-      }
-
-      downloadFallback(blobPromise, method, hint);
+      if (format === 'text')  return shareSetAsText(hint);
+      if (format === 'image') return shareSetAsImage(hint);
+      if (format === 'pdf')   return shareSetAsPDF(hint);
     };
 
-    function downloadFallback(blobPromise, method, hint) {
-      blobPromise.then(function(blob) {
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url; a.download = 'run-worship-set.png'; a.click();
-        URL.revokeObjectURL(url);
-        openTargetApp(method);
-        hint.textContent = 'Image downloaded — drag into your message';
-        setTimeout(function() { hint.style.display = 'none'; }, 5000);
-      });
+    function shareSetAsText(hint) {
+      var text = buildSetText();
+      navigator.clipboard.writeText(text)
+        .then(function() { flashHint(hint, 'Text copied ✓ — paste anywhere (⌘V)'); })
+        .catch(function() { flashHint(hint, 'Copy failed — try again'); });
     }
 
-    window.shareSetImage = function() {}; // kept for any legacy references
+    function shareSetAsImage(hint) {
+      flashHint(hint, 'Preparing image…', 0);
+      var card = document.getElementById('set-card');
+      html2canvas(card, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
+        .then(function(canvas) {
+          canvas.toBlob(function(blob) { dispatchImage(blob, hint); }, 'image/png');
+        })
+        .catch(function(e) {
+          console.error('html2canvas failed:', e);
+          flashHint(hint, 'Image generation failed');
+        });
+    }
+
+    function shareSetAsPDF(hint) {
+      flashHint(hint, 'Generating PDF…', 0);
+      var result;
+      try { result = SundayPDF.generateSetPDF(true); }
+      catch (e) { console.error('PDF generation failed:', e); }
+      if (!result || !result.blob) {
+        flashHint(hint, 'PDF generation failed');
+        return;
+      }
+      dispatchPDF(result.blob, result.filename, hint);
+    }
+
+    function dispatchImage(blob, hint) {
+      var file = new File([blob], 'the-local-set.png', { type: 'image/png' });
+
+      // 1. Native share sheet (iPhone, Mac Safari, Android).
+      if (canShareFiles([file])) {
+        navigator.share({ files: [file], title: 'Set List' })
+          .then(function() { flashHint(hint, 'Shared ✓'); })
+          .catch(function() { hint.style.display = 'none'; });
+        return;
+      }
+
+      // 2. Clipboard image (Mac Chrome / Edge).
+      if (canWriteClipboardImage()) {
+        var item = new ClipboardItem({ 'image/png': blob });
+        navigator.clipboard.write([item])
+          .then(function() {
+            flashHint(hint, 'Image copied ✓ — open Messages, WhatsApp, or Mail and paste (⌘V)', 6000);
+          })
+          .catch(function(e) {
+            console.warn('Image clipboard write failed:', e);
+            downloadBlob(blob, 'the-local-set.png');
+            flashHint(hint, 'Image downloaded — drag into your message');
+          });
+        return;
+      }
+
+      // 3. Download.
+      downloadBlob(blob, 'the-local-set.png');
+      flashHint(hint, 'Image downloaded — drag into your message');
+    }
+
+    function dispatchPDF(blob, filename, hint) {
+      var file = new File([blob], filename, { type: 'application/pdf' });
+
+      // 1. Native share sheet.
+      if (canShareFiles([file])) {
+        navigator.share({ files: [file], title: 'Set List PDF' })
+          .then(function() { flashHint(hint, 'Shared ✓'); })
+          .catch(function() { hint.style.display = 'none'; });
+        return;
+      }
+
+      // 2. Download.
+      downloadBlob(blob, filename);
+      flashHint(hint, 'PDF downloaded — attach to Messages, WhatsApp, or Mail');
+    }
+
+    function canShareFiles(files) {
+      return !!(navigator.share && navigator.canShare && navigator.canShare({ files: files }));
+    }
+
+    function canWriteClipboardImage() {
+      return typeof ClipboardItem !== 'undefined'
+          && !!navigator.clipboard
+          && typeof navigator.clipboard.write === 'function';
+    }
+
+    function downloadBlob(blob, filename) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function flashHint(hint, text, ms) {
+      hint.textContent = text;
+      hint.style.display = 'block';
+      if (ms === 0) return; // persistent ("Preparing…")
+      setTimeout(function() { hint.style.display = 'none'; }, ms || 4000);
+    }
   </script>
 
 </body>
