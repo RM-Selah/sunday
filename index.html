@@ -11688,12 +11688,10 @@
       var scope = isMonth ? 'month' : 'week';
 
       // Detect Web Share API + files capability EARLY (synchronously,
-      // inside the user gesture). On iPhone / iPad / Mac Safari the image
-      // attaches automatically via the native share sheet — no second
-      // app-open is needed. On Mac Chrome we open the target app and the
-      // image lands on the clipboard for ⌘V paste.
-      var probe = new File([new Blob([''], { type: 'image/png' })], 'probe.png', { type: 'image/png' });
-      var supportsFileShare = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [probe] }));
+      // inside the user gesture). Uses a real 1×1 PNG probe so Mac
+      // Safari correctly returns true — empty/invalid file blobs were
+      // making Safari fall through to the Mac Chrome download path.
+      var supportsFileShare = window.supportsNativeFileShare();
 
       // For the Mac Chrome path: open the target app NOW inside the click
       // gesture, so the popup blocker stays happy.
@@ -12015,11 +12013,11 @@
       var targetApp = (format === 'imessage' || format === 'whatsapp' || format === 'email') ? format : null;
       if (!targetApp) return;
 
-      // Synchronously inside the click: detect native share-file support
-      // and either open the target app (Mac Chrome path) or do nothing
-      // and wait for the share sheet (iPhone/Safari path).
-      var probe = new File([new Blob([''], { type: 'image/png' })], 'probe.png', { type: 'image/png' });
-      var supportsFileShare = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [probe] }));
+      // Synchronous detection (uses a real 1×1 PNG probe so Mac Safari
+      // correctly returns true). If supported → native share sheet on
+      // iPhone / iPad / Mac Safari. If not → open the target app inside
+      // the click gesture for the Mac Chrome paste-from-clipboard flow.
+      var supportsFileShare = window.supportsNativeFileShare();
       if (!supportsFileShare && targetApp) openSetTarget(targetApp);
 
       flashHint(hint, 'Preparing image…', 0);
@@ -12103,6 +12101,28 @@
           && typeof navigator.clipboard.write === 'function';
     }
     window.canWriteClipboardImage = canWriteClipboardImage;
+
+    // Synchronous detection of whether navigator.share can accept a file.
+    // Uses a real 1×1 PNG as the probe — Safari rejects empty / invalid
+    // file blobs in canShare(), which used to make us fall through to
+    // the Mac Chrome path on Mac Safari (clipboard, then download).
+    var _fileShareSupportCache = null;
+    function supportsNativeFileShare() {
+      if (_fileShareSupportCache !== null) return _fileShareSupportCache;
+      if (!navigator.share || !navigator.canShare) { _fileShareSupportCache = false; return false; }
+      try {
+        var b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+        var bin = atob(b64);
+        var arr = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        var f = new File([new Blob([arr], { type: 'image/png' })], 'probe.png', { type: 'image/png' });
+        _fileShareSupportCache = !!navigator.canShare({ files: [f] });
+      } catch (e) {
+        _fileShareSupportCache = false;
+      }
+      return _fileShareSupportCache;
+    }
+    window.supportsNativeFileShare = supportsNativeFileShare;
 
     function downloadBlob(blob, filename) {
       var url = URL.createObjectURL(blob);
