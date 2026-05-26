@@ -11925,10 +11925,15 @@
 
     // ── Set list share — single Share button, iOS-native pattern ──
     // window.shareSet() is the primary action: image to native share
-    // sheet on iPhone, image to clipboard on Mac.
+    // sheet on iPhone, image to clipboard on Mac. On a successful
+    // native share we dismiss the set card overlay so the user lands
+    // back on the set builder instead of having to tap ✕.
     window.shareSet = function() {
       var hint = document.getElementById('set-card-share-hint');
-      shareImageToTarget(preloadSetShareImage(), null, hint, 'Set List');
+      Promise.resolve(shareImageToTarget(preloadSetShareImage(), null, hint, 'Set List'))
+        .then(function(result) {
+          if (result === 'shared') setTimeout(window.closeSetCard, 500);
+        });
     };
 
     window.shareSetPDF = function() {
@@ -11938,7 +11943,10 @@
       try { pdfResult = SundayPDF.generateSetPDF(true); }
       catch (e) { console.error('[Sunday] PDF generation failed:', e); }
       if (!pdfResult || !pdfResult.blob) { flashHint(hint, 'PDF generation failed'); return; }
-      sharePdfBlob(pdfResult.blob, pdfResult.filename, hint, 'Set List PDF');
+      Promise.resolve(sharePdfBlob(pdfResult.blob, pdfResult.filename, hint, 'Set List PDF'))
+        .then(function(result) {
+          if (result === 'shared') setTimeout(window.closeSetCard, 500);
+        });
     };
 
     // Legacy entry point — any Sunny action or old call site that still
@@ -11961,38 +11969,33 @@
     //   targetApp:    'imessage' | 'whatsapp' | 'email'
     //   hint:         element to display feedback in
     //   title:        title for navigator.share
+    // Returns a Promise<string> that resolves to one of:
+    //   'shared'    — native share completed successfully (user sent)
+    //   'cancelled' — user dismissed the share sheet without sending
+    //   'clipboard' — Mac/desktop path: image is on clipboard
+    //   'fail'      — generation failed or no clipboard support
     window.shareImageToTarget = function(imagePromise, targetApp, hint, title) {
       flashHint(hint, 'Preparing image…', 0);
 
       // ── iPhone / iPad / Android Chrome: native OS share sheet ──
-      // The share sheet pops with the image already attached. User
-      // picks Messages / WhatsApp / Mail and the image is in the
-      // message — one pick of recipient + send.
       if (shouldUseNativeShareSheet()) {
-        Promise.resolve(imagePromise).then(function(r) {
-          if (!r || !r.blob) { flashHint(hint, 'Image generation failed'); return; }
+        return Promise.resolve(imagePromise).then(function(r) {
+          if (!r || !r.blob) { flashHint(hint, 'Image generation failed'); return 'fail'; }
           var file = new File([r.blob], r.filename, { type: 'image/png' });
-          navigator.share({ files: [file], title: title || 'Share' })
-            .then(function() { flashHint(hint, 'Shared ✓'); })
+          return navigator.share({ files: [file], title: title || 'Share' })
+            .then(function() { flashHint(hint, 'Shared ✓'); return 'shared'; })
             .catch(function(e) {
-              if (e && e.name === 'AbortError') { hint && (hint.style.display = 'none'); return; }
-              // Native share misfired — fall to the desktop flow as a
-              // last resort. Won't auto-open the target app here either.
+              if (e && e.name === 'AbortError') { hint && (hint.style.display = 'none'); return 'cancelled'; }
+              // Native share misfired — fall to the desktop flow as a last resort.
               desktopClipboardFlow(imagePromise, targetApp, hint);
+              return 'clipboard';
             });
         });
-        return;
       }
 
       // ── Mac / desktop: clipboard-only ──
-      // We used to auto-open the target app via sms:?body= / wa.me / mailto:.
-      // It was fragile: window.open + the async clipboard.write race lost
-      // the user gesture intermittently, and the share ended up dumping
-      // into Downloads. The reliable thing is to copy the image to the
-      // clipboard with the ClipboardItem(Promise<Blob>) pattern (which
-      // keeps the gesture alive), then tell the user to open their app
-      // and paste. Predictable on every Mac browser.
       desktopClipboardFlow(imagePromise, targetApp, hint);
+      return Promise.resolve('clipboard');
     };
 
     function desktopClipboardFlow(imagePromise, targetApp, hint) {
@@ -12121,18 +12124,24 @@
     }
     window.messagingHint = messagingHint;
 
+    // Returns the same status strings as shareImageToTarget so callers
+    // can auto-dismiss their overlay on a successful share.
     function sharePdfBlob(blob, filename, hint, title) {
       var file = new File([blob], filename, { type: 'application/pdf' });
-      // Try native share for PDFs only where it's reliable.
       if (shouldUseNativeShareSheet() && navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({ files: [file], title: title || 'PDF' })
-          .then(function() { flashHint(hint, 'Shared ✓'); })
-          .catch(function() { hint && (hint.style.display = 'none'); });
-        return;
+        return navigator.share({ files: [file], title: title || 'PDF' })
+          .then(function() { flashHint(hint, 'Shared ✓'); return 'shared'; })
+          .catch(function(e) {
+            if (e && e.name === 'AbortError') { hint && (hint.style.display = 'none'); return 'cancelled'; }
+            downloadBlob(blob, filename);
+            flashHint(hint, 'PDF downloaded — attach it to your message');
+            return 'download';
+          });
       }
       // Desktop: PDF can't go on the clipboard usefully — just download.
       downloadBlob(blob, filename);
       flashHint(hint, 'PDF downloaded — attach it to your message');
+      return Promise.resolve('download');
     }
     window.sharePdfBlob = sharePdfBlob;
 
