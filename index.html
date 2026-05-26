@@ -327,12 +327,36 @@
       padding: 10px;
       border-top: 1px solid var(--gb);
       flex-shrink: 0;
+      /* Sticky-bottom inside the scrolling messages column. On an empty
+         chat it sits right under the greeting; as messages pile up it
+         drops with them, and once content overflows it pins to the
+         visible bottom so the user can always type. */
+      position: sticky;
+      bottom: 0;
+      background: rgba(8,8,14,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      margin-top: 6px;
+      z-index: 1;
     }
 
     .sidebar-chat-input-row {
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    /* Pulse animation — gentle amber ring on the input to draw the
+       user's eye to the chat. Removed on focus / first message. */
+    @keyframes sunny-pulse-ring {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(224,154,45,0); border-color: var(--gb); }
+      50%      { box-shadow: 0 0 0 4px rgba(224,154,45,0.18); border-color: rgba(224,154,45,0.4); }
+    }
+    .sidebar-chat-input.sunny-pulse {
+      animation: sunny-pulse-ring 2.4s ease-in-out infinite;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .sidebar-chat-input.sunny-pulse { animation: none; }
     }
 
     .sidebar-chat-context {
@@ -3457,9 +3481,13 @@
         background: var(--gb2);
       }
 
-      /* Tiny grabber on the peeked input bar — hints the sheet can be lifted. */
+      /* Tiny grabber on the peeked input bar — hints the sheet can be lifted.
+         Keep position:sticky from the base styles (so the input pins to the
+         bottom when the user scrolls), but ALSO push it to the end of the
+         messages flex column when the chat is short, so the peek bar shows
+         the input instead of empty space below the greeting. */
       .sidebar-chat-input-area {
-        position: relative;
+        margin-top: auto;
       }
       .sidebar-chat-input-area::before {
         content: '';
@@ -3744,18 +3772,25 @@
             ✦ &nbsp; Who's been on a lot lately?
           </button>
         </div>
-      </div>
-      <div class="sidebar-chat-input-area">
-        <div id="sidebar-file-preview" style="display:none; margin-bottom:6px;"></div>
-        <div class="sidebar-chat-input-row">
-          <span class="sidebar-chat-context" id="sidebar-chat-context">SET</span>
-          <button class="sidebar-chat-attach" onclick="document.getElementById('sidebar-file-input').click()" title="Attach file">📎</button>
-          <input type="file" id="sidebar-file-input" accept="image/*,.pdf" style="display:none" onchange="window.handleFileSelect(this)">
-          <input type="text" class="sidebar-chat-input" id="sidebar-chat-input"
-                 placeholder="Ask Sunny anything…"
-                 onkeydown="if(event.key==='Enter')window.handleSundayChat()"
-                 onpaste="window.handlePaste(event)">
-          <button class="sidebar-chat-send" onclick="window.handleSundayChat()">&rarr;</button>
+        <!-- Input area lives INSIDE the messages container now. On an
+             empty chat it sits right under the greeting / chips so the
+             user's eye lands on it. As messages get prepended above it,
+             it naturally drops down with the conversation. When the
+             content overflows the sidebar, `position: sticky` keeps the
+             input pinned to the bottom of the visible area. -->
+        <div class="sidebar-chat-input-area" id="sidebar-chat-input-area">
+          <div id="sidebar-file-preview" style="display:none; margin-bottom:6px;"></div>
+          <div class="sidebar-chat-input-row">
+            <span class="sidebar-chat-context" id="sidebar-chat-context">SET</span>
+            <button class="sidebar-chat-attach" onclick="document.getElementById('sidebar-file-input').click()" title="Attach file">📎</button>
+            <input type="file" id="sidebar-file-input" accept="image/*,.pdf" style="display:none" onchange="window.handleFileSelect(this)">
+            <input type="text" class="sidebar-chat-input" id="sidebar-chat-input"
+                   placeholder="Ask Sunny anything…"
+                   onkeydown="if(event.key==='Enter')window.handleSundayChat()"
+                   onfocus="window.stopSunnyPulse && window.stopSunnyPulse()"
+                   onpaste="window.handlePaste(event)">
+            <button class="sidebar-chat-send" onclick="window.handleSundayChat()">&rarr;</button>
+          </div>
         </div>
       </div>
     </div>
@@ -9498,6 +9533,8 @@
       if (!sundayChatMessages) return null;
       // First real user message → hide the starter chips so they don't clutter the thread
       hideSidebarStarterChips();
+      // Stop the input pulse as soon as a real conversation starts.
+      if (typeof window.stopSunnyPulse === 'function') window.stopSunnyPulse();
       var div = document.createElement('div');
       div.className = 'sidebar-msg ' + type;
       if (type === 'sunday' || type === 'sunday thinking') {
@@ -9505,9 +9542,35 @@
       } else {
         div.textContent = text;
       }
-      sundayChatMessages.appendChild(div);
+      // Insert BEFORE the sticky input area so the input always stays
+      // at the bottom of the message column (and the new message
+      // appears above it). When the messages container scrolls, the
+      // input stays pinned to the visible bottom via position:sticky.
+      var inputArea = document.getElementById('sidebar-chat-input-area');
+      if (inputArea && inputArea.parentNode === sundayChatMessages) {
+        sundayChatMessages.insertBefore(div, inputArea);
+      } else {
+        sundayChatMessages.appendChild(div);
+      }
       sundayChatMessages.scrollTop = sundayChatMessages.scrollHeight;
       return div;
+    }
+
+    // Start / stop the gentle pulse on the chat input. Pulse starts once
+    // on page load (deferred until DOM is ready) and stops on first
+    // focus or first sent message — whichever comes first.
+    window.startSunnyPulse = function() {
+      var input = document.getElementById('sidebar-chat-input');
+      if (input) input.classList.add('sunny-pulse');
+    };
+    window.stopSunnyPulse = function() {
+      var input = document.getElementById('sidebar-chat-input');
+      if (input) input.classList.remove('sunny-pulse');
+    };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() { setTimeout(window.startSunnyPulse, 400); });
+    } else {
+      setTimeout(window.startSunnyPulse, 400);
     }
 
     function hideSidebarStarterChips() {
