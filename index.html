@@ -3832,19 +3832,27 @@
       <div id="set-card-overlay" style="display:none; position:fixed; inset:0; background:rgba(5,5,7,0.85); z-index:500; overflow-y:auto; padding:24px 16px;">
         <div id="set-card" style="background:#fff; border-radius:12px; max-width:440px; margin:0 auto; padding:32px 36px; font-family:var(--font-display); color:#111;"></div>
 
-        <!-- Share dropdown — three formats, each uses the native share
-             sheet (iPhone, Mac Safari) and falls back to clipboard/download. -->
+        <!-- Share dropdown — messaging-first, mirrors the roster share.
+             Messaging apps use native share sheet on iPhone / Safari and
+             "open app + clipboard paste" on Mac Chrome. PDF + text live
+             in a small secondary footer. -->
         <div style="max-width:440px; margin:16px auto 0; position:relative;">
           <div id="share-dropdown" style="display:none; position:absolute; bottom:calc(100% + 8px); left:0; right:40px; background:#1c1c1e; border:1px solid rgba(255,255,255,0.12); border-radius:12px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.6);">
-            <button onclick="window.shareSetAs('image')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-              <span style="font-size:20px;">📸</span> Share image
+            <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:10px 14px 4px;">Send set list</div>
+            <button onclick="window.shareSetAs('imessage')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+              <span style="font-size:20px;">💬</span> iMessage
             </button>
-            <button onclick="window.shareSetAs('pdf')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-              <span style="font-size:20px;">📄</span> Share PDF
+            <button onclick="window.shareSetAs('whatsapp')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+              <span style="font-size:20px;">🟢</span> WhatsApp
             </button>
-            <button onclick="window.shareSetAs('text')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:14px 18px; font-family:var(--font-display); font-size:14px; color:rgba(255,255,255,0.6); cursor:pointer; text-align:left;">
-              <span style="font-size:20px;">📋</span> Copy as text
+            <button onclick="window.shareSetAs('email')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
+              <span style="font-size:20px;">✉️</span> Email
             </button>
+            <div style="height:1px; background:rgba(255,255,255,0.08); margin:8px 0 0;"></div>
+            <div style="display:flex; gap:0; background:rgba(255,255,255,0.02);">
+              <button onclick="window.shareSetAs('pdf')" style="flex:1; background:none; border:none; padding:9px 12px; font-family:var(--font-display); font-size:10px; letter-spacing:0.5px; color:rgba(255,255,255,0.45); cursor:pointer; text-align:center;">📄 PDF</button>
+              <button onclick="window.shareSetAs('text')" style="flex:1; background:none; border:none; padding:9px 12px; font-family:var(--font-display); font-size:10px; letter-spacing:0.5px; color:rgba(255,255,255,0.45); cursor:pointer; text-align:center; border-left:1px solid rgba(255,255,255,0.06);">📋 Text</button>
+            </div>
           </div>
           <div style="display:flex; gap:10px;">
             <button id="btn-card-share" onclick="window.toggleShareDropdown()" style="flex:1; background:var(--amber); border:none; border-radius:8px; padding:14px 18px; font-family:var(--font-display); font-size:13px; letter-spacing:0.5px; color:#fff; cursor:pointer; font-weight:600;">Share ↑</button>
@@ -11928,114 +11936,158 @@
     }
 
     // ── Set list share ────────────────────────────────────────────────
-    // One entry point: shareSetAs(format) where format is 'image', 'pdf',
-    // or 'text'. Each format picks the most direct path available:
-    //   1. Native share sheet via navigator.share with a File
-    //        — iPhone / iPad / Android / Mac Safari 14+. Opens the
-    //          system sheet so the user picks Messages, WhatsApp,
-    //          Mail, Notes, AirDrop, etc.
-    //   2. Clipboard via ClipboardItem (for image) or writeText (for text)
-    //        — Mac Chrome / Edge. User pastes (⌘V) into any app.
-    //   3. Plain download
-    //        — last resort. User attaches the file manually.
-    //
-    // We deliberately do NOT auto-open Messages / WhatsApp / Mail. The
-    // sms: URL on macOS picks the most recent conversation (the bug that
-    // landed every share in a chat with Georgia), and the same URL
-    // schemes can't carry an image/PDF attachment anyway. Cleaner to let
-    // the user open their own app and paste.
+    // Mirrors the roster share flow exactly:
+    //   1. Click "Share ↑" → dropdown opens AND set-card image starts
+    //      generating in the background so a platform click is fast.
+    //   2. Pick iMessage / WhatsApp / Email →
+    //        - iPhone / iPad / Mac Safari: native share sheet with the
+    //          image already attached (one pick of recipient = done).
+    //        - Mac Chrome: target app opens synchronously (popup blocker
+    //          safe), image is copied to clipboard, ⌘V paste in the
+    //          opened app.
+    //   3. PDF: native share sheet on iPhone/Safari, plain download on Mac.
+    //   4. Text: clipboard.
+
+    var _setShareImagePromise = null;
+
+    function preloadSetShareImage() {
+      if (_setShareImagePromise) return _setShareImagePromise;
+      var card = document.getElementById('set-card');
+      if (!card) return Promise.resolve(null);
+      _setShareImagePromise = html2canvas(card, {
+        scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false
+      }).then(function(canvas) {
+        return new Promise(function(resolve) {
+          canvas.toBlob(function(blob) {
+            resolve(blob ? { blob: blob, filename: 'the-local-set.png' } : null);
+          }, 'image/png');
+        });
+      }).catch(function(e) {
+        console.error('Set image generation failed:', e);
+        return null;
+      });
+      return _setShareImagePromise;
+    }
 
     window.toggleShareDropdown = function() {
       var dd = document.getElementById('share-dropdown');
-      dd.style.display = (dd.style.display === 'none' || !dd.style.display) ? 'block' : 'none';
+      var opening = dd.style.display === 'none' || !dd.style.display;
+      dd.style.display = opening ? 'block' : 'none';
+      if (opening) {
+        // Reset cache + kick off generation now so the platform click is fast.
+        _setShareImagePromise = null;
+        try { preloadSetShareImage(); } catch (e) {}
+      }
+    };
+
+    // Reset the image cache whenever the set card is rebuilt or closed —
+    // the next open will regenerate from the latest set.
+    var _origCloseSetCard = window.closeSetCard;
+    window.closeSetCard = function() {
+      _setShareImagePromise = null;
+      if (typeof _origCloseSetCard === 'function') _origCloseSetCard();
+      else document.getElementById('set-card-overlay').style.display = 'none';
     };
 
     window.shareSetAs = function(format) {
       document.getElementById('share-dropdown').style.display = 'none';
       var hint = document.getElementById('set-card-share-hint');
 
-      if (format === 'text')  return shareSetAsText(hint);
-      if (format === 'image') return shareSetAsImage(hint);
-      if (format === 'pdf')   return shareSetAsPDF(hint);
+      if (format === 'text') {
+        var text = buildSetText();
+        navigator.clipboard.writeText(text)
+          .then(function() { flashHint(hint, 'Text copied ✓ — paste anywhere (⌘V)'); })
+          .catch(function() { flashHint(hint, 'Copy failed — try again'); });
+        return;
+      }
+
+      if (format === 'pdf') {
+        flashHint(hint, 'Generating PDF…', 0);
+        var result;
+        try { result = SundayPDF.generateSetPDF(true); }
+        catch (e) { console.error('PDF generation failed:', e); }
+        if (!result || !result.blob) { flashHint(hint, 'PDF generation failed'); return; }
+        dispatchSetPDF(result.blob, result.filename, hint);
+        return;
+      }
+
+      // Messaging platforms: 'imessage', 'whatsapp', 'email'.
+      var targetApp = (format === 'imessage' || format === 'whatsapp' || format === 'email') ? format : null;
+      if (!targetApp) return;
+
+      // Synchronously inside the click: detect native share-file support
+      // and either open the target app (Mac Chrome path) or do nothing
+      // and wait for the share sheet (iPhone/Safari path).
+      var probe = new File([new Blob([''], { type: 'image/png' })], 'probe.png', { type: 'image/png' });
+      var supportsFileShare = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [probe] }));
+      if (!supportsFileShare && targetApp) openSetTarget(targetApp);
+
+      flashHint(hint, 'Preparing image…', 0);
+      preloadSetShareImage().then(function(r) {
+        if (!r || !r.blob) { flashHint(hint, 'Image generation failed'); return; }
+
+        // Path A — native share sheet (iPhone / iPad / Mac Safari).
+        if (supportsFileShare) {
+          var file = new File([r.blob], r.filename, { type: 'image/png' });
+          navigator.share({ files: [file], title: 'Set List' })
+            .then(function() { flashHint(hint, 'Shared ✓'); })
+            .catch(function() { hint && (hint.style.display = 'none'); });
+          return;
+        }
+
+        // Path B — Mac Chrome. App is opening; copy image to clipboard
+        // so the user can ⌘V paste.
+        if (canWriteClipboardImage()) {
+          var item = new ClipboardItem({ 'image/png': r.blob });
+          navigator.clipboard.write([item])
+            .then(function() {
+              flashHint(hint, setHintForTarget(targetApp), 7000);
+            })
+            .catch(function(e) {
+              console.warn('Set clipboard write failed:', e);
+              downloadBlob(r.blob, r.filename);
+              flashHint(hint, 'Couldn\'t copy — image saved instead. Drag it into your message.');
+            });
+          return;
+        }
+
+        downloadBlob(r.blob, r.filename);
+        flashHint(hint, 'Image saved — drag into your message');
+      });
     };
 
-    function shareSetAsText(hint) {
-      var text = buildSetText();
-      navigator.clipboard.writeText(text)
-        .then(function() { flashHint(hint, 'Text copied ✓ — paste anywhere (⌘V)'); })
-        .catch(function() { flashHint(hint, 'Copy failed — try again'); });
-    }
-
-    function shareSetAsImage(hint) {
-      flashHint(hint, 'Preparing image…', 0);
-      var card = document.getElementById('set-card');
-      html2canvas(card, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
-        .then(function(canvas) {
-          canvas.toBlob(function(blob) { dispatchImage(blob, hint); }, 'image/png');
-        })
-        .catch(function(e) {
-          console.error('html2canvas failed:', e);
-          flashHint(hint, 'Image generation failed');
-        });
-    }
-
-    function shareSetAsPDF(hint) {
-      flashHint(hint, 'Generating PDF…', 0);
-      var result;
-      try { result = SundayPDF.generateSetPDF(true); }
-      catch (e) { console.error('PDF generation failed:', e); }
-      if (!result || !result.blob) {
-        flashHint(hint, 'PDF generation failed');
-        return;
+    // Open the chosen messaging / mail app. Uses sms:?body= (iOS 8+
+    // syntax — sms:&body= was the "Georgia bug" that hijacked Messages
+    // into the most recent contact on macOS).
+    function openSetTarget(targetApp) {
+      var churchName = (typeof heroState !== 'undefined' && heroState.churchName)
+        ? heroState.churchName : 'The Local';
+      if (targetApp === 'imessage') {
+        window.open('sms:?body=', '_blank');
+      } else if (targetApp === 'whatsapp') {
+        window.open('https://web.whatsapp.com/', '_blank');
+      } else if (targetApp === 'email') {
+        window.open('mailto:?subject=' + encodeURIComponent(churchName + ' — Sunday Set List'), '_blank');
       }
-      dispatchPDF(result.blob, result.filename, hint);
     }
 
-    function dispatchImage(blob, hint) {
-      var file = new File([blob], 'the-local-set.png', { type: 'image/png' });
-
-      // 1. Native share sheet (iPhone, Mac Safari, Android).
-      if (canShareFiles([file])) {
-        navigator.share({ files: [file], title: 'Set List' })
-          .then(function() { flashHint(hint, 'Shared ✓'); })
-          .catch(function() { hint.style.display = 'none'; });
-        return;
-      }
-
-      // 2. Clipboard image (Mac Chrome / Edge).
-      if (canWriteClipboardImage()) {
-        var item = new ClipboardItem({ 'image/png': blob });
-        navigator.clipboard.write([item])
-          .then(function() {
-            flashHint(hint, 'Image copied ✓ — open Messages, WhatsApp, or Mail and paste (⌘V)', 6000);
-          })
-          .catch(function(e) {
-            console.warn('Image clipboard write failed:', e);
-            downloadBlob(blob, 'the-local-set.png');
-            flashHint(hint, 'Image downloaded — drag into your message');
-          });
-        return;
-      }
-
-      // 3. Download.
-      downloadBlob(blob, 'the-local-set.png');
-      flashHint(hint, 'Image downloaded — drag into your message');
+    function setHintForTarget(targetApp) {
+      if (targetApp === 'imessage') return 'Image copied ✓ — paste into Messages (⌘V)';
+      if (targetApp === 'whatsapp') return 'Image copied ✓ — pick a chat in WhatsApp and paste (⌘V)';
+      if (targetApp === 'email')    return 'Image copied ✓ — paste into Mail (⌘V)';
+      return 'Image copied ✓ — paste anywhere (⌘V)';
     }
 
-    function dispatchPDF(blob, filename, hint) {
+    function dispatchSetPDF(blob, filename, hint) {
       var file = new File([blob], filename, { type: 'application/pdf' });
-
-      // 1. Native share sheet.
       if (canShareFiles([file])) {
         navigator.share({ files: [file], title: 'Set List PDF' })
           .then(function() { flashHint(hint, 'Shared ✓'); })
-          .catch(function() { hint.style.display = 'none'; });
+          .catch(function() { hint && (hint.style.display = 'none'); });
         return;
       }
-
-      // 2. Download.
       downloadBlob(blob, filename);
-      flashHint(hint, 'PDF downloaded — attach to Messages, WhatsApp, or Mail');
+      flashHint(hint, 'PDF downloaded — attach to your message');
     }
 
     // Exposed on window so the roster share flow in the main app script
