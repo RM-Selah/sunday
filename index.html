@@ -11916,15 +11916,18 @@
     };
 
     // UA-based: which platforms use the native OS share sheet?
-    // Only iPhone / iPad / Android Chrome — Mac Safari's file-share
-    // support exists but is too inconsistent across versions, and we
-    // get a more reliable experience by routing Mac through the
-    // clipboard+open-app path instead.
+    // iPhone / iPad / Android Chrome / Mac Safari — anywhere
+    // navigator.share with files is supported. On Mac Safari this
+    // pops the system share sheet with the image already attached,
+    // so the user picks Messages / Mail / etc. and the image lands
+    // in the message — no manual paste needed.
     function shouldUseNativeShareSheet() {
       if (!navigator.share) return false;
       var ua = navigator.userAgent || '';
       if (/iPhone|iPad|iPod/.test(ua)) return true;
       if (/Android/.test(ua) && /Chrome\//.test(ua)) return true;
+      // Mac Safari: "Macintosh" + "Version/<x>" + "Safari/<x>", NOT Chrome / Edge.
+      if (/Macintosh/.test(ua) && /Version\/[\d.]+\s+Safari\//.test(ua) && !/Chrome|Chromium|Edg/.test(ua)) return true;
       return false;
     }
 
