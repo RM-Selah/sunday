@@ -12018,37 +12018,48 @@
       // iPhone / iPad / Mac Safari. If not → open the target app inside
       // the click gesture for the Mac Chrome paste-from-clipboard flow.
       var supportsFileShare = window.supportsNativeFileShare();
+      console.log('[Sunday] shareSetAs(' + format + ') · supportsFileShare =', supportsFileShare);
       if (!supportsFileShare && targetApp) openSetTarget(targetApp);
 
       flashHint(hint, 'Preparing image…', 0);
       preloadSetShareImage().then(function(r) {
-        if (!r || !r.blob) { flashHint(hint, 'Image generation failed'); return; }
+        if (!r || !r.blob) {
+          console.warn('[Sunday] image generation failed for set share');
+          flashHint(hint, 'Image generation failed');
+          return;
+        }
 
         // Path A — native share sheet (iPhone / iPad / Mac Safari).
         if (supportsFileShare) {
           var file = new File([r.blob], r.filename, { type: 'image/png' });
+          console.log('[Sunday] taking Path A · navigator.share with file', file);
           navigator.share({ files: [file], title: 'Set List' })
-            .then(function() { flashHint(hint, 'Shared ✓'); })
-            .catch(function() { hint && (hint.style.display = 'none'); });
+            .then(function() { console.log('[Sunday] share OK'); flashHint(hint, 'Shared ✓'); })
+            .catch(function(e) {
+              console.warn('[Sunday] share rejected:', e && e.name, e && e.message);
+              hint && (hint.style.display = 'none');
+            });
           return;
         }
 
         // Path B — Mac Chrome. App is opening; copy image to clipboard
         // so the user can ⌘V paste.
         if (canWriteClipboardImage()) {
+          console.log('[Sunday] taking Path B · clipboard write');
           var item = new ClipboardItem({ 'image/png': r.blob });
           navigator.clipboard.write([item])
             .then(function() {
               flashHint(hint, setHintForTarget(targetApp), 7000);
             })
             .catch(function(e) {
-              console.warn('Set clipboard write failed:', e);
+              console.warn('[Sunday] clipboard write failed:', e);
               downloadBlob(r.blob, r.filename);
               flashHint(hint, 'Couldn\'t copy — image saved instead. Drag it into your message.');
             });
           return;
         }
 
+        console.log('[Sunday] taking Path C · download fallback');
         downloadBlob(r.blob, r.filename);
         flashHint(hint, 'Image saved — drag into your message');
       });
@@ -12103,24 +12114,49 @@
     window.canWriteClipboardImage = canWriteClipboardImage;
 
     // Synchronous detection of whether navigator.share can accept a file.
-    // Uses a real 1×1 PNG as the probe — Safari rejects empty / invalid
-    // file blobs in canShare(), which used to make us fall through to
-    // the Mac Chrome path on Mac Safari (clipboard, then download).
+    // Uses a real 1×1 PNG as the probe (Safari rejects empty / invalid
+    // file blobs). Falls back to userAgent sniffing if canShare isn't
+    // available — older Safari versions have share() but not canShare().
     var _fileShareSupportCache = null;
     function supportsNativeFileShare() {
       if (_fileShareSupportCache !== null) return _fileShareSupportCache;
-      if (!navigator.share || !navigator.canShare) { _fileShareSupportCache = false; return false; }
-      try {
-        var b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-        var bin = atob(b64);
-        var arr = new Uint8Array(bin.length);
-        for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-        var f = new File([new Blob([arr], { type: 'image/png' })], 'probe.png', { type: 'image/png' });
-        _fileShareSupportCache = !!navigator.canShare({ files: [f] });
-      } catch (e) {
-        _fileShareSupportCache = false;
+      var result = false;
+      var reason = 'none';
+
+      if (!navigator.share) {
+        reason = 'no navigator.share';
+      } else if (navigator.canShare) {
+        // Preferred path: probe with a tiny real PNG.
+        try {
+          var b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+          var bin = atob(b64);
+          var arr = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+          var f = new File([new Blob([arr], { type: 'image/png' })], 'probe.png', { type: 'image/png' });
+          result = !!navigator.canShare({ files: [f] });
+          reason = 'canShare probe → ' + result;
+        } catch (e) {
+          result = false;
+          reason = 'canShare threw: ' + (e && e.message);
+        }
       }
-      return _fileShareSupportCache;
+
+      // Fallback: userAgent sniff for Safari / iPhone / iPad / Android Chrome
+      // when the probe didn't conclude positively.
+      if (!result && navigator.share) {
+        var ua = navigator.userAgent || '';
+        var isIOS = /iPhone|iPad|iPod/.test(ua);
+        var isMacSafari = /Macintosh/.test(ua) && /Safari\//.test(ua) && !/Chrome|Chromium|Edg/.test(ua);
+        var isAndroidChrome = /Android/.test(ua) && /Chrome\//.test(ua);
+        if (isIOS || isMacSafari || isAndroidChrome) {
+          result = true;
+          reason = 'UA fallback (' + (isIOS ? 'iOS' : isMacSafari ? 'Mac Safari' : 'Android Chrome') + ')';
+        }
+      }
+
+      console.log('[Sunday] supportsNativeFileShare =', result, '·', reason);
+      _fileShareSupportCache = result;
+      return result;
     }
     window.supportsNativeFileShare = supportsNativeFileShare;
 
