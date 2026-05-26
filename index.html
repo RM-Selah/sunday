@@ -8954,9 +8954,9 @@
       html += '<div style="font-size:22px; font-weight:500; color:#111; line-height:1.2;">Sunday set</div></div>';
       html += '<div style="text-align:right;"><div style="font-size:12px; color:#888;">' + esc(state.rosterMonth) + '</div></div></div>';
 
-      // Meta row
+      // Meta row — Worship leader removed 2026-05-26 per Reuben's request
+      // (set card is for the songs; the band callsheet lives on the roster share).
       html += '<div style="display:flex; gap:24px; margin-bottom:20px; padding-bottom:16px; border-bottom:0.5px solid #e5e5e5;">';
-      if (wl) html += '<div><div style="font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:#888; margin-bottom:3px;">Worship leader</div><div style="font-size:13px; font-weight:500; color:#111;">' + esc(wl) + '</div></div>';
       html += '<div><div style="font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:#888; margin-bottom:3px;">Duration</div><div style="font-size:13px; font-weight:500; color:#111;">' + totalMins + ' min</div></div>';
       html += '<div><div style="font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:#888; margin-bottom:3px;">Songs</div><div style="font-size:13px; font-weight:500; color:#111;">' + state.set.length + '</div></div>';
       html += '</div>';
