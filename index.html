@@ -11654,137 +11654,62 @@
     window.shareRosterAs = function(format) {
       window.closeRosterShareMenu();
       var hint = document.getElementById('roster-share-hint');
+      console.log('[Sunday] shareRosterAs(' + format + ')');
 
       if (format === 'text') {
         var built = buildRosterShareText();
         navigator.clipboard.writeText(built.text)
-          .then(function() { flashRosterHint(hint, 'Text copied ✓ — paste anywhere (⌘V)'); })
+          .then(function() { flashRosterHint(hint, 'Text copied ✓ — paste anywhere'); })
           .catch(function() { flashRosterHint(hint, 'Copy failed — try again'); });
         return;
       }
 
       if (format === 'pdf' || format === 'month-pdf') {
         flashRosterHint(hint, 'Generating PDF…', 0);
-        var result;
+        var pdfResult;
         try {
-          result = (format === 'pdf')
+          pdfResult = (format === 'pdf')
             ? SundayPDF.generateRosterPDF(undefined, undefined, true)
             : SundayPDF.generateMonthVertical(undefined, 'pdf', true);
-        } catch (e) { console.error('Roster PDF failed:', e); }
-        if (!result || !result.blob) {
-          flashRosterHint(hint, 'PDF generation failed');
-          return;
+        } catch (e) { console.error('[Sunday] roster PDF failed:', e); }
+        if (!pdfResult || !pdfResult.blob) { flashRosterHint(hint, 'PDF generation failed'); return; }
+        if (typeof window.sharePdfBlob === 'function') {
+          window.sharePdfBlob(pdfResult.blob, pdfResult.filename, hint, format === 'pdf' ? 'Roster PDF' : 'Month PDF');
+        } else {
+          window.downloadBlob && window.downloadBlob(pdfResult.blob, pdfResult.filename);
+          flashRosterHint(hint, 'PDF downloaded — attach it to your message');
         }
-        dispatchRosterPDF(result.blob, result.filename, hint);
         return;
       }
 
       // Image-based platform shares.
-      // Single week: 'imessage' / 'whatsapp' / 'email'.
-      // Whole month: 'month-imessage' / 'month-whatsapp' / 'month-email'.
+      //   Single week: 'imessage' / 'whatsapp' / 'email'.
+      //   Whole month: 'month-imessage' / 'month-whatsapp' / 'month-email'.
       var isMonth = format.indexOf('month-') === 0;
       var targetKey = isMonth ? format.replace('month-', '') : format;
-      var targetApp = (targetKey === 'imessage' || targetKey === 'whatsapp' || targetKey === 'email') ? targetKey : null;
+      if (targetKey !== 'imessage' && targetKey !== 'whatsapp' && targetKey !== 'email') return;
       var scope = isMonth ? 'month' : 'week';
 
-      // Detect Web Share API + files capability EARLY (synchronously,
-      // inside the user gesture). Uses a real 1×1 PNG probe so Mac
-      // Safari correctly returns true — empty/invalid file blobs were
-      // making Safari fall through to the Mac Chrome download path.
-      var supportsFileShare = window.supportsNativeFileShare();
-
-      // For the Mac Chrome path: open the target app NOW inside the click
-      // gesture, so the popup blocker stays happy.
-      if (!supportsFileShare && targetApp) openRosterTarget(targetApp);
-
-      // Use the pre-generated image from the dropdown-open warm-up. If
-      // the user clicked faster than generation could finish, the promise
-      // is still pending and we'll await it transparently.
-      flashRosterHint(hint, isMonth ? 'Building month overview…' : 'Preparing image…', 0);
-      preloadRosterShareImage(scope).then(function(r) {
-        if (!r || !r.blob) { flashRosterHint(hint, 'Image generation failed'); return; }
-
-        // Path A — native share sheet (iPhone / iPad / Mac Safari).
-        // The user picks the app from the OS picker; the image is
-        // already attached. One pick + recipient = done.
-        if (supportsFileShare) {
-          var file = new File([r.blob], r.filename, { type: 'image/png' });
-          navigator.share({ files: [file], title: 'Roster' })
-            .then(function() { flashRosterHint(hint, 'Shared ✓'); })
-            .catch(function() { hint && (hint.style.display = 'none'); });
-          return;
-        }
-
-        // Path B — Mac Chrome. Target app is already opening (we did it
-        // synchronously above). Copy the image to clipboard so user can
-        // paste with ⌘V.
-        copyImageToClipboard(r.blob, hint, targetApp, r.filename);
-      });
-    };
-
-    // Image → clipboard. After the user gesture has ended (we're inside an
-    // async chain), browsers still allow clipboard.write so long as the
-    // tab has focus. If the user switched to Messages already, the write
-    // can fail — in that case we silently fall back to a download so the
-    // image isn't lost.
-    function copyImageToClipboard(blob, hint, targetApp, filename) {
-      if (typeof window.canWriteClipboardImage === 'function' && window.canWriteClipboardImage()) {
-        try {
-          var item = new ClipboardItem({ 'image/png': blob });
-          navigator.clipboard.write([item])
-            .then(function() {
-              flashRosterHint(hint, rosterHintForTarget(targetApp), 7000);
-            })
-            .catch(function(e) {
-              console.warn('Clipboard write failed:', e);
-              window.downloadBlob && window.downloadBlob(blob, filename);
-              flashRosterHint(hint, 'Couldn\'t copy — image saved instead. Drag it into your message.');
-            });
-          return;
-        } catch (e) {
-          console.warn('ClipboardItem unsupported:', e);
-        }
+      var imagePromise = preloadRosterShareImage(scope);
+      // Delegate to the shared dispatcher (defined alongside the set
+      // list share). Same logic on every screen.
+      if (typeof window.shareImageToTarget === 'function') {
+        window.shareImageToTarget(imagePromise, targetKey, hint, isMonth ? 'Month overview' : 'Roster');
+      } else {
+        // Shouldn't happen — script order guarantees the helper is loaded
+        // by the time this click fires. Defensive fallback just in case.
+        console.error('[Sunday] shareImageToTarget missing — bailing out');
+        flashRosterHint(hint, 'Share unavailable — please reload');
       }
-      // No clipboard support — download as last resort.
-      window.downloadBlob && window.downloadBlob(blob, filename);
-      flashRosterHint(hint, 'Image saved — drag into your message');
-    }
+    };
 
     // Open the chosen messaging / mail app. We never auto-fill text or
     // recipient — the user picks their contact / chat and pastes the
-    // image from the clipboard. The sms:?body= form is the iOS-8+ syntax;
-    // an earlier sms:&body= bug made macOS Messages land on a random
-    // recent contact (the "Georgia bug" we hit on the set-list share).
-    function openRosterTarget(targetApp) {
-      var churchName = (typeof heroState !== 'undefined' && heroState.churchName)
-        ? heroState.churchName : 'The Local';
-      if (targetApp === 'imessage') {
-        window.open('sms:?body=', '_blank');
-      } else if (targetApp === 'whatsapp') {
-        window.open('https://web.whatsapp.com/', '_blank');
-      } else if (targetApp === 'email') {
-        window.open('mailto:?subject=' + encodeURIComponent(churchName + ' — Roster'), '_blank');
-      }
-    }
-
-    function rosterHintForTarget(targetApp) {
-      if (targetApp === 'imessage') return 'Image copied ✓ — paste into Messages (⌘V)';
-      if (targetApp === 'whatsapp') return 'Image copied ✓ — pick a chat in WhatsApp and paste (⌘V)';
-      if (targetApp === 'email')    return 'Image copied ✓ — paste into Mail (⌘V)';
-      return 'Image copied ✓ — paste anywhere (⌘V)';
-    }
-
-    function dispatchRosterPDF(blob, filename, hint) {
-      var file = new File([blob], filename, { type: 'application/pdf' });
-      if (typeof window.canShareFiles === 'function' && window.canShareFiles([file])) {
-        navigator.share({ files: [file], title: filename })
-          .then(function() { flashRosterHint(hint, 'Shared ✓'); })
-          .catch(function() { hint && (hint.style.display = 'none'); });
-        return;
-      }
-      window.downloadBlob && window.downloadBlob(blob, filename);
-      flashRosterHint(hint, 'PDF downloaded — attach to your message');
-    }
+    // The per-target helpers (openRosterTarget / rosterHintForTarget /
+    // dispatchRosterPDF) were removed 2026-05-26. The shared dispatcher
+    // window.shareImageToTarget + window.openMessagingTarget +
+    // window.messagingHint + window.sharePdfBlob (all defined in the
+    // set-list share block) now handle both screens identically.
 
     function flashRosterHint(hint, text, ms) {
       if (!hint) return;
@@ -11934,17 +11859,23 @@
     }
 
     // ── Set list share ────────────────────────────────────────────────
-    // Mirrors the roster share flow exactly:
-    //   1. Click "Share ↑" → dropdown opens AND set-card image starts
-    //      generating in the background so a platform click is fast.
-    //   2. Pick iMessage / WhatsApp / Email →
-    //        - iPhone / iPad / Mac Safari: native share sheet with the
-    //          image already attached (one pick of recipient = done).
-    //        - Mac Chrome: target app opens synchronously (popup blocker
-    //          safe), image is copied to clipboard, ⌘V paste in the
-    //          opened app.
-    //   3. PDF: native share sheet on iPhone/Safari, plain download on Mac.
-    //   4. Text: clipboard.
+    // Rewritten 2026-05-26 for reliability:
+    //
+    // The fragile bit of the previous version was awaiting html2canvas
+    // before calling navigator.clipboard.write — Safari treats that as
+    // an expired user gesture and silently fails, which then fell
+    // through to a download. The fix: use the ClipboardItem(Promise<Blob>)
+    // pattern. We construct the ClipboardItem with a Blob-resolving
+    // promise SYNCHRONOUSLY inside the click handler, and the browser
+    // awaits the blob internally while keeping the gesture alive.
+    //
+    // Platform routing:
+    //   - iPhone / iPad / Android Chrome (UA-detected) → native share
+    //     sheet with the file attached. Best UX where supported.
+    //   - Everything else (Mac Safari, Mac Chrome, Edge, etc.) →
+    //     sync-open the target app, write image to clipboard via the
+    //     promise pattern, user pastes (⌘V).
+    //   - Fallback: download.
 
     var _setShareImagePromise = null;
 
@@ -11961,7 +11892,7 @@
           }, 'image/png');
         });
       }).catch(function(e) {
-        console.error('Set image generation failed:', e);
+        console.error('[Sunday] set image generation failed:', e);
         return null;
       });
       return _setShareImagePromise;
@@ -11972,14 +11903,11 @@
       var opening = dd.style.display === 'none' || !dd.style.display;
       dd.style.display = opening ? 'block' : 'none';
       if (opening) {
-        // Reset cache + kick off generation now so the platform click is fast.
         _setShareImagePromise = null;
         try { preloadSetShareImage(); } catch (e) {}
       }
     };
 
-    // Reset the image cache whenever the set card is rebuilt or closed —
-    // the next open will regenerate from the latest set.
     var _origCloseSetCard = window.closeSetCard;
     window.closeSetCard = function() {
       _setShareImagePromise = null;
@@ -11987,88 +11915,134 @@
       else document.getElementById('set-card-overlay').style.display = 'none';
     };
 
+    // UA-based: which platforms use the native OS share sheet?
+    // Only iPhone / iPad / Android Chrome — Mac Safari's file-share
+    // support exists but is too inconsistent across versions, and we
+    // get a more reliable experience by routing Mac through the
+    // clipboard+open-app path instead.
+    function shouldUseNativeShareSheet() {
+      if (!navigator.share) return false;
+      var ua = navigator.userAgent || '';
+      if (/iPhone|iPad|iPod/.test(ua)) return true;
+      if (/Android/.test(ua) && /Chrome\//.test(ua)) return true;
+      return false;
+    }
+
     window.shareSetAs = function(format) {
       document.getElementById('share-dropdown').style.display = 'none';
       var hint = document.getElementById('set-card-share-hint');
+      console.log('[Sunday] shareSetAs(' + format + ')');
 
       if (format === 'text') {
         var text = buildSetText();
         navigator.clipboard.writeText(text)
-          .then(function() { flashHint(hint, 'Text copied ✓ — paste anywhere (⌘V)'); })
+          .then(function() { flashHint(hint, 'Text copied ✓ — paste anywhere'); })
           .catch(function() { flashHint(hint, 'Copy failed — try again'); });
         return;
       }
 
       if (format === 'pdf') {
         flashHint(hint, 'Generating PDF…', 0);
-        var result;
-        try { result = SundayPDF.generateSetPDF(true); }
-        catch (e) { console.error('PDF generation failed:', e); }
-        if (!result || !result.blob) { flashHint(hint, 'PDF generation failed'); return; }
-        dispatchSetPDF(result.blob, result.filename, hint);
+        var pdfResult;
+        try { pdfResult = SundayPDF.generateSetPDF(true); }
+        catch (e) { console.error('[Sunday] PDF generation failed:', e); }
+        if (!pdfResult || !pdfResult.blob) { flashHint(hint, 'PDF generation failed'); return; }
+        sharePdfBlob(pdfResult.blob, pdfResult.filename, hint, 'Set List PDF');
         return;
       }
 
-      // Messaging platforms: 'imessage', 'whatsapp', 'email'.
-      var targetApp = (format === 'imessage' || format === 'whatsapp' || format === 'email') ? format : null;
-      if (!targetApp) return;
-
-      // Synchronous detection (uses a real 1×1 PNG probe so Mac Safari
-      // correctly returns true). If supported → native share sheet on
-      // iPhone / iPad / Mac Safari. If not → open the target app inside
-      // the click gesture for the Mac Chrome paste-from-clipboard flow.
-      var supportsFileShare = window.supportsNativeFileShare();
-      console.log('[Sunday] shareSetAs(' + format + ') · supportsFileShare =', supportsFileShare);
-      if (!supportsFileShare && targetApp) openSetTarget(targetApp);
-
-      flashHint(hint, 'Preparing image…', 0);
-      preloadSetShareImage().then(function(r) {
-        if (!r || !r.blob) {
-          console.warn('[Sunday] image generation failed for set share');
-          flashHint(hint, 'Image generation failed');
-          return;
-        }
-
-        // Path A — native share sheet (iPhone / iPad / Mac Safari).
-        if (supportsFileShare) {
-          var file = new File([r.blob], r.filename, { type: 'image/png' });
-          console.log('[Sunday] taking Path A · navigator.share with file', file);
-          navigator.share({ files: [file], title: 'Set List' })
-            .then(function() { console.log('[Sunday] share OK'); flashHint(hint, 'Shared ✓'); })
-            .catch(function(e) {
-              console.warn('[Sunday] share rejected:', e && e.name, e && e.message);
-              hint && (hint.style.display = 'none');
-            });
-          return;
-        }
-
-        // Path B — Mac Chrome. App is opening; copy image to clipboard
-        // so the user can ⌘V paste.
-        if (canWriteClipboardImage()) {
-          console.log('[Sunday] taking Path B · clipboard write');
-          var item = new ClipboardItem({ 'image/png': r.blob });
-          navigator.clipboard.write([item])
-            .then(function() {
-              flashHint(hint, setHintForTarget(targetApp), 7000);
-            })
-            .catch(function(e) {
-              console.warn('[Sunday] clipboard write failed:', e);
-              downloadBlob(r.blob, r.filename);
-              flashHint(hint, 'Couldn\'t copy — image saved instead. Drag it into your message.');
-            });
-          return;
-        }
-
-        console.log('[Sunday] taking Path C · download fallback');
-        downloadBlob(r.blob, r.filename);
-        flashHint(hint, 'Image saved — drag into your message');
-      });
+      // Messaging platforms: 'imessage' / 'whatsapp' / 'email'.
+      if (format !== 'imessage' && format !== 'whatsapp' && format !== 'email') return;
+      shareImageToTarget(preloadSetShareImage(), format, hint, 'Set List');
     };
 
-    // Open the chosen messaging / mail app. Uses sms:?body= (iOS 8+
-    // syntax — sms:&body= was the "Georgia bug" that hijacked Messages
-    // into the most recent contact on macOS).
-    function openSetTarget(targetApp) {
+    // Shared image-share dispatcher. Used by both the set list and
+    // the roster share flows.
+    //   imagePromise: Promise<{blob, filename}>
+    //   targetApp:    'imessage' | 'whatsapp' | 'email'
+    //   hint:         element to display feedback in
+    //   title:        title for navigator.share
+    window.shareImageToTarget = function(imagePromise, targetApp, hint, title) {
+      flashHint(hint, 'Preparing image…', 0);
+
+      // ── iPhone / Android path: native share sheet.
+      if (shouldUseNativeShareSheet()) {
+        console.log('[Sunday] native share path');
+        Promise.resolve(imagePromise).then(function(r) {
+          if (!r || !r.blob) { flashHint(hint, 'Image generation failed'); return; }
+          var file = new File([r.blob], r.filename, { type: 'image/png' });
+          navigator.share({ files: [file], title: title || 'Share' })
+            .then(function() { flashHint(hint, 'Shared ✓'); })
+            .catch(function(e) {
+              if (e && e.name === 'AbortError') { hint && (hint.style.display = 'none'); return; }
+              console.warn('[Sunday] share rejected — falling back to clipboard:', e && e.name);
+              clipboardFallback(imagePromise, targetApp, hint);
+            });
+        });
+        return;
+      }
+
+      // ── Mac / desktop path: open target app sync, then clipboard.
+      // window.open inside the click handler is allowed; deferred is not.
+      // ClipboardItem accepts a Promise<Blob> so the user gesture is
+      // preserved through the async image generation.
+      console.log('[Sunday] clipboard path · opening', targetApp);
+      openMessagingTarget(targetApp);
+      clipboardWriteFromPromise(imagePromise, targetApp, hint);
+    };
+
+    function clipboardWriteFromPromise(imagePromise, targetApp, hint) {
+      // Some browsers don't expose ClipboardItem at all.
+      if (typeof ClipboardItem === 'undefined' || !navigator.clipboard || !navigator.clipboard.write) {
+        console.log('[Sunday] no ClipboardItem — downloading instead');
+        Promise.resolve(imagePromise).then(function(r) {
+          if (!r || !r.blob) { flashHint(hint, 'Image generation failed'); return; }
+          downloadBlob(r.blob, r.filename);
+          flashHint(hint, 'Image saved — drag into ' + messagingAppName(targetApp));
+        });
+        return;
+      }
+
+      // Build the ClipboardItem synchronously with a Promise<Blob>.
+      // Browser holds the gesture through the resolve.
+      var blobPromise = Promise.resolve(imagePromise).then(function(r) {
+        if (!r || !r.blob) throw new Error('image generation failed');
+        return r.blob;
+      });
+
+      try {
+        var item = new ClipboardItem({ 'image/png': blobPromise });
+        navigator.clipboard.write([item])
+          .then(function() {
+            console.log('[Sunday] clipboard write OK');
+            flashHint(hint, messagingHint(targetApp), 7000);
+          })
+          .catch(function(e) {
+            console.warn('[Sunday] clipboard write rejected:', e && e.name, e && e.message);
+            // Last resort: download
+            Promise.resolve(imagePromise).then(function(r) {
+              if (r && r.blob) {
+                downloadBlob(r.blob, r.filename);
+                flashHint(hint, 'Couldn\'t copy to clipboard — image saved. Drag it into ' + messagingAppName(targetApp));
+              } else {
+                flashHint(hint, 'Image generation failed');
+              }
+            });
+          });
+      } catch (e) {
+        console.warn('[Sunday] ClipboardItem threw:', e);
+        Promise.resolve(imagePromise).then(function(r) {
+          if (r && r.blob) { downloadBlob(r.blob, r.filename); flashHint(hint, 'Image saved — drag into your message'); }
+        });
+      }
+    }
+
+    function clipboardFallback(imagePromise, targetApp, hint) {
+      openMessagingTarget(targetApp);
+      clipboardWriteFromPromise(imagePromise, targetApp, hint);
+    }
+
+    function openMessagingTarget(targetApp) {
       var churchName = (typeof heroState !== 'undefined' && heroState.churchName)
         ? heroState.churchName : 'The Local';
       if (targetApp === 'imessage') {
@@ -12076,28 +12050,38 @@
       } else if (targetApp === 'whatsapp') {
         window.open('https://web.whatsapp.com/', '_blank');
       } else if (targetApp === 'email') {
-        window.open('mailto:?subject=' + encodeURIComponent(churchName + ' — Sunday Set List'), '_blank');
+        window.open('mailto:?subject=' + encodeURIComponent(churchName + ' — Sunday'), '_blank');
       }
     }
+    window.openMessagingTarget = openMessagingTarget;
 
-    function setHintForTarget(targetApp) {
-      if (targetApp === 'imessage') return 'Image copied ✓ — paste into Messages (⌘V)';
-      if (targetApp === 'whatsapp') return 'Image copied ✓ — pick a chat in WhatsApp and paste (⌘V)';
-      if (targetApp === 'email')    return 'Image copied ✓ — paste into Mail (⌘V)';
-      return 'Image copied ✓ — paste anywhere (⌘V)';
+    function messagingAppName(targetApp) {
+      if (targetApp === 'imessage') return 'Messages';
+      if (targetApp === 'whatsapp') return 'WhatsApp';
+      if (targetApp === 'email')    return 'Mail';
+      return 'your message';
     }
+    window.messagingAppName = messagingAppName;
 
-    function dispatchSetPDF(blob, filename, hint) {
+    function messagingHint(targetApp) {
+      return 'Image copied ✓ — paste into ' + messagingAppName(targetApp) + ' (⌘V or long-press → Paste)';
+    }
+    window.messagingHint = messagingHint;
+
+    function sharePdfBlob(blob, filename, hint, title) {
       var file = new File([blob], filename, { type: 'application/pdf' });
-      if (canShareFiles([file])) {
-        navigator.share({ files: [file], title: 'Set List PDF' })
+      // Try native share for PDFs only where it's reliable.
+      if (shouldUseNativeShareSheet() && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: title || 'PDF' })
           .then(function() { flashHint(hint, 'Shared ✓'); })
           .catch(function() { hint && (hint.style.display = 'none'); });
         return;
       }
+      // Desktop: PDF can't go on the clipboard usefully — just download.
       downloadBlob(blob, filename);
-      flashHint(hint, 'PDF downloaded — attach to your message');
+      flashHint(hint, 'PDF downloaded — attach it to your message');
     }
+    window.sharePdfBlob = sharePdfBlob;
 
     // Exposed on window so the roster share flow in the main app script
     // can reuse them (the helpers are defined in a different <script>).
@@ -12113,52 +12097,14 @@
     }
     window.canWriteClipboardImage = canWriteClipboardImage;
 
-    // Synchronous detection of whether navigator.share can accept a file.
-    // Uses a real 1×1 PNG as the probe (Safari rejects empty / invalid
-    // file blobs). Falls back to userAgent sniffing if canShare isn't
-    // available — older Safari versions have share() but not canShare().
-    var _fileShareSupportCache = null;
-    function supportsNativeFileShare() {
-      if (_fileShareSupportCache !== null) return _fileShareSupportCache;
-      var result = false;
-      var reason = 'none';
-
-      if (!navigator.share) {
-        reason = 'no navigator.share';
-      } else if (navigator.canShare) {
-        // Preferred path: probe with a tiny real PNG.
-        try {
-          var b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-          var bin = atob(b64);
-          var arr = new Uint8Array(bin.length);
-          for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-          var f = new File([new Blob([arr], { type: 'image/png' })], 'probe.png', { type: 'image/png' });
-          result = !!navigator.canShare({ files: [f] });
-          reason = 'canShare probe → ' + result;
-        } catch (e) {
-          result = false;
-          reason = 'canShare threw: ' + (e && e.message);
-        }
-      }
-
-      // Fallback: userAgent sniff for Safari / iPhone / iPad / Android Chrome
-      // when the probe didn't conclude positively.
-      if (!result && navigator.share) {
-        var ua = navigator.userAgent || '';
-        var isIOS = /iPhone|iPad|iPod/.test(ua);
-        var isMacSafari = /Macintosh/.test(ua) && /Safari\//.test(ua) && !/Chrome|Chromium|Edg/.test(ua);
-        var isAndroidChrome = /Android/.test(ua) && /Chrome\//.test(ua);
-        if (isIOS || isMacSafari || isAndroidChrome) {
-          result = true;
-          reason = 'UA fallback (' + (isIOS ? 'iOS' : isMacSafari ? 'Mac Safari' : 'Android Chrome') + ')';
-        }
-      }
-
-      console.log('[Sunday] supportsNativeFileShare =', result, '·', reason);
-      _fileShareSupportCache = result;
-      return result;
-    }
-    window.supportsNativeFileShare = supportsNativeFileShare;
+    // supportsNativeFileShare was removed 2026-05-26. The detection now
+    // lives in shouldUseNativeShareSheet() above — UA-based, no probe.
+    // The probe approach was unreliable across Safari versions and
+    // pushed Mac Safari into a clipboard-write that itself failed
+    // because of Safari's strict user-gesture rules, ultimately
+    // dumping the share into Downloads. The new flow uses the
+    // ClipboardItem(Promise<Blob>) pattern which keeps the gesture
+    // alive across async image generation.
 
     function downloadBlob(blob, filename) {
       var url = URL.createObjectURL(blob);
