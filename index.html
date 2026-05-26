@@ -10896,7 +10896,7 @@
             if (!blob) return;
             var file = new File([blob], baseName + '.png', { type: 'image/png' });
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-              navigator.share({ files: [file], title: baseName }).catch(function() {});
+              navigator.share({ files: [file] }).catch(function() {});
             } else {
               var url = URL.createObjectURL(blob);
               var a = document.createElement('a');
@@ -11157,7 +11157,7 @@
             if (!blob) return;
             var file = new File([blob], baseName + '.png', { type: 'image/png' });
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-              navigator.share({ files: [file], title: baseName }).catch(function() {});
+              navigator.share({ files: [file] }).catch(function() {});
             } else {
               var url = URL.createObjectURL(blob);
               var a = document.createElement('a');
@@ -12014,11 +12014,21 @@
       flashHint(hint, 'Preparing image…', 0);
 
       // ── iPhone / iPad / Android Chrome: native OS share sheet ──
+      // We deliberately pass ONLY `files`. Earlier we also passed
+      // `title` which on iOS made the share sheet inject the page URL
+      // (runworship.com) and sometimes the filename appeared as "blob"
+      // in the preview. Files-only gives a clean image-only share —
+      // no stray link, the picked app shows just the image.
       if (shouldUseNativeShareSheet()) {
         return Promise.resolve(imagePromise).then(function(r) {
           if (!r || !r.blob) { flashHint(hint, 'Image generation failed'); return 'fail'; }
-          var file = new File([r.blob], r.filename, { type: 'image/png' });
-          return navigator.share({ files: [file], title: title || 'Share' })
+          // Make sure the file has a clean .png name (iOS uses this
+          // verbatim in the share preview).
+          var safeName = (r.filename && r.filename.indexOf('.png') > -1)
+            ? r.filename
+            : 'the-local-set.png';
+          var file = new File([r.blob], safeName, { type: 'image/png' });
+          return navigator.share({ files: [file] })
             .then(function() { flashHint(hint, 'Shared ✓'); return 'shared'; })
             .catch(function(e) {
               if (e && e.name === 'AbortError') { hint && (hint.style.display = 'none'); return 'cancelled'; }
@@ -12163,9 +12173,14 @@
     // Returns the same status strings as shareImageToTarget so callers
     // can auto-dismiss their overlay on a successful share.
     function sharePdfBlob(blob, filename, hint, title) {
-      var file = new File([blob], filename, { type: 'application/pdf' });
+      // Make sure the file has a .pdf name (iOS shows this verbatim).
+      var safeName = (filename && filename.toLowerCase().indexOf('.pdf') > -1)
+        ? filename
+        : (filename || 'the-local') + '.pdf';
+      var file = new File([blob], safeName, { type: 'application/pdf' });
       if (shouldUseNativeShareSheet() && navigator.canShare && navigator.canShare({ files: [file] })) {
-        return navigator.share({ files: [file], title: title || 'PDF' })
+        // Files-only — see shareImageToTarget for why we don't pass title.
+        return navigator.share({ files: [file] })
           .then(function() { flashHint(hint, 'Shared ✓'); return 'shared'; })
           .catch(function(e) {
             if (e && e.name === 'AbortError') { hint && (hint.style.display = 'none'); return 'cancelled'; }
