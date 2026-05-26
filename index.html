@@ -3832,30 +3832,16 @@
       <div id="set-card-overlay" style="display:none; position:fixed; inset:0; background:rgba(5,5,7,0.85); z-index:500; overflow-y:auto; padding:24px 16px;">
         <div id="set-card" style="background:#fff; border-radius:12px; max-width:440px; margin:0 auto; padding:32px 36px; font-family:var(--font-display); color:#111;"></div>
 
-        <!-- Share dropdown — messaging-first, mirrors the roster share.
-             Messaging apps use native share sheet on iPhone / Safari and
-             "open app + clipboard paste" on Mac Chrome. PDF + text live
-             in a small secondary footer. -->
-        <div style="max-width:440px; margin:16px auto 0; position:relative;">
-          <div id="share-dropdown" style="display:none; position:absolute; bottom:calc(100% + 8px); left:0; right:40px; background:#1c1c1e; border:1px solid rgba(255,255,255,0.12); border-radius:12px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.6);">
-            <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:10px 14px 4px;">Send set list</div>
-            <button onclick="window.shareSetAs('imessage')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-              <span style="font-size:20px;">💬</span> iMessage
-            </button>
-            <button onclick="window.shareSetAs('whatsapp')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-              <span style="font-size:20px;">🟢</span> WhatsApp
-            </button>
-            <button onclick="window.shareSetAs('email')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-              <span style="font-size:20px;">✉️</span> Email
-            </button>
-            <div style="height:1px; background:rgba(255,255,255,0.08); margin:8px 0 0;"></div>
-            <div style="display:flex; gap:0; background:rgba(255,255,255,0.02);">
-              <button onclick="window.shareSetAs('pdf')" style="flex:1; background:none; border:none; padding:9px 12px; font-family:var(--font-display); font-size:10px; letter-spacing:0.5px; color:rgba(255,255,255,0.45); cursor:pointer; text-align:center;">📄 PDF</button>
-              <button onclick="window.shareSetAs('text')" style="flex:1; background:none; border:none; padding:9px 12px; font-family:var(--font-display); font-size:10px; letter-spacing:0.5px; color:rgba(255,255,255,0.45); cursor:pointer; text-align:center; border-left:1px solid rgba(255,255,255,0.06);">📋 Text</button>
-            </div>
-          </div>
+        <!-- Single Share button — best-practice iOS pattern.
+             iPhone / iPad / Android: native OS share sheet (image attaches
+             to the picked app automatically — Messages / WhatsApp / Mail /
+             AirDrop / Notes / wherever).
+             Mac: image lands on the clipboard, big visible hint tells the
+             user to paste it. Tiny PDF link for explicit file download. -->
+        <div style="max-width:440px; margin:16px auto 0;">
           <div style="display:flex; gap:10px;">
-            <button id="btn-card-share" onclick="window.toggleShareDropdown()" style="flex:1; background:var(--amber); border:none; border-radius:8px; padding:14px 18px; font-family:var(--font-display); font-size:13px; letter-spacing:0.5px; color:#fff; cursor:pointer; font-weight:600;">Share ↑</button>
+            <button id="btn-card-share" onclick="window.shareSet()" style="flex:1; background:var(--amber); border:none; border-radius:8px; padding:14px 18px; font-family:var(--font-display); font-size:13px; letter-spacing:0.5px; color:#fff; cursor:pointer; font-weight:600;">Share</button>
+            <button onclick="window.shareSetPDF()" style="background:transparent; border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding:14px 18px; font-family:var(--font-display); font-size:13px; letter-spacing:0.5px; color:rgba(255,255,255,0.6); cursor:pointer;">PDF</button>
             <button onclick="window.closeSetCard()" style="background:transparent; border:none; padding:12px; color:rgba(255,255,255,0.4); cursor:pointer; font-size:18px; line-height:1;">✕</button>
           </div>
         </div>
@@ -3871,40 +3857,15 @@
               <span id="month-display">April 2026</span>
               <button class="month-nav-btn" id="next-month" onclick="window.nextMonth()">→</button>
             </div>
-            <div style="display:flex; align-items:center; gap:10px;">
-              <div style="position:relative;">
-                <button class="btn-suggest" onclick="window.toggleRosterShareMenu(event)" style="padding:6px 12px; font-size:10px; opacity:0.85;" title="Share this roster">Share ↗</button>
-                <div id="roster-share-menu" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:#1c1c1e; border:1px solid rgba(255,255,255,0.12); border-radius:12px; min-width:260px; z-index:200; box-shadow:0 8px 32px rgba(0,0,0,0.6); overflow:hidden;">
-                  <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:10px 14px 4px;">Send this week</div>
-                  <button onclick="window.shareRosterAs('imessage')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-                    <span style="font-size:20px;">💬</span> iMessage
-                  </button>
-                  <button onclick="window.shareRosterAs('whatsapp')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-                    <span style="font-size:20px;">🟢</span> WhatsApp
-                  </button>
-                  <button onclick="window.shareRosterAs('email')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-                    <span style="font-size:20px;">✉️</span> Email
-                  </button>
-                  <div style="height:1px; background:rgba(255,255,255,0.08); margin:6px 0;"></div>
-                  <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:6px 14px 4px;">Whole month</div>
-                  <button onclick="window.shareRosterAs('month-imessage')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-                    <span style="font-size:20px;">💬</span> iMessage
-                  </button>
-                  <button onclick="window.shareRosterAs('month-whatsapp')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-                    <span style="font-size:20px;">🟢</span> WhatsApp
-                  </button>
-                  <button onclick="window.shareRosterAs('month-email')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-                    <span style="font-size:20px;">✉️</span> Email
-                  </button>
-                  <div style="height:1px; background:rgba(255,255,255,0.08); margin:8px 0 0;"></div>
-                  <div style="display:flex; gap:0; background:rgba(255,255,255,0.02);">
-                    <button onclick="window.shareRosterAs('pdf')" style="flex:1; background:none; border:none; padding:8px 12px; font-family:var(--font-display); font-size:10px; letter-spacing:0.5px; color:rgba(255,255,255,0.45); cursor:pointer; text-align:center;">📄 PDF · week</button>
-                    <button onclick="window.shareRosterAs('month-pdf')" style="flex:1; background:none; border:none; padding:8px 12px; font-family:var(--font-display); font-size:10px; letter-spacing:0.5px; color:rgba(255,255,255,0.45); cursor:pointer; text-align:center; border-left:1px solid rgba(255,255,255,0.06);">🗓 PDF · month</button>
-                    <button onclick="window.shareRosterAs('text')" style="flex:1; background:none; border:none; padding:8px 12px; font-family:var(--font-display); font-size:10px; letter-spacing:0.5px; color:rgba(255,255,255,0.45); cursor:pointer; text-align:center; border-left:1px solid rgba(255,255,255,0.06);">📋 Text</button>
-                  </div>
-                </div>
-                <div id="roster-share-hint" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:rgba(0,0,0,0.85); color:rgba(255,255,255,0.9); padding:10px 14px; border-radius:8px; font-size:11px; font-family:var(--font-display); white-space:nowrap; z-index:201; pointer-events:none;"></div>
+            <div style="display:flex; align-items:center; gap:10px; position:relative;">
+              <button class="btn-suggest" onclick="window.shareRosterWeek()" style="padding:6px 12px; font-size:10px; opacity:0.9;" title="Share this week's roster">Share week</button>
+              <button class="btn-suggest" onclick="window.shareRosterMonth()" style="padding:6px 12px; font-size:10px; opacity:0.9;" title="Share the whole month's overview">Share month</button>
+              <button class="btn-suggest" onclick="window.shareRosterPDFMenu(event)" style="padding:6px 10px; font-size:10px; opacity:0.5;" title="Download as PDF">PDF ↓</button>
+              <div id="roster-pdf-menu" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:#1c1c1e; border:1px solid rgba(255,255,255,0.12); border-radius:10px; min-width:180px; z-index:200; box-shadow:0 8px 32px rgba(0,0,0,0.6); overflow:hidden;">
+                <button onclick="window.shareRosterAs('pdf'); window.closeRosterPDFMenu();" style="display:block; width:100%; background:none; border:none; padding:10px 14px; font-family:var(--font-display); font-size:13px; color:#fff; cursor:pointer; text-align:left;">📄 PDF · this week</button>
+                <button onclick="window.shareRosterAs('month-pdf'); window.closeRosterPDFMenu();" style="display:block; width:100%; background:none; border:none; padding:10px 14px; font-family:var(--font-display); font-size:13px; color:#fff; cursor:pointer; text-align:left; border-top:1px solid rgba(255,255,255,0.06);">🗓 PDF · whole month</button>
               </div>
+              <div id="roster-share-hint" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:rgba(0,0,0,0.92); color:rgba(255,255,255,0.95); padding:10px 14px; border-radius:8px; font-size:12px; font-family:var(--font-display); z-index:201; pointer-events:none; max-width:320px; line-height:1.4; box-shadow:0 4px 16px rgba(0,0,0,0.4);"></div>
               <button class="btn-suggest" onclick="window.startBuildMonth()" style="padding:6px 14px; font-size:11px;">✦ Build month</button>
               <div class="service-toggle" id="service-toggle"></div>
             </div>
@@ -11719,15 +11680,59 @@
       setTimeout(function() { hint.style.display = 'none'; }, ms || 4000);
     }
 
-    // Legacy shims — old call sites (and any Sunny action that still
-    // emits these) route through the new unified flow.
-    window.shareRosterImage = function() { window.shareRosterAs('imessage'); };
-    window.shareRosterWhatsApp = function() { window.shareRosterAs('whatsapp'); };
-    window.shareRosterEmail = function() { window.shareRosterAs('email'); };
+    // ── Roster share — primary entry points ──
+    // window.shareRosterWeek() / window.shareRosterMonth() are the two
+    // top-level actions in the roster header. iOS-native share sheet on
+    // iPhone / iPad, clipboard with a clear paste hint on Mac.
+    window.shareRosterWeek = function() {
+      var hint = document.getElementById('roster-share-hint');
+      if (typeof window.shareImageToTarget === 'function') {
+        window.shareImageToTarget(preloadRosterShareImage('week'), null, hint, 'Roster');
+      } else {
+        flashRosterHint(hint, 'Share unavailable — please reload');
+      }
+    };
+    window.shareRosterMonth = function() {
+      var hint = document.getElementById('roster-share-hint');
+      if (typeof window.shareImageToTarget === 'function') {
+        window.shareImageToTarget(preloadRosterShareImage('month'), null, hint, 'Month overview');
+      } else {
+        flashRosterHint(hint, 'Share unavailable — please reload');
+      }
+    };
+
+    // Small PDF download menu (sits next to the Share buttons).
+    window.shareRosterPDFMenu = function(evt) {
+      if (evt) evt.stopPropagation();
+      var menu = document.getElementById('roster-pdf-menu');
+      if (!menu) return;
+      var open = menu.style.display === 'block';
+      menu.style.display = open ? 'none' : 'block';
+      if (!open) {
+        setTimeout(function() {
+          document.addEventListener('click', window.closeRosterPDFMenu, { once: true });
+        }, 0);
+      }
+    };
+    window.closeRosterPDFMenu = function() {
+      var menu = document.getElementById('roster-pdf-menu');
+      if (menu) menu.style.display = 'none';
+    };
+
+    // Legacy shims — Sunny actions / older code paths.
+    window.shareRosterImage    = function() { window.shareRosterWeek(); };
+    window.shareRosterWhatsApp = function() { window.shareRosterWeek(); };
+    window.shareRosterEmail    = function() { window.shareRosterWeek(); };
     window.exportMonthOverviewPDF = function() { window.shareRosterAs('month-pdf'); };
-    // Sunny may emit a `SHARE_MONTH` action with `target: 'imessage'|'whatsapp'|'email'|'pdf'`.
-    window.shareMonthAs = function(target) { window.shareRosterAs('month-' + (target || 'imessage')); };
+    window.shareMonthAs = function(target) {
+      if (target === 'pdf') return window.shareRosterAs('month-pdf');
+      return window.shareRosterMonth();
+    };
     window.exportRosterPDF = function() { window.shareRosterAs('pdf'); };
+    // toggleRosterShareMenu and closeRosterShareMenu still referenced from
+    // legacy spots — make them no-ops since the dropdown is gone.
+    window.toggleRosterShareMenu = function() {};
+    window.closeRosterShareMenu = function() {};
 
     // Cache for pre-generated roster share images. Keyed by 'week' / 'month'.
     // We kick off generation the moment the dropdown opens so that picking
@@ -11743,32 +11748,10 @@
       return promise;
     }
 
-    // Dropdown toggle for the roster Share menu
-    window.toggleRosterShareMenu = function(evt) {
-      if (evt) evt.stopPropagation();
-      var menu = document.getElementById('roster-share-menu');
-      if (!menu) return;
-      var open = menu.style.display === 'block';
-      menu.style.display = open ? 'none' : 'block';
-      if (!open) {
-        // Kick off both week + month image generation in the background
-        // so any platform click is fast. Errors are swallowed; the
-        // platform handler will retry/fail-gracefully if a promise
-        // resolves to nothing.
-        _rosterShareCache = {};
-        try { preloadRosterShareImage('week').catch(function() {}); } catch (e) {}
-        try { preloadRosterShareImage('month').catch(function() {}); } catch (e) {}
-        // Dismiss on outside click
-        setTimeout(function() {
-          document.addEventListener('click', window.closeRosterShareMenu, { once: true });
-        }, 0);
-      }
-    };
-
-    window.closeRosterShareMenu = function() {
-      var menu = document.getElementById('roster-share-menu');
-      if (menu) menu.style.display = 'none';
-    };
+    // toggleRosterShareMenu / closeRosterShareMenu removed 2026-05-26
+    // along with the multi-option dropdown. Roster header now has direct
+    // "Share week" and "Share month" buttons. Pre-generation now happens
+    // when the user enters the roster screen (see renderRoster).
 
     // ─── Mobile sidebar — bottom-sheet behaviour ───────────────────────
     // The sidebar is a peek-and-expand bottom sheet on mobile. Closed
@@ -11898,14 +11881,19 @@
       return _setShareImagePromise;
     }
 
-    window.toggleShareDropdown = function() {
-      var dd = document.getElementById('share-dropdown');
-      var opening = dd.style.display === 'none' || !dd.style.display;
-      dd.style.display = opening ? 'block' : 'none';
-      if (opening) {
-        _setShareImagePromise = null;
-        try { preloadSetShareImage(); } catch (e) {}
-      }
+    // Kick off image generation as soon as the set card is opened so the
+    // share is instant when the user taps the button. (The old design
+    // started generation when the dropdown opened, but with the dropdown
+    // gone, we move the warmup to card-show.)
+    var _origBuildSetCard = window.buildAndShowSetCard;
+    window.buildAndShowSetCard = function() {
+      _setShareImagePromise = null;
+      if (typeof _origBuildSetCard === 'function') _origBuildSetCard();
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          try { preloadSetShareImage(); } catch (e) {}
+        });
+      });
     };
 
     var _origCloseSetCard = window.closeSetCard;
@@ -11914,6 +11902,10 @@
       if (typeof _origCloseSetCard === 'function') _origCloseSetCard();
       else document.getElementById('set-card-overlay').style.display = 'none';
     };
+
+    // Kept for any legacy onclick that still calls toggleShareDropdown.
+    // The dropdown is gone — this becomes a no-op (no element to toggle).
+    window.toggleShareDropdown = function() {};
 
     // Predictable, deterministic share routing:
     //   • iPhone / iPad / Android: native OS share sheet — best mobile UX.
@@ -11931,32 +11923,36 @@
       return false;
     }
 
-    window.shareSetAs = function(format) {
-      document.getElementById('share-dropdown').style.display = 'none';
+    // ── Set list share — single Share button, iOS-native pattern ──
+    // window.shareSet() is the primary action: image to native share
+    // sheet on iPhone, image to clipboard on Mac.
+    window.shareSet = function() {
       var hint = document.getElementById('set-card-share-hint');
-      console.log('[Sunday] shareSetAs(' + format + ')');
+      shareImageToTarget(preloadSetShareImage(), null, hint, 'Set List');
+    };
 
+    window.shareSetPDF = function() {
+      var hint = document.getElementById('set-card-share-hint');
+      flashHint(hint, 'Generating PDF…', 0);
+      var pdfResult;
+      try { pdfResult = SundayPDF.generateSetPDF(true); }
+      catch (e) { console.error('[Sunday] PDF generation failed:', e); }
+      if (!pdfResult || !pdfResult.blob) { flashHint(hint, 'PDF generation failed'); return; }
+      sharePdfBlob(pdfResult.blob, pdfResult.filename, hint, 'Set List PDF');
+    };
+
+    // Legacy entry point — any Sunny action or old call site that still
+    // routes through shareSetAs gets mapped to the new single-button flow.
+    window.shareSetAs = function(format) {
+      var hint = document.getElementById('set-card-share-hint');
       if (format === 'text') {
-        var text = buildSetText();
-        navigator.clipboard.writeText(text)
+        navigator.clipboard.writeText(buildSetText())
           .then(function() { flashHint(hint, 'Text copied ✓ — paste anywhere'); })
           .catch(function() { flashHint(hint, 'Copy failed — try again'); });
         return;
       }
-
-      if (format === 'pdf') {
-        flashHint(hint, 'Generating PDF…', 0);
-        var pdfResult;
-        try { pdfResult = SundayPDF.generateSetPDF(true); }
-        catch (e) { console.error('[Sunday] PDF generation failed:', e); }
-        if (!pdfResult || !pdfResult.blob) { flashHint(hint, 'PDF generation failed'); return; }
-        sharePdfBlob(pdfResult.blob, pdfResult.filename, hint, 'Set List PDF');
-        return;
-      }
-
-      // Messaging platforms: 'imessage' / 'whatsapp' / 'email'.
-      if (format !== 'imessage' && format !== 'whatsapp' && format !== 'email') return;
-      shareImageToTarget(preloadSetShareImage(), format, hint, 'Set List');
+      if (format === 'pdf') return window.shareSetPDF();
+      return window.shareSet();
     };
 
     // Shared image-share dispatcher. Used by both the set list and
@@ -12114,7 +12110,9 @@
       if (targetApp === 'imessage') return 'Messages';
       if (targetApp === 'whatsapp') return 'WhatsApp';
       if (targetApp === 'email')    return 'Mail';
-      return 'your message';
+      // Generic single-button share: no specific app pre-picked, so
+      // tell the user it works in any of the common messaging apps.
+      return 'Messages, WhatsApp, or Mail';
     }
     window.messagingAppName = messagingAppName;
 
