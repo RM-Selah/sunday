@@ -11968,9 +11968,11 @@
     window.shareImageToTarget = function(imagePromise, targetApp, hint, title) {
       flashHint(hint, 'Preparing image…', 0);
 
-      // ── iPhone / Android path: native share sheet.
+      // ── iPhone / iPad / Android Chrome: native OS share sheet ──
+      // The share sheet pops with the image already attached. User
+      // picks Messages / WhatsApp / Mail and the image is in the
+      // message — one pick of recipient + send.
       if (shouldUseNativeShareSheet()) {
-        console.log('[Sunday] native share path');
         Promise.resolve(imagePromise).then(function(r) {
           if (!r || !r.blob) { flashHint(hint, 'Image generation failed'); return; }
           var file = new File([r.blob], r.filename, { type: 'image/png' });
@@ -11978,21 +11980,71 @@
             .then(function() { flashHint(hint, 'Shared ✓'); })
             .catch(function(e) {
               if (e && e.name === 'AbortError') { hint && (hint.style.display = 'none'); return; }
-              console.warn('[Sunday] share rejected — falling back to clipboard:', e && e.name);
-              clipboardFallback(imagePromise, targetApp, hint);
+              // Native share misfired — fall to the desktop flow as a
+              // last resort. Won't auto-open the target app here either.
+              desktopClipboardFlow(imagePromise, targetApp, hint);
             });
         });
         return;
       }
 
-      // ── Mac / desktop path: open target app sync, then clipboard.
-      // window.open inside the click handler is allowed; deferred is not.
-      // ClipboardItem accepts a Promise<Blob> so the user gesture is
-      // preserved through the async image generation.
-      console.log('[Sunday] clipboard path · opening', targetApp);
-      openMessagingTarget(targetApp);
-      clipboardWriteFromPromise(imagePromise, targetApp, hint);
+      // ── Mac / desktop: clipboard-only ──
+      // We used to auto-open the target app via sms:?body= / wa.me / mailto:.
+      // It was fragile: window.open + the async clipboard.write race lost
+      // the user gesture intermittently, and the share ended up dumping
+      // into Downloads. The reliable thing is to copy the image to the
+      // clipboard with the ClipboardItem(Promise<Blob>) pattern (which
+      // keeps the gesture alive), then tell the user to open their app
+      // and paste. Predictable on every Mac browser.
+      desktopClipboardFlow(imagePromise, targetApp, hint);
     };
+
+    function desktopClipboardFlow(imagePromise, targetApp, hint) {
+      if (typeof ClipboardItem === 'undefined' || !navigator.clipboard || !navigator.clipboard.write) {
+        // No ClipboardItem — fall back to download as the absolute last resort.
+        Promise.resolve(imagePromise).then(function(r) {
+          if (!r || !r.blob) { flashHint(hint, 'Image generation failed'); return; }
+          downloadBlob(r.blob, r.filename);
+          flashHint(hint, 'Image saved — drag into ' + messagingAppName(targetApp));
+        });
+        return;
+      }
+
+      // ClipboardItem accepts a Promise<Blob>. By constructing it
+      // synchronously inside the click handler we preserve the
+      // user activation across the async image generation.
+      var blobPromise = Promise.resolve(imagePromise).then(function(r) {
+        if (!r || !r.blob) throw new Error('image generation failed');
+        return r.blob;
+      });
+
+      try {
+        var item = new ClipboardItem({ 'image/png': blobPromise });
+        navigator.clipboard.write([item])
+          .then(function() {
+            flashHint(hint, 'Image copied ✓ — open ' + messagingAppName(targetApp) + ' and paste (⌘V)', 10000);
+          })
+          .catch(function(e) {
+            console.warn('[Sunday] clipboard write rejected:', e && e.name, e && e.message);
+            Promise.resolve(imagePromise).then(function(r) {
+              if (r && r.blob) {
+                downloadBlob(r.blob, r.filename);
+                flashHint(hint, 'Couldn\'t copy — image saved. Drag it into ' + messagingAppName(targetApp));
+              } else {
+                flashHint(hint, 'Image generation failed');
+              }
+            });
+          });
+      } catch (e) {
+        console.warn('[Sunday] ClipboardItem threw:', e);
+        Promise.resolve(imagePromise).then(function(r) {
+          if (r && r.blob) {
+            downloadBlob(r.blob, r.filename);
+            flashHint(hint, 'Image saved — drag into ' + messagingAppName(targetApp));
+          }
+        });
+      }
+    }
 
     function clipboardWriteFromPromise(imagePromise, targetApp, hint) {
       // Some browsers don't expose ClipboardItem at all.
