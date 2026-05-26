@@ -707,10 +707,24 @@
     }
 
     .key-badge {
-      padding: 2px 6px;
+      padding: 4px 10px;
       background: var(--s2);
-      border-radius: 3px;
+      border-radius: 4px;
       border: 1px solid var(--gb);
+      cursor: pointer;
+      min-width: 32px;
+      text-align: center;
+      font-weight: 500;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.15s;
+    }
+    .key-badge:hover,
+    .key-badge:active {
+      background: var(--gl);
+      border-color: var(--amber);
+      color: var(--amber);
     }
 
     .song-actions {
@@ -6677,7 +6691,7 @@
           '<div class="song-artist">' + esc(song.artist) + '</div>' +
         '</div>' +
         '<div class="song-meta">' +
-          '<span class="key-badge">' + esc(song.key) + '</span>' +
+          '<span class="key-badge" onclick="event.stopPropagation();window.editSongKey(' + song.id + ',event)" title="Tap to set the key">' + esc(song.key) + '</span>' +
           (song.bpm ? '<span>' + song.bpm + ' bpm</span>' : '') +
         '</div>' +
         '<div class="song-actions">' +
@@ -6689,6 +6703,28 @@
 
       parent.appendChild(row);
     }
+
+    // Edit a song's key. Tap the key badge in the song row to open an
+    // inline prompt — works on iPhone, iPad, and Mac. Tap-to-edit instead
+    // of long-press or a separate edit screen, so the iPad flow feels
+    // the same as the desktop flow.
+    window.editSongKey = function(id, event) {
+      if (event) { try { event.stopPropagation(); event.preventDefault(); } catch (e) {} }
+      var song = SONGS.find(function(s) { return s.id === id; });
+      if (!song) return;
+      var current = (!song.key || song.key === '?') ? '' : song.key;
+      var input = window.prompt('Key for "' + song.title + '"\n\nE.g. C, D, Em, F#, Bb', current);
+      if (input === null) return; // user cancelled
+      var trimmed = String(input).trim();
+      song.key = trimmed || '?';
+      // Mirror into any active set / ministry entries that may have been
+      // cloned (defensive — references usually point back to SONGS).
+      if (state.set) state.set.forEach(function(s) { if (s.id === id) s.key = song.key; });
+      if (state.ministrySongs) state.ministrySongs.forEach(function(s) { if (s.id === id) s.key = song.key; });
+      try { SundayData.save(); } catch (e) {}
+      try { renderSongs(); } catch (e) {}
+      try { renderSet(); } catch (e) {}
+    };
 
     // Delete a song from the library entirely
     window.deleteSong = function(id) {
