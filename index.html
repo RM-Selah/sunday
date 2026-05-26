@@ -3877,9 +3877,6 @@
                   <button onclick="window.shareRosterAs('email')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
                     <span style="font-size:20px;">✉️</span> Email
                   </button>
-                  <button onclick="window.shareRosterAs('pdf')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-                    <span style="font-size:20px;">📄</span> PDF
-                  </button>
                   <div style="height:1px; background:rgba(255,255,255,0.08); margin:6px 0;"></div>
                   <div style="font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.4); padding:6px 14px 4px;">Whole month</div>
                   <button onclick="window.shareRosterAs('month-imessage')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
@@ -3891,13 +3888,12 @@
                   <button onclick="window.shareRosterAs('month-email')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
                     <span style="font-size:20px;">✉️</span> Email
                   </button>
-                  <button onclick="window.shareRosterAs('month-pdf')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:#fff; cursor:pointer; text-align:left;">
-                    <span style="font-size:20px;">📄</span> PDF
-                  </button>
-                  <div style="height:1px; background:rgba(255,255,255,0.08); margin:6px 0;"></div>
-                  <button onclick="window.shareRosterAs('text')" style="display:flex; align-items:center; gap:14px; width:100%; background:none; border:none; padding:12px 18px; font-family:var(--font-display); font-size:14px; color:rgba(255,255,255,0.6); cursor:pointer; text-align:left;">
-                    <span style="font-size:20px;">📋</span> Copy as text
-                  </button>
+                  <div style="height:1px; background:rgba(255,255,255,0.08); margin:8px 0 0;"></div>
+                  <div style="display:flex; gap:0; background:rgba(255,255,255,0.02);">
+                    <button onclick="window.shareRosterAs('pdf')" style="flex:1; background:none; border:none; padding:8px 12px; font-family:var(--font-display); font-size:10px; letter-spacing:0.5px; color:rgba(255,255,255,0.45); cursor:pointer; text-align:center;">📄 PDF · week</button>
+                    <button onclick="window.shareRosterAs('month-pdf')" style="flex:1; background:none; border:none; padding:8px 12px; font-family:var(--font-display); font-size:10px; letter-spacing:0.5px; color:rgba(255,255,255,0.45); cursor:pointer; text-align:center; border-left:1px solid rgba(255,255,255,0.06);">🗓 PDF · month</button>
+                    <button onclick="window.shareRosterAs('text')" style="flex:1; background:none; border:none; padding:8px 12px; font-family:var(--font-display); font-size:10px; letter-spacing:0.5px; color:rgba(255,255,255,0.45); cursor:pointer; text-align:center; border-left:1px solid rgba(255,255,255,0.06);">📋 Text</button>
+                  </div>
                 </div>
                 <div id="roster-share-hint" style="display:none; position:absolute; right:0; top:calc(100% + 6px); background:rgba(0,0,0,0.85); color:rgba(255,255,255,0.9); padding:10px 14px; border-radius:8px; font-size:11px; font-family:var(--font-display); white-space:nowrap; z-index:201; pointer-events:none;"></div>
               </div>
@@ -11684,18 +11680,41 @@
       var isMonth = format.indexOf('month-') === 0;
       var targetKey = isMonth ? format.replace('month-', '') : format;
       var targetApp = (targetKey === 'imessage' || targetKey === 'whatsapp' || targetKey === 'email') ? targetKey : null;
+      var scope = isMonth ? 'month' : 'week';
 
-      // STEP 1 (synchronous, inside the click): open the target app now,
-      // before any async work, so window.open isn't blocked.
-      if (targetApp) openRosterTarget(targetApp);
+      // Detect Web Share API + files capability EARLY (synchronously,
+      // inside the user gesture). On iPhone / iPad / Mac Safari the image
+      // attaches automatically via the native share sheet — no second
+      // app-open is needed. On Mac Chrome we open the target app and the
+      // image lands on the clipboard for ⌘V paste.
+      var probe = new File([new Blob([''], { type: 'image/png' })], 'probe.png', { type: 'image/png' });
+      var supportsFileShare = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [probe] }));
 
-      // STEP 2: generate image + copy to clipboard in the background.
+      // For the Mac Chrome path: open the target app NOW inside the click
+      // gesture, so the popup blocker stays happy.
+      if (!supportsFileShare && targetApp) openRosterTarget(targetApp);
+
+      // Use the pre-generated image from the dropdown-open warm-up. If
+      // the user clicked faster than generation could finish, the promise
+      // is still pending and we'll await it transparently.
       flashRosterHint(hint, isMonth ? 'Building month overview…' : 'Preparing image…', 0);
-      var imagePromise = isMonth
-        ? SundayPDF.generateMonthVertical(undefined, 'image', true)
-        : SundayPDF.generateRosterImage(undefined, undefined, true);
-      Promise.resolve(imagePromise).then(function(r) {
+      preloadRosterShareImage(scope).then(function(r) {
         if (!r || !r.blob) { flashRosterHint(hint, 'Image generation failed'); return; }
+
+        // Path A — native share sheet (iPhone / iPad / Mac Safari).
+        // The user picks the app from the OS picker; the image is
+        // already attached. One pick + recipient = done.
+        if (supportsFileShare) {
+          var file = new File([r.blob], r.filename, { type: 'image/png' });
+          navigator.share({ files: [file], title: 'Roster' })
+            .then(function() { flashRosterHint(hint, 'Shared ✓'); })
+            .catch(function() { hint && (hint.style.display = 'none'); });
+          return;
+        }
+
+        // Path B — Mac Chrome. Target app is already opening (we did it
+        // synchronously above). Copy the image to clipboard so user can
+        // paste with ⌘V.
         copyImageToClipboard(r.blob, hint, targetApp, r.filename);
       });
     };
@@ -11782,6 +11801,20 @@
     window.shareMonthAs = function(target) { window.shareRosterAs('month-' + (target || 'imessage')); };
     window.exportRosterPDF = function() { window.shareRosterAs('pdf'); };
 
+    // Cache for pre-generated roster share images. Keyed by 'week' / 'month'.
+    // We kick off generation the moment the dropdown opens so that picking
+    // a platform feels instant. Stays valid until the menu is closed.
+    var _rosterShareCache = {};
+
+    function preloadRosterShareImage(scope) {
+      if (_rosterShareCache[scope]) return _rosterShareCache[scope];
+      var promise = (scope === 'month')
+        ? Promise.resolve(SundayPDF.generateMonthVertical(undefined, 'image', true))
+        : Promise.resolve(SundayPDF.generateRosterImage(undefined, undefined, true));
+      _rosterShareCache[scope] = promise;
+      return promise;
+    }
+
     // Dropdown toggle for the roster Share menu
     window.toggleRosterShareMenu = function(evt) {
       if (evt) evt.stopPropagation();
@@ -11790,6 +11823,13 @@
       var open = menu.style.display === 'block';
       menu.style.display = open ? 'none' : 'block';
       if (!open) {
+        // Kick off both week + month image generation in the background
+        // so any platform click is fast. Errors are swallowed; the
+        // platform handler will retry/fail-gracefully if a promise
+        // resolves to nothing.
+        _rosterShareCache = {};
+        try { preloadRosterShareImage('week').catch(function() {}); } catch (e) {}
+        try { preloadRosterShareImage('month').catch(function() {}); } catch (e) {}
         // Dismiss on outside click
         setTimeout(function() {
           document.addEventListener('click', window.closeRosterShareMenu, { once: true });
