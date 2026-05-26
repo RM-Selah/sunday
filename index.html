@@ -11915,32 +11915,20 @@
       else document.getElementById('set-card-overlay').style.display = 'none';
     };
 
-    // UA-based: which platforms use the native OS share sheet?
-    // iPhone / iPad / Android Chrome / Mac Safari — anywhere
-    // navigator.share with files is well supported. On Mac Safari
-    // the OS share sheet opens with the image attached, the user
-    // picks Messages / Mail / etc., and the image lands in the
-    // message — no manual paste needed.
+    // Predictable, deterministic share routing:
+    //   • iPhone / iPad / Android: native OS share sheet — best mobile UX.
+    //     Image is attached to the picked app automatically.
+    //   • Everything else (Mac Safari, Mac Chrome, Edge, etc.): open the
+    //     target app + write the image to the clipboard. User pastes with
+    //     ⌘V. Works the SAME on Mac Safari and Mac Chrome so we don't
+    //     get bitten by Safari's stricter user-gesture rules around the
+    //     async share API.
     function shouldUseNativeShareSheet() {
-      if (!navigator.share) {
-        console.log('[Sunday] share routing: no navigator.share');
-        return false;
-      }
+      if (!navigator.share) return false;
       var ua = navigator.userAgent || '';
-      var path = 'clipboard fallback';
-      var use = false;
-
-      if (/iPhone|iPad|iPod/.test(ua)) { use = true; path = 'native (iOS)'; }
-      else if (/Android/.test(ua) && /Chrome\//.test(ua)) { use = true; path = 'native (Android Chrome)'; }
-      // Mac Safari: presence of Safari/ in UA, exclude all the other
-      // Mac-resident browsers that also include Safari in their UA.
-      else if (/Macintosh/.test(ua) && /Safari\//.test(ua)
-               && !/Chrome|Chromium|Edg|FxiOS|CriOS|Firefox|OPR/.test(ua)) {
-        use = true; path = 'native (Mac Safari)';
-      }
-
-      console.log('[Sunday] share routing:', path, '·', ua);
-      return use;
+      if (/iPhone|iPad|iPod/.test(ua)) return true;
+      if (/Android/.test(ua) && /Chrome\//.test(ua)) return true;
+      return false;
     }
 
     window.shareSetAs = function(format) {
