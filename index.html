@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Sunday</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3444,7 +3444,11 @@
          Open (.mobile-open): full 75vh sheet with conversation visible. */
       .sidebar {
         position: fixed;
-        bottom: 0;
+        /* --kb-offset is set by the VisualViewport listener when the soft
+           keyboard opens; the sheet lifts above the keyboard so the input
+           never disappears behind it. Falls back to 0 on desktop / when
+           the keyboard is closed. */
+        bottom: var(--kb-offset, 0px);
         left: 0;
         right: 0;
         top: auto;
@@ -3455,8 +3459,26 @@
         border-top: 1px solid var(--gb);
         border-radius: 16px 16px 0 0;
         transform: translateY(calc(100% - 78px));
-        transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+                    bottom 0.18s ease-out;
         box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+      }
+
+      /* iOS auto-zooms any input with text smaller than 16px on focus —
+         then refuses to zoom back. Force 16px on every text-like input so
+         the layout stays put. (We dropped maximum-scale=1.0 / user-scalable=no
+         from the viewport meta because they hurt accessibility; 16px on
+         inputs is the right way to prevent the zoom.) */
+      input[type="text"],
+      input[type="password"],
+      input[type="email"],
+      input[type="search"],
+      input[type="number"],
+      input[type="tel"],
+      input[type="url"],
+      textarea,
+      select {
+        font-size: 16px;
       }
 
       .sidebar.mobile-open {
@@ -3786,6 +3808,10 @@
             <input type="file" id="sidebar-file-input" accept="image/*,.pdf" style="display:none" onchange="window.handleFileSelect(this)">
             <input type="text" class="sidebar-chat-input" id="sidebar-chat-input"
                    placeholder="Ask Sunny anything…"
+                   enterkeyhint="send"
+                   autocomplete="off"
+                   autocorrect="on"
+                   autocapitalize="sentences"
                    onkeydown="if(event.key==='Enter')window.handleSundayChat()"
                    onfocus="window.stopSunnyPulse && window.stopSunnyPulse()"
                    onpaste="window.handlePaste(event)">
@@ -9572,6 +9598,42 @@
     } else {
       setTimeout(window.startSunnyPulse, 400);
     }
+
+    // Soft-keyboard handling for the mobile chat sheet.
+    //
+    // Problem: the Sunny bottom sheet is position:fixed; bottom:0. When iOS
+    // (or Android) raises the soft keyboard, position:fixed stays anchored
+    // to the LAYOUT viewport, not the VISUAL viewport — so the input slides
+    // behind the keyboard the moment it's focused.
+    //
+    // Fix: subscribe to VisualViewport and publish the occluded height as a
+    // CSS custom property (--kb-offset) on :root. The mobile .sidebar rule
+    // reads it as `bottom: var(--kb-offset, 0px)` and lifts above the
+    // keyboard. Falls back to 0 when the keyboard closes or on browsers
+    // without VisualViewport support (mostly older Android — degrades to
+    // the pre-existing behaviour, no regression).
+    (function setupKeyboardHandling() {
+      if (!window.visualViewport) return;
+      var vv = window.visualViewport;
+      var root = document.documentElement;
+      var rafId = 0;
+      function update() {
+        rafId = 0;
+        var occluded = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        // Treat anything under ~80px as "no keyboard" — guards against
+        // the iOS toolbar collapse/expand which also shrinks the visual
+        // viewport by ~50px and would otherwise trigger a false lift.
+        if (occluded < 80) occluded = 0;
+        root.style.setProperty('--kb-offset', occluded + 'px');
+      }
+      function schedule() {
+        if (rafId) return;
+        rafId = requestAnimationFrame(update);
+      }
+      vv.addEventListener('resize', schedule);
+      vv.addEventListener('scroll', schedule);
+      update();
+    })();
 
     function hideSidebarStarterChips() {
       var chips = document.getElementById('sidebar-starter-chips');
