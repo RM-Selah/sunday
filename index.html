@@ -188,6 +188,29 @@
       gap: 12px;
     }
 
+    /* Mobile-only ⋯ menu button in the topbar. Claude-style nav-bar
+       action — always visible regardless of scroll. Hidden by default;
+       the body[data-current-screen="set"] rule in the 768px block
+       flips it on for the set screen. */
+    .topbar-menu-btn {
+      display: none;
+      width: 32px;
+      height: 32px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 50%;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: -1px;
+      font-family: var(--font-display);
+      padding: 0;
+      line-height: 1;
+    }
+    .topbar-menu-btn:active { background: rgba(255,255,255,0.14); }
+
     .chip {
       padding: 5px 12px;
       border: 1px solid var(--gb);
@@ -3919,10 +3942,50 @@
       .topbar .nav-tabs {
         display: none;
       }
-      /* Keep scrollable content from running under the fixed nav. */
+      /* Keep scrollable content from running under the fixed nav AND
+         the Sunny peek that sits just above it. Without the +78 the last
+         row or two of content (Finalise button, last song slot) hides
+         behind the peek and feels "lost at the bottom". */
       .main-content {
+        padding-bottom: calc(var(--bottom-nav-height) + 78px);
+      }
+
+      /* Show the topbar ⋯ menu only on the set screen.
+         Hide the inline btn-finalise inside the set panel since the
+         menu (always visible in the topbar) is the new entry point. */
+      body[data-current-screen="set"] .topbar-menu-btn {
+        display: inline-flex;
+      }
+      .btn-finalise {
+        display: none;
+      }
+
+      /* ----- Sunny (Sunday) screen — usable on mobile -----
+         Desktop has a 280px conv-list + chat thread side by side. On a
+         390px iPhone that left the chat with ~110px and nothing
+         actually usable. Hide the conv-list and let the chat thread
+         take the whole screen. Conversation history is still reachable
+         from desktop / iPad — mobile is one active thread only. */
+      .agent-container {
+        grid-template-columns: 1fr;
+      }
+      .conv-list {
+        display: none;
+      }
+      /* On the Sunny screen, hide the always-on peek sheet — the user
+         is already in chat. Two stacked chat inputs at the bottom would
+         confuse rather than help. Also drop the +78px peek buffer in
+         main-content padding since the peek isn't visible here. */
+      body[data-current-screen="sunday"] .sidebar {
+        display: none;
+      }
+      body[data-current-screen="sunday"] .main-content {
         padding-bottom: var(--bottom-nav-height);
       }
+      /* Bigger chat input on the Sunny screen (was 12px which iOS would
+         auto-zoom; the global 16px rule covers it, but bump padding too
+         so the tap target is comfortable). */
+      .chat-input { padding: 12px 14px; }
 
       /* ----- Set builder: Spotify-style tile library + set list below -----
          Library on top as a 4-column grid of song tiles. Tap a tile and
@@ -4220,7 +4283,7 @@
     })();
   </script>
 </head>
-<body>
+<body data-current-screen="set">
 
   <!-- HERO LANDING — archived for separate onboarding sprint; hidden via class -->
   <div class="hero-landing hidden" id="hero-landing" style="display:none;">
@@ -4265,6 +4328,11 @@
       </div>
       <div style="flex: 1;"></div>
       <div class="topbar-right">
+        <!-- Mobile-only ⋯ menu, Claude-style. Shown only on the set
+             screen (gated by body[data-current-screen="set"]). Opens
+             the set-builder bottom sheet with Finalise / Share / PDF /
+             Reset actions — same pattern as Claude's nav-bar menu. -->
+        <button class="topbar-menu-btn" id="set-builder-menu-btn" onclick="window.openSetBuilderMenu()" aria-label="More actions">⋯</button>
         <div class="chip" onclick="window.resetSunday()" title="Reset Sunday &amp; start over" style="cursor:pointer;">Sunday</div>
         <div class="avatar-circle">R</div>
       </div>
@@ -4453,6 +4521,24 @@
             <span class="set-card-menu-icon" aria-hidden="true">✕</span>Close
           </button>
           <button class="set-card-menu-item set-card-menu-cancel" onclick="window.closeSetCardMenu()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Set-builder ⋯ menu. Opened from the topbar ⋯ on mobile while
+           on the set screen. Same Claude-style bottom sheet pattern as
+           the set-card menu above — reuses the .set-card-menu styles. -->
+      <div id="set-builder-menu" class="set-card-menu" onclick="if(event.target.id==='set-builder-menu') window.closeSetBuilderMenu()" role="dialog" aria-label="Set actions">
+        <div class="set-card-menu-sheet">
+          <button class="set-card-menu-item" onclick="window.closeSetBuilderMenu(); window.handleFinalise();">
+            <span class="set-card-menu-icon" aria-hidden="true">✦</span>Finalise &amp; preview
+          </button>
+          <button class="set-card-menu-item" onclick="window.closeSetBuilderMenu(); window.shareSetFromBuilder();">
+            <span class="set-card-menu-icon" aria-hidden="true">↗</span>Share
+          </button>
+          <button class="set-card-menu-item" onclick="window.closeSetBuilderMenu(); window.shareSetPDFFromBuilder();">
+            <span class="set-card-menu-icon" aria-hidden="true">📄</span>Save as PDF
+          </button>
+          <button class="set-card-menu-item set-card-menu-cancel" onclick="window.closeSetBuilderMenu()">Cancel</button>
         </div>
       </div>
 
@@ -7494,7 +7580,9 @@
       if (elDur) elDur.textContent = Math.round(totalMins) + 'm';
       if (elKeys) elKeys.textContent = keys;
 
-      // Finalise button
+      // Finalise button (desktop / iPad — the in-panel one). On mobile
+      // the entry point is the topbar ⋯ menu (always visible) so we
+      // don't need a count badge here.
       var btnFinalise = document.getElementById('btn-finalise');
       if (btnFinalise) btnFinalise.disabled = state.set.length < 1;
 
@@ -9162,6 +9250,10 @@
     /* ==================== SCREEN SWITCHING ===================== */
     function switchScreen(screenName) {
       state.currentScreen = screenName;
+      // Mirror the current screen onto <body> so CSS can show/hide the
+      // topbar Finalise (and any future screen-scoped nav-bar actions)
+      // without JS having to toggle classes on each one.
+      document.body.setAttribute('data-current-screen', screenName);
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.querySelector(`[data-screen="${screenName}"]`).classList.add('active');
 
@@ -10205,6 +10297,36 @@
     window.closeSetCardMenu = function() {
       var menu = document.getElementById('set-card-menu');
       if (menu) menu.classList.remove('open');
+    };
+
+    // Set-builder ⋯ menu (topbar on mobile). Mirrors the set-card menu
+    // pattern but opens before Finalise — so users can share / PDF /
+    // finalise in one tap from the set-builder screen.
+    window.openSetBuilderMenu = function() {
+      var menu = document.getElementById('set-builder-menu');
+      if (menu) menu.classList.add('open');
+    };
+    window.closeSetBuilderMenu = function() {
+      var menu = document.getElementById('set-builder-menu');
+      if (menu) menu.classList.remove('open');
+    };
+
+    // "Share" / "Save as PDF" from the set-builder menu — render the
+    // set-card preview first (handleFinalise), then trigger the existing
+    // share / PDF flow on a tick so the card has time to mount in the
+    // DOM. The card stays visible after; user can dismiss via its own
+    // ⋯ menu Close or by tapping the backdrop.
+    window.shareSetFromBuilder = function() {
+      if (typeof window.handleFinalise === 'function') window.handleFinalise();
+      setTimeout(function() {
+        if (typeof window.shareSet === 'function') window.shareSet();
+      }, 200);
+    };
+    window.shareSetPDFFromBuilder = function() {
+      if (typeof window.handleFinalise === 'function') window.handleFinalise();
+      setTimeout(function() {
+        if (typeof window.shareSetPDF === 'function') window.shareSetPDF();
+      }, 200);
     };
     (function setupA2HSPrompt() {
       var ua = navigator.userAgent || '';
@@ -12965,7 +13087,7 @@
     <button class="bottom-nav-tab active" data-tab="set" onclick="switchScreen('set')">Set</button>
     <button class="bottom-nav-tab" data-tab="team" onclick="switchScreen('team')">Roster</button>
     <button class="bottom-nav-tab" data-tab="people" onclick="switchScreen('people')">Team</button>
-    <button class="bottom-nav-tab" data-tab="sunday" onclick="switchScreen('sunday')">Sunday</button>
+    <button class="bottom-nav-tab" data-tab="sunday" onclick="switchScreen('sunday')">Sunny</button>
     <button class="bottom-nav-tab" data-tab="settings" onclick="switchScreen('settings')" aria-label="Settings">⚙</button>
   </nav>
 
