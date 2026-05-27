@@ -94,7 +94,11 @@
 
     #app {
       position: relative;
-      z-index: 0;
+      /* No z-index here — it would create a stacking context that traps
+         child overlays (set-card-overlay z=1100, set-card-menu z=1200)
+         underneath sibling-of-#app elements like .bottom-nav (z=998).
+         position: relative alone gives us a containing block without
+         the stacking trap. */
       width: 100%;
       height: 100%;
       display: grid;
@@ -3557,7 +3561,9 @@
       align-items: center;
       justify-content: center;
       letter-spacing: -1px;
-      z-index: 610;
+      /* Above the set-card overlay (1100) so the ⋯ stays clickable
+         even when scrolled in the overlay. */
+      z-index: 1150;
       font-family: var(--font-display);
       line-height: 1;
     }
@@ -3567,7 +3573,11 @@
       display: none;
       position: fixed;
       inset: 0;
-      z-index: 700;
+      /* Above the set-card overlay (1100) AND the ⋯ button (1150) so
+         the bottom sheet menu sits cleanly on top of the card when
+         opened. Was 700 — below the bottom-nav (998) and Sunny peek
+         (999), so the bottom of the menu was being covered by them. */
+      z-index: 1200;
       background: rgba(0,0,0,0.55);
       -webkit-backdrop-filter: blur(4px);
       backdrop-filter: blur(4px);
@@ -4508,7 +4518,7 @@
       </div>
 
       <!-- SET CARD OVERLAY -->
-      <div id="set-card-overlay" onclick="if(event.target.id==='set-card-overlay') window.closeSetCard()" style="display:none; position:fixed; inset:0; background:rgba(5,5,7,0.85); z-index:500; overflow-y:auto; padding:24px 16px;">
+      <div id="set-card-overlay" onclick="if(event.target.id==='set-card-overlay') window.closeSetCard()" style="display:none; position:fixed; inset:0; background:rgba(5,5,7,0.85); z-index:1100; overflow-y:auto; padding:24px 16px;">
         <!-- Mobile: ⋯ menu top-right opens the share sheet below.
              Hidden on desktop via CSS; desktop uses the inline buttons. -->
         <button class="set-card-menu-btn" onclick="event.stopPropagation(); window.openSetCardMenu();" aria-label="Set card menu">⋯</button>
