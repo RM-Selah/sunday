@@ -3736,7 +3736,13 @@
         top: auto;
         height: 75vh;
         max-height: 75vh;
-        z-index: 999;
+        /* Closed state z-index: BELOW the bottom-nav (998) so the nav is
+           always visible underneath the peek. Was 999 — which meant the
+           sheet's box (which extends below viewport bottom because of the
+           transform: translateY) was rendering ON TOP of the nav in their
+           overlap region, hiding navigation entirely. The .mobile-open
+           rule below bumps z-index up when fully expanded. */
+        z-index: 997;
         border-right: none;
         border-top: 1px solid var(--gb);
         border-radius: 16px 16px 0 0;
@@ -3771,6 +3777,10 @@
            opened sheet still respects the home indicator. */
         bottom: var(--kb-offset, 0px);
         padding-bottom: env(safe-area-inset-bottom);
+        /* When expanded the sheet should sit ABOVE the bottom-nav (998)
+           so it fully covers the chrome. Stays below the set-card overlay
+           (1100) so finalising-while-chat-open still works correctly. */
+        z-index: 1050;
       }
 
       .sidebar-chat-header {
