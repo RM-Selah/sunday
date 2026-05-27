@@ -4788,37 +4788,25 @@
             </div>
           </div>
 
-          <!-- TWILIO / WHATSAPP SECTION -->
+          <!-- WHATSAPP SECTION -->
           <div class="settings-section">
             <div class="settings-section-header">
-              <span class="settings-section-title">WhatsApp (Twilio)</span>
-              <span class="settings-section-desc">Two-way conversations with your team. Sunny can message them, they can reply naturally.</span>
-            </div>
-            <div class="settings-field">
-              <label class="settings-label">Twilio Account SID</label>
-              <input type="text" class="settings-input" id="twilio-sid" placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
-            </div>
-            <div class="settings-field">
-              <label class="settings-label">Twilio Auth Token</label>
-              <input type="password" class="settings-input" id="twilio-token" placeholder="Your auth token" autocomplete="off">
-            </div>
-            <div class="settings-field">
-              <label class="settings-label">WhatsApp From Number</label>
-              <input type="text" class="settings-input" id="twilio-from" placeholder="whatsapp:+14155238886" autocomplete="off">
+              <span class="settings-section-title">WhatsApp</span>
+              <span class="settings-section-desc">Sunny can message your team — roster notifications, availability checks, blast messages.</span>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
-              <button class="settings-btn" onclick="window.connectWhatsApp()">Connect</button>
+              <button class="settings-btn" onclick="window.testWhatsApp()">Test connection</button>
               <span class="settings-feedback" id="whatsapp-feedback"></span>
             </div>
             <div class="settings-help">
-              <strong>How to get these:</strong><br>
-              1. Go to <span style="color:var(--amber);">twilio.com</span> and sign up (free trial gives you credit)<br>
-              2. On the dashboard, you'll see your <strong>Account SID</strong> and <strong>Auth Token</strong> — copy both<br>
-              3. In the left sidebar go to <strong>Messaging → Try it out → Send a WhatsApp message</strong><br>
-              4. Follow the sandbox setup — it gives you a WhatsApp number (paste it above with whatsapp: prefix)<br>
-              5. Each team member needs to send a one-time message to your Twilio sandbox number to opt in<br>
-              6. Paste all three values above, hit "Connect"<br>
-              7. The server needs restarting with these values — Sunday will save them for next time
+              <strong>One-time setup:</strong><br>
+              1. Sign up at <span style="color:var(--amber);">twilio.com</span> (free trial) and enable the WhatsApp Sandbox under Messaging → Try it out<br>
+              2. In your terminal, run these three commands to set the secrets on the Worker:<br>
+              <code style="color:var(--amber); background:var(--s1); padding:4px 8px; border-radius:4px; display:block; margin:6px 0; line-height:1.8;">npx wrangler secret put TWILIO_ACCOUNT_SID<br>npx wrangler secret put TWILIO_AUTH_TOKEN<br>npx wrangler secret put TWILIO_FROM</code>
+              For <strong>TWILIO_FROM</strong> use the sandbox number with the whatsapp: prefix, e.g. <code style="color:var(--amber);">whatsapp:+14155238886</code><br><br>
+              3. Each team member texts the sandbox join code to your Twilio number once to opt in<br>
+              4. Add phone numbers to people in the People screen<br>
+              5. Hit "Test connection" above — the dot should go green
             </div>
           </div>
 
@@ -11193,7 +11181,7 @@
 
     // ─── WhatsApp Integration Module ──────────────────────────────
     var SundayWhatsApp = window.SundayWhatsApp = {
-      serverUrl: 'http://localhost:3456',
+      serverUrl: 'https://api.runworship.com',
       enabled: false,
 
       // Check if WhatsApp is available on the server
@@ -11233,10 +11221,37 @@
         } catch(e) { if (callback) callback(e); }
       },
 
-      // Send roster to entire team for a specific week/service
+      // Send roster to entire team for a specific week/service.
+      // The Worker is stateless, so we build the recipient list here from
+      // roster state and send it inline — no syncStateToServer needed.
       blastRoster: function(week, serviceId, customMessage, callback) {
         var wk = week || state.rosterWeek;
         var svc = serviceId || state.rosterService || 'default';
+        var rKey = state.rosterMonth + '-' + wk + '-' + svc;
+        var slots = state.roster[rKey] || {};
+        var svcObj = (services || []).find(function(s) { return s.id === svc; });
+        var svcName = svcObj ? svcObj.name : svc;
+
+        var recipients = [];
+        Object.keys(slots).forEach(function(role) {
+          var personName = slots[role];
+          if (!personName) return;
+          var person = TEAM.find(function(t) { return t.name === personName; });
+          if (person && person.phone) {
+            recipients.push({
+              phone: person.phone,
+              name: personName.split(' ')[0],
+              role: role,
+              service: svcName
+            });
+          }
+        });
+
+        if (recipients.length === 0) {
+          console.log('WhatsApp blast: no recipients with phone numbers in this slot');
+          if (callback) callback(null, { sent: 0, total: 0 });
+          return;
+        }
 
         try {
           var xhr = new XMLHttpRequest();
@@ -11250,44 +11265,10 @@
             } catch(e) { if (callback) callback(e); }
           };
           xhr.onerror = function() { if (callback) callback(new Error('Network error')); };
-          xhr.send(JSON.stringify({
-            month: state.rosterMonth,
-            week: String(wk),
-            service: svc,
-            message: customMessage || ''
-          }));
+          xhr.send(JSON.stringify({ recipients: recipients, message: customMessage || '' }));
         } catch(e) { if (callback) callback(e); }
       },
 
-      // Sync current state to server (so server can answer WhatsApp queries)
-      syncStateToServer: function() {
-        var churchName = '';
-        try { churchName = localStorage.getItem('sunday_church') || ''; } catch(e) {}
-
-        try {
-          var xhr = new XMLHttpRequest();
-          xhr.open('POST', this.serverUrl + '/sync-state', true);
-          xhr.setRequestHeader('Content-Type', 'application/json');
-          xhr.send(JSON.stringify({
-            churchName: churchName,
-            team: TEAM,
-            services: services,
-            roster: state.roster,
-            songs: SONGS
-          }));
-        } catch(e) {}
-      }
-    };
-
-    // Auto-sync state to server when data changes
-    var _origSave = SundayData.save;
-    SundayData.save = function() {
-      _origSave.call(SundayData);
-      // Debounced sync to server
-      clearTimeout(SundayData._syncTimer);
-      SundayData._syncTimer = setTimeout(function() {
-        if (SundayAPI.connected) SundayWhatsApp.syncStateToServer();
-      }, 2000);
     };
 
     // ─── Settings Screen Logic ──────────────────────────────────────
@@ -11297,28 +11278,23 @@
         var savedApiKey = localStorage.getItem('sunday_api_key') || '';
         var sUrl = localStorage.getItem('sunday_supabase_url') || '';
         var sKey = localStorage.getItem('sunday_supabase_key') || '';
-        var tSid = localStorage.getItem('sunday_twilio_sid') || '';
-        var tToken = localStorage.getItem('sunday_twilio_token') || '';
-        var tFrom = localStorage.getItem('sunday_twilio_from') || '';
 
         var apiKeyField = document.getElementById('anthropic-key');
         var urlField = document.getElementById('supabase-url');
         var keyField = document.getElementById('supabase-key');
-        var sidField = document.getElementById('twilio-sid');
-        var tokenField = document.getElementById('twilio-token');
-        var fromField = document.getElementById('twilio-from');
 
         // Show masked key if already saved (don't expose full key in UI)
         if (apiKeyField && savedApiKey) apiKeyField.placeholder = 'sk-ant-api03-••••••••••••' + savedApiKey.slice(-4);
         if (urlField && sUrl) urlField.value = sUrl;
         if (keyField && sKey) keyField.value = sKey;
-        if (sidField && tSid) sidField.value = tSid;
-        if (tokenField && tToken) tokenField.value = tToken;
-        if (fromField && tFrom) fromField.value = tFrom;
       } catch(e) {}
 
-      // Update status dots
+      // Update status dots (WhatsApp checks the live Worker)
       updateSettingsStatus();
+      SundayWhatsApp.checkStatus(function(s) {
+        SundayWhatsApp.enabled = s.enabled;
+        updateSettingsStatus();
+      });
     }
 
     window.saveAnthropicKey = function() {
@@ -11430,39 +11406,20 @@
       }
     };
 
-    window.connectWhatsApp = function() {
-      var sid = document.getElementById('twilio-sid').value.trim();
-      var token = document.getElementById('twilio-token').value.trim();
-      var from = document.getElementById('twilio-from').value.trim();
+    window.testWhatsApp = function() {
       var feedback = document.getElementById('whatsapp-feedback');
-
-      if (!sid || !token || !from) {
-        feedback.textContent = 'All three fields are required';
-        feedback.className = 'settings-feedback error';
-        return;
-      }
-
-      // Save to localStorage for future sessions
-      try {
-        localStorage.setItem('sunday_twilio_sid', sid);
-        localStorage.setItem('sunday_twilio_token', token);
-        localStorage.setItem('sunday_twilio_from', from);
-      } catch(e) {}
-
-      feedback.textContent = 'Saved! Restart the server with these values to activate WhatsApp.';
-      feedback.className = 'settings-feedback success';
-
-      // Also show the command they need to run
-      feedback.innerHTML = 'Saved! <br><span style="font-size:10px; color:var(--dim);">Restart server: close it, then run:<br><code style="color:var(--amber); background:var(--s1); padding:2px 6px; border-radius:4px;">TWILIO_ACCOUNT_SID=' + sid.substring(0,6) + '... TWILIO_AUTH_TOKEN=... TWILIO_WHATSAPP_FROM=' + from + ' node sunday-server.js</code></span>';
-
-      // Check if server already has WhatsApp
+      feedback.textContent = 'Checking…';
+      feedback.className = 'settings-feedback';
       SundayWhatsApp.checkStatus(function(status) {
+        SundayWhatsApp.enabled = status.enabled;
         if (status.enabled) {
           feedback.textContent = 'WhatsApp is live!';
           feedback.className = 'settings-feedback success';
-          SundayWhatsApp.enabled = true;
-          updateSettingsStatus();
+        } else {
+          feedback.textContent = 'Not configured — follow the setup steps below';
+          feedback.className = 'settings-feedback error';
         }
+        updateSettingsStatus();
       });
     };
 
