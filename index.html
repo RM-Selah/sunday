@@ -3532,6 +3532,104 @@
       .ios-a2hs-dismiss:hover { color: rgba(255,255,255,0.9); }
     }
 
+    /* ===================== Set-card 3-dot menu + share bottom sheet =====================
+       When the user hits "Finalise" the set renders as a screen-cap card.
+       On mobile we drop a ⋯ in the top-right of the overlay; tapping it
+       opens the same Share / Save-as-PDF options as a bottom sheet —
+       mirroring the Claude share UX. Defaults below hide the button and
+       the menu; the 768px media query above flips the button on. */
+    .set-card-menu-btn {
+      display: none;
+      position: fixed;
+      top: calc(env(safe-area-inset-top) + 14px);
+      right: 14px;
+      width: 38px;
+      height: 38px;
+      background: rgba(255,255,255,0.1);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 50%;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: -1px;
+      z-index: 610;
+      font-family: var(--font-display);
+      line-height: 1;
+    }
+    .set-card-menu-btn:active { background: rgba(255,255,255,0.18); }
+
+    .set-card-menu {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 700;
+      background: rgba(0,0,0,0.55);
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+    .set-card-menu.open {
+      display: flex;
+      align-items: flex-end;
+      animation: set-card-menu-fade 0.18s ease-out;
+    }
+    @keyframes set-card-menu-fade { from { opacity: 0; } to { opacity: 1; } }
+    .set-card-menu-sheet {
+      width: 100%;
+      background: rgba(20,20,26,0.98);
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+      border-radius: 16px 16px 0 0;
+      padding: 8px 8px calc(env(safe-area-inset-bottom) + 12px);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      animation: set-card-menu-slide 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes set-card-menu-slide {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .set-card-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-family: var(--font-display);
+      font-size: 15px;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 12px;
+      letter-spacing: 0.2px;
+    }
+    .set-card-menu-item:active { background: rgba(255,255,255,0.06); }
+    @media (hover: hover) {
+      .set-card-menu-item:hover { background: rgba(255,255,255,0.06); }
+    }
+    .set-card-menu-icon {
+      font-size: 18px;
+      width: 26px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .set-card-menu-cancel {
+      margin-top: 6px;
+      justify-content: center;
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.75);
+      font-weight: 500;
+    }
+    .set-card-menu-cancel:active { background: rgba(255,255,255,0.08); }
+    @media (hover: hover) {
+      .set-card-menu-cancel:hover { background: rgba(255,255,255,0.08); }
+    }
+
     /* ===================== RESPONSIVE: Tablet (≤1024px) ===================== */
     @media (max-width: 1024px) {
       #app {
@@ -3826,49 +3924,164 @@
         padding-bottom: var(--bottom-nav-height);
       }
 
-      /* ----- Set builder: split view restored, Spotify-clean styling -----
-         The iPad pattern (library + set both visible, tap-to-add, drag-
-         reorder) carries to mobile as a vertical split. Set on top (capped
-         at 55vh so library still has room), library below filling the rest.
-         Each panel scrolls internally so the page itself doesn't bounce. */
+      /* ----- Set builder: Spotify-style tile library + set list below -----
+         Library on top as a 4-column grid of song tiles. Tap a tile and
+         it tints amber + numbers itself in selection order. Set list
+         flows below the grid — the page itself scrolls (via main-content),
+         not each panel separately, so it reads like one continuous canvas. */
       .set-builder-container {
+        height: auto;
+        overflow: visible;
         grid-template-columns: 1fr;
-        /* auto for set so empty/small sets don't waste space; 1fr for
-           library so it fills whatever's left. */
-        grid-template-rows: auto 1fr;
-        overflow: hidden;
+        grid-template-rows: auto auto;
       }
-      .set-panel {
-        max-height: 55vh;
-        overflow-y: auto;
-        padding: 16px 18px 12px;
-      }
+
+      /* LIBRARY (top) — full-flow grid, no internal scroll */
       .library-panel {
-        /* Subtle separator between the two panels, with rounded top
-           edge to read like a peek/sheet attached to the set above. */
-        border-top: 1px solid var(--gb);
-        border-radius: 14px 14px 0 0;
+        overflow: visible;
         max-height: none;
-        overflow: hidden; /* songs-scroll handles its own overflow */
+        border: none;
+        border-radius: 0;
+        background: transparent;
       }
       .library-header {
-        padding: 14px 18px 8px;
+        padding: 10px 14px 6px;
+        /* Stick the search + category tabs at the top of main-content
+           while user scrolls down through tiles. */
+        position: sticky;
+        top: 0;
+        background: rgba(8,8,14,0.92);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+        z-index: 3;
       }
       .library-title {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.6px;
         color: var(--mid);
-        margin-bottom: 12px;
+        margin-bottom: 8px;
+      }
+      .search-input { font-size: 16px; padding: 10px 12px 10px 32px; }
+      .category-tabs { gap: 12px; margin-top: 8px; padding-bottom: 6px; }
+      .category-tab { font-size: 11px; }
+
+      /* Tile grid — 4 columns of square tiles */
+      .songs-scroll {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        padding: 8px 14px 16px;
+        overflow: visible;
+        flex: none;
+      }
+      /* Category dividers span the whole row */
+      .category-divider {
+        grid-column: 1 / -1;
+        padding: 12px 0 4px;
+        font-size: 9px;
+        letter-spacing: 0.8px;
+        font-weight: 500;
+        color: var(--mid);
       }
 
-      /* Hero header — bigger title, less chrome */
+      /* Each song = square tile */
+      .song-row {
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: space-between;
+        aspect-ratio: 1;
+        padding: 8px 8px 10px;
+        margin: 0;
+        background: var(--s2);
+        border: 1px solid var(--gb);
+        border-radius: 8px;
+        gap: 0;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+      }
+      .song-row .song-info {
+        flex: 1;
+        min-width: 0;
+        width: 100%;
+        padding-right: 22px; /* clear the number badge */
+      }
+      .song-row .song-title {
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1.25;
+        margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .song-row .song-artist {
+        font-size: 9px;
+        line-height: 1.2;
+        color: var(--mid);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        margin-top: 6px;
+      }
+      /* In tile mode we don't need key/bpm or +/× buttons inline —
+         tapping the tile toggles selection, and key edits happen from the
+         set slot below (still has the key picker). */
+      .song-row .song-meta,
+      .song-row .song-actions { display: none; }
+
+      /* Category color = thin bottom strip on the tile */
+      .song-row .song-color-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: 3px;
+        border-radius: 0;
+      }
+
+      /* Selected (in set) — amber tint, amber border, numbered badge */
+      .song-row.in-set {
+        background: rgba(224,154,45,0.16);
+        border-color: var(--amber);
+      }
+      .song-row.in-set .song-title { color: var(--text); }
+      .song-tile-number {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--amber);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 600;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        line-height: 1;
+      }
+      .song-row.in-set .song-tile-number { display: flex; }
+
+      /* SET (bottom) — flows below the library, no internal scroll */
+      .set-panel {
+        max-height: none;
+        overflow-y: visible;
+        padding: 20px 18px 24px;
+        border-top: 1px solid var(--gb);
+      }
+
+      /* Hero header, slim arc — same Spotify-clean treatment */
       .set-title { font-size: 22px; letter-spacing: -0.4px; }
       .set-header { margin-bottom: 10px; padding: 0; }
       .btn-pdf-small { display: none; }
 
-      /* Slim arc bar, hide the legend (signal is in the song meta below) */
       .arc-container {
         padding: 0;
         background: transparent;
@@ -3877,7 +4090,6 @@
       .arc-bar { height: 4px; border-radius: 2px; margin-bottom: 0; }
       .arc-legend { display: none; }
 
-      /* Strip the desktop-only bits on mobile */
       .set-stats { display: none; }
       .set-suggest-link { display: none; }
 
@@ -3923,41 +4135,6 @@
         font-size: 14px;
       }
 
-      /* Library song rows — same clean playlist treatment.
-         Bigger tap target, no boxes, color bar promotes to a tinted dot. */
-      .song-row {
-        padding: 12px 18px;
-        margin: 0;
-        border-radius: 0;
-        border-left: none;
-        border-bottom: 1px solid var(--gb);
-        gap: 12px;
-      }
-      .song-row:last-child { border-bottom: none; }
-      .song-row:hover, .song-row:active { background: var(--gl); }
-      .song-color-bar {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        align-self: center;
-      }
-      .song-title { font-size: 15px; font-weight: 500; }
-      .song-artist { font-size: 12px; }
-      .song-meta { font-size: 12px; gap: 10px; }
-      .key-badge {
-        padding: 4px 8px;
-        font-size: 12px;
-        background: transparent;
-        border: 1px solid var(--gb);
-        min-width: 32px;
-      }
-      .category-divider {
-        padding: 14px 18px 6px;
-        font-size: 10px;
-        letter-spacing: 0.8px;
-      }
-
-      /* Finalise button — slimmer (panel is shorter) */
       .btn-finalise {
         padding: 14px;
         font-size: 13px;
@@ -3966,10 +4143,10 @@
         margin-top: 12px;
       }
 
-      /* Library search + tabs — slimmer on mobile */
-      .search-input { font-size: 16px; padding: 10px 12px 10px 32px; }
-      .category-tabs { gap: 12px; margin-top: 10px; }
-      .category-tab { font-size: 11px; }
+      /* Set-card overlay: surface the 3-dot menu, hide the inline action
+         buttons (replaced by the bottom-sheet menu the dots open). */
+      .set-card-menu-btn { display: flex; }
+      .set-card-actions-desktop { display: none; }
     }
 
     /* ===================== RESPONSIVE: Small phone (≤420px) ===================== */
@@ -4241,16 +4418,18 @@
       </div>
 
       <!-- SET CARD OVERLAY -->
-      <div id="set-card-overlay" style="display:none; position:fixed; inset:0; background:rgba(5,5,7,0.85); z-index:500; overflow-y:auto; padding:24px 16px;">
+      <div id="set-card-overlay" onclick="if(event.target.id==='set-card-overlay') window.closeSetCard()" style="display:none; position:fixed; inset:0; background:rgba(5,5,7,0.85); z-index:500; overflow-y:auto; padding:24px 16px;">
+        <!-- Mobile: ⋯ menu top-right opens the share sheet below.
+             Hidden on desktop via CSS; desktop uses the inline buttons. -->
+        <button class="set-card-menu-btn" onclick="event.stopPropagation(); window.openSetCardMenu();" aria-label="Set card menu">⋯</button>
+
         <div id="set-card" style="background:#fff; border-radius:12px; max-width:440px; margin:0 auto; padding:32px 36px; font-family:var(--font-display); color:#111;"></div>
 
-        <!-- Single Share button — best-practice iOS pattern.
-             iPhone / iPad / Android: native OS share sheet (image attaches
-             to the picked app automatically — Messages / WhatsApp / Mail /
-             AirDrop / Notes / wherever).
-             Mac: image lands on the clipboard, big visible hint tells the
-             user to paste it. Tiny PDF link for explicit file download. -->
-        <div style="max-width:440px; margin:16px auto 0;">
+        <!-- Desktop action row. Hidden on mobile (≤768px) — mobile users
+             reach the same actions via the 3-dot bottom sheet. iPad/Mac:
+             native share sheet auto-attaches the image. Mac browsers
+             fallback to clipboard with a visible paste hint. -->
+        <div class="set-card-actions-desktop" style="max-width:440px; margin:16px auto 0;">
           <div style="display:flex; gap:10px;">
             <button id="btn-card-share" onclick="window.shareSet()" style="flex:1; background:var(--amber); border:none; border-radius:8px; padding:14px 18px; font-family:var(--font-display); font-size:13px; letter-spacing:0.5px; color:#fff; cursor:pointer; font-weight:600;">Share</button>
             <button onclick="window.shareSetPDF()" style="background:transparent; border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding:14px 18px; font-family:var(--font-display); font-size:13px; letter-spacing:0.5px; color:rgba(255,255,255,0.6); cursor:pointer;">PDF</button>
@@ -4258,6 +4437,23 @@
           </div>
         </div>
         <div id="set-card-share-hint" style="max-width:440px; margin:8px auto 0; text-align:center; font-family:var(--font-display); font-size:11px; color:rgba(255,255,255,0.4); display:none;"></div>
+      </div>
+
+      <!-- Set-card share bottom sheet. Opened by the ⋯ button on mobile.
+           Backdrop tap (outside the .set-card-menu-sheet) closes the menu. -->
+      <div id="set-card-menu" class="set-card-menu" onclick="if(event.target.id==='set-card-menu') window.closeSetCardMenu()" role="dialog" aria-label="Share set">
+        <div class="set-card-menu-sheet">
+          <button class="set-card-menu-item" onclick="window.closeSetCardMenu(); window.shareSet();">
+            <span class="set-card-menu-icon" aria-hidden="true">↗</span>Share
+          </button>
+          <button class="set-card-menu-item" onclick="window.closeSetCardMenu(); window.shareSetPDF();">
+            <span class="set-card-menu-icon" aria-hidden="true">📄</span>Save as PDF
+          </button>
+          <button class="set-card-menu-item" onclick="window.closeSetCardMenu(); window.closeSetCard();">
+            <span class="set-card-menu-icon" aria-hidden="true">✕</span>Close
+          </button>
+          <button class="set-card-menu-item set-card-menu-cancel" onclick="window.closeSetCardMenu()">Cancel</button>
+        </div>
       </div>
 
       <!-- SCREEN 2: ROSTER -->
@@ -7080,10 +7276,15 @@
       row.className = 'song-row';
       row.setAttribute('data-song-id', String(song.id));
       row.setAttribute('onclick', 'window.clickSong(' + song.id + ')');
-      if (state.set.find(function(s) { return s.id === song.id; })) row.classList.add('in-set');
 
-      var isInSet = state.set.find(function(s) { return s.id === song.id; });
+      // findIndex (not find) so we know the song's *position* in the set —
+      // that's what the mobile tile number badge renders ("1", "2", "3").
+      var idxInSet = state.set.findIndex(function(s) { return s.id === song.id; });
+      var isInSet = idxInSet >= 0;
+      if (isInSet) row.classList.add('in-set');
+
       row.innerHTML = '<div class="song-color-bar bar-' + esc(song.cat) + '"></div>' +
+        '<div class="song-tile-number">' + (isInSet ? (idxInSet + 1) : '') + '</div>' +
         '<div class="song-info">' +
           '<div class="song-title">' + esc(song.title) + '</div>' +
           '<div class="song-artist">' + esc(song.artist) + '</div>' +
@@ -9990,6 +10191,20 @@
       var el = document.getElementById('ios-a2hs-prompt');
       if (el) el.classList.remove('visible');
       try { localStorage.setItem('sunday_a2hs_dismissed', '1'); } catch (e) {}
+    };
+
+    // Set-card share sheet (mobile). The ⋯ in the top-right of the
+    // finalised-set overlay opens a bottom sheet with the same Share /
+    // Save-as-PDF / Close actions as the desktop inline buttons. Desktop
+    // still uses the inline buttons (this menu is just opened/closed
+    // here — visibility is gated by CSS at ≤768px).
+    window.openSetCardMenu = function() {
+      var menu = document.getElementById('set-card-menu');
+      if (menu) menu.classList.add('open');
+    };
+    window.closeSetCardMenu = function() {
+      var menu = document.getElementById('set-card-menu');
+      if (menu) menu.classList.remove('open');
     };
     (function setupA2HSPrompt() {
       var ua = navigator.userAgent || '';
