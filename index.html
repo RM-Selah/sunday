@@ -12762,7 +12762,15 @@
       var hint = document.getElementById('set-card-share-hint');
       Promise.resolve(shareImageToTarget(preloadSetShareImage(), null, hint, 'Set List'))
         .then(function(result) {
-          if (result === 'shared') setTimeout(window.closeSetCard, 500);
+          // Close the set-card after share completes — Reuben's call.
+          // Was only closing on 'shared' before, which left the card
+          // hanging on Mac (clipboard path) and on iPad if the user
+          // dismissed the native share sheet without sending. Now we
+          // close on every outcome except 'fail' (where the hint shows
+          // an error the user needs to see).
+          if (result === 'fail') return;
+          var delay = result === 'clipboard' ? 1500 : 500;
+          setTimeout(window.closeSetCard, delay);
         });
     };
 
@@ -12775,7 +12783,9 @@
       if (!pdfResult || !pdfResult.blob) { flashHint(hint, 'PDF generation failed'); return; }
       Promise.resolve(sharePdfBlob(pdfResult.blob, pdfResult.filename, hint, 'Set List PDF'))
         .then(function(result) {
-          if (result === 'shared') setTimeout(window.closeSetCard, 500);
+          if (result === 'fail') return;
+          var delay = result === 'clipboard' ? 1500 : 500;
+          setTimeout(window.closeSetCard, delay);
         });
     };
 
