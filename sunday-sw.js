@@ -1,5 +1,5 @@
 // Sunday Service Worker — Offline support + caching
-const CACHE_NAME = 'sunday-v4.8';
+const CACHE_NAME = 'sunday-v4.9';
 const ASSETS = [
   './',
   './sunday-manifest.json',

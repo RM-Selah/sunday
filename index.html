@@ -3579,16 +3579,29 @@
     }
     @keyframes set-card-menu-fade { from { opacity: 0; } to { opacity: 1; } }
     .set-card-menu-sheet {
+      position: relative;
       width: 100%;
       background: rgba(20,20,26,0.98);
       -webkit-backdrop-filter: blur(20px);
       backdrop-filter: blur(20px);
       border-radius: 16px 16px 0 0;
-      padding: 8px 8px calc(env(safe-area-inset-bottom) + 12px);
+      padding: 22px 8px calc(env(safe-area-inset-bottom) + 12px);
       display: flex;
       flex-direction: column;
       gap: 2px;
       animation: set-card-menu-slide 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* iOS-style grabber at the top of the sheet, matches Claude's. */
+    .set-card-menu-sheet::before {
+      content: '';
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 36px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.22);
     }
     @keyframes set-card-menu-slide {
       from { transform: translateY(100%); }
@@ -3629,6 +3642,11 @@
     .set-card-menu-cancel:active { background: rgba(255,255,255,0.08); }
     @media (hover: hover) {
       .set-card-menu-cancel:hover { background: rgba(255,255,255,0.08); }
+    }
+    /* Destructive option (Reset Sunday) — matches Claude's red Delete. */
+    .set-card-menu-destructive,
+    .set-card-menu-destructive .set-card-menu-icon {
+      color: #ef5350;
     }
 
     /* ===================== RESPONSIVE: Tablet (≤1024px) ===================== */
@@ -4499,17 +4517,22 @@
       </div>
 
       <!-- Set-card share bottom sheet. Opened by the ⋯ button on mobile.
-           Backdrop tap (outside the .set-card-menu-sheet) closes the menu. -->
+           Backdrop tap (outside the .set-card-menu-sheet) closes the menu.
+           Options mirror Claude's conversation-menu structure as closely
+           as the use-case allows: Share / Copy / Save / Destructive / Cancel. -->
       <div id="set-card-menu" class="set-card-menu" onclick="if(event.target.id==='set-card-menu') window.closeSetCardMenu()" role="dialog" aria-label="Share set">
         <div class="set-card-menu-sheet">
           <button class="set-card-menu-item" onclick="window.closeSetCardMenu(); window.shareSet();">
             <span class="set-card-menu-icon" aria-hidden="true">↗</span>Share
           </button>
+          <button class="set-card-menu-item" onclick="window.closeSetCardMenu(); window.copySetImage();">
+            <span class="set-card-menu-icon" aria-hidden="true">⎘</span>Copy image
+          </button>
           <button class="set-card-menu-item" onclick="window.closeSetCardMenu(); window.shareSetPDF();">
             <span class="set-card-menu-icon" aria-hidden="true">📄</span>Save as PDF
           </button>
-          <button class="set-card-menu-item" onclick="window.closeSetCardMenu(); window.closeSetCard();">
-            <span class="set-card-menu-icon" aria-hidden="true">✕</span>Close
+          <button class="set-card-menu-item set-card-menu-destructive" onclick="window.closeSetCardMenu(); if(confirm('Reset this Sunday’s set? This will clear all selected songs.')) window.resetSunday();">
+            <span class="set-card-menu-icon" aria-hidden="true">🗑</span>Reset Sunday
           </button>
           <button class="set-card-menu-item set-card-menu-cancel" onclick="window.closeSetCardMenu()">Cancel</button>
         </div>
@@ -10276,6 +10299,32 @@
     window.closeSetCardMenu = function() {
       var menu = document.getElementById('set-card-menu');
       if (menu) menu.classList.remove('open');
+    };
+
+    // Copy the rendered set-card image to clipboard. Parallel to Claude's
+    // "Copy link" — same idea, different payload (PNG, not URL). Uses
+    // the modern ClipboardItem API; gracefully falls back to the share
+    // hint if not supported (mostly older Android Chrome).
+    window.copySetImage = function() {
+      var hint = document.getElementById('set-card-share-hint');
+      if (!window.ClipboardItem || !navigator.clipboard || !navigator.clipboard.write) {
+        flashHint(hint, 'Copy not supported here — try Share');
+        return;
+      }
+      flashHint(hint, 'Preparing image…', 0);
+      Promise.resolve(preloadSetShareImage()).then(function(r) {
+        if (!r || !r.blob) { flashHint(hint, 'Image generation failed'); return; }
+        var item = new ClipboardItem({ 'image/png': r.blob });
+        navigator.clipboard.write([item])
+          .then(function() {
+            flashHint(hint, 'Copied ✓');
+            setTimeout(window.closeSetCard, 1500);
+          })
+          .catch(function(e) {
+            console.error('[Sunday] Copy failed:', e);
+            flashHint(hint, 'Copy failed — try Share');
+          });
+      });
     };
 
     (function setupA2HSPrompt() {
