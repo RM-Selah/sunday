@@ -188,28 +188,6 @@
       gap: 12px;
     }
 
-    /* Mobile-only ⋯ menu button in the topbar. Claude-style nav-bar
-       action — always visible regardless of scroll. Hidden by default;
-       the body[data-current-screen="set"] rule in the 768px block
-       flips it on for the set screen. */
-    .topbar-menu-btn {
-      display: none;
-      width: 32px;
-      height: 32px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 50%;
-      color: #fff;
-      font-size: 16px;
-      cursor: pointer;
-      align-items: center;
-      justify-content: center;
-      letter-spacing: -1px;
-      font-family: var(--font-display);
-      padding: 0;
-      line-height: 1;
-    }
-    .topbar-menu-btn:active { background: rgba(255,255,255,0.14); }
 
     .chip {
       padding: 5px 12px;
@@ -3950,15 +3928,33 @@
         padding-bottom: calc(var(--bottom-nav-height) + 78px);
       }
 
-      /* Show the topbar ⋯ menu only on the set screen.
-         Hide the inline btn-finalise inside the set panel since the
-         menu (always visible in the topbar) is the new entry point. */
-      body[data-current-screen="set"] .topbar-menu-btn {
-        display: inline-flex;
-      }
+      /* Big amber Finalise bar — bottom of the set list, can't miss it.
+         Tapping it opens the set-card screenshot, which has its own ⋯
+         menu in the top-right for share / save / close. */
       .btn-finalise {
-        display: none;
+        display: block;
+        background: var(--amber);
+        color: #fff;
+        border: none;
+        font-family: var(--font-display);
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0.4px;
+        padding: 18px 20px;
+        border-radius: 12px;
+        width: 100%;
+        margin: 20px 0 12px;
+        cursor: pointer;
+        box-shadow: 0 8px 24px rgba(224, 154, 45, 0.28);
+        transition: transform 0.08s, box-shadow 0.2s;
       }
+      .btn-finalise:disabled {
+        background: rgba(255,255,255,0.05);
+        color: var(--mid);
+        box-shadow: none;
+        opacity: 1; /* override the base 0.5 */
+      }
+      .btn-finalise:active:not(:disabled) { transform: scale(0.98); }
 
       /* ----- Sunny (Sunday) screen — usable on mobile -----
          Desktop has a 280px conv-list + chat thread side by side. On a
@@ -4328,11 +4324,6 @@
       </div>
       <div style="flex: 1;"></div>
       <div class="topbar-right">
-        <!-- Mobile-only ⋯ menu, Claude-style. Shown only on the set
-             screen (gated by body[data-current-screen="set"]). Opens
-             the set-builder bottom sheet with Finalise / Share / PDF /
-             Reset actions — same pattern as Claude's nav-bar menu. -->
-        <button class="topbar-menu-btn" id="set-builder-menu-btn" onclick="window.openSetBuilderMenu()" aria-label="More actions">⋯</button>
         <div class="chip" onclick="window.resetSunday()" title="Reset Sunday &amp; start over" style="cursor:pointer;">Sunday</div>
         <div class="avatar-circle">R</div>
       </div>
@@ -4524,23 +4515,6 @@
         </div>
       </div>
 
-      <!-- Set-builder ⋯ menu. Opened from the topbar ⋯ on mobile while
-           on the set screen. Same Claude-style bottom sheet pattern as
-           the set-card menu above — reuses the .set-card-menu styles. -->
-      <div id="set-builder-menu" class="set-card-menu" onclick="if(event.target.id==='set-builder-menu') window.closeSetBuilderMenu()" role="dialog" aria-label="Set actions">
-        <div class="set-card-menu-sheet">
-          <button class="set-card-menu-item" onclick="window.closeSetBuilderMenu(); window.handleFinalise();">
-            <span class="set-card-menu-icon" aria-hidden="true">✦</span>Finalise &amp; preview
-          </button>
-          <button class="set-card-menu-item" onclick="window.closeSetBuilderMenu(); window.shareSetFromBuilder();">
-            <span class="set-card-menu-icon" aria-hidden="true">↗</span>Share
-          </button>
-          <button class="set-card-menu-item" onclick="window.closeSetBuilderMenu(); window.shareSetPDFFromBuilder();">
-            <span class="set-card-menu-icon" aria-hidden="true">📄</span>Save as PDF
-          </button>
-          <button class="set-card-menu-item set-card-menu-cancel" onclick="window.closeSetBuilderMenu()">Cancel</button>
-        </div>
-      </div>
 
       <!-- SCREEN 2: ROSTER -->
       <div class="screen" data-screen="team">
@@ -7580,11 +7554,16 @@
       if (elDur) elDur.textContent = Math.round(totalMins) + 'm';
       if (elKeys) elKeys.textContent = keys;
 
-      // Finalise button (desktop / iPad — the in-panel one). On mobile
-      // the entry point is the topbar ⋯ menu (always visible) so we
-      // don't need a count badge here.
+      // Finalise button — show song count when there's a set so the
+      // amber bar reads "Finalise Sunday set · 4 songs", reinforcing
+      // what's about to be finalised. Disabled state when empty.
       var btnFinalise = document.getElementById('btn-finalise');
-      if (btnFinalise) btnFinalise.disabled = state.set.length < 1;
+      if (btnFinalise) {
+        btnFinalise.disabled = state.set.length < 1;
+        btnFinalise.textContent = state.set.length > 0
+          ? 'Finalise Sunday set · ' + state.set.length + (state.set.length === 1 ? ' song' : ' songs')
+          : 'Finalise Sunday set';
+      }
 
       // Arc bar
       var arcBar = document.getElementById('arc-bar');
@@ -10299,35 +10278,6 @@
       if (menu) menu.classList.remove('open');
     };
 
-    // Set-builder ⋯ menu (topbar on mobile). Mirrors the set-card menu
-    // pattern but opens before Finalise — so users can share / PDF /
-    // finalise in one tap from the set-builder screen.
-    window.openSetBuilderMenu = function() {
-      var menu = document.getElementById('set-builder-menu');
-      if (menu) menu.classList.add('open');
-    };
-    window.closeSetBuilderMenu = function() {
-      var menu = document.getElementById('set-builder-menu');
-      if (menu) menu.classList.remove('open');
-    };
-
-    // "Share" / "Save as PDF" from the set-builder menu — render the
-    // set-card preview first (handleFinalise), then trigger the existing
-    // share / PDF flow on a tick so the card has time to mount in the
-    // DOM. The card stays visible after; user can dismiss via its own
-    // ⋯ menu Close or by tapping the backdrop.
-    window.shareSetFromBuilder = function() {
-      if (typeof window.handleFinalise === 'function') window.handleFinalise();
-      setTimeout(function() {
-        if (typeof window.shareSet === 'function') window.shareSet();
-      }, 200);
-    };
-    window.shareSetPDFFromBuilder = function() {
-      if (typeof window.handleFinalise === 'function') window.handleFinalise();
-      setTimeout(function() {
-        if (typeof window.shareSetPDF === 'function') window.shareSetPDF();
-      }, 200);
-    };
     (function setupA2HSPrompt() {
       var ua = navigator.userAgent || '';
       var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
