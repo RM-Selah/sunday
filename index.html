@@ -3532,45 +3532,6 @@
       .ios-a2hs-dismiss:hover { color: rgba(255,255,255,0.9); }
     }
 
-    /* ===================== Set builder — mobile playlist layout =====================
-       On phones the split library/set view becomes a single "playlist"-style
-       column (think Spotify or Apple Music). The library lives as a
-       fullscreen sheet you summon with "Add songs". These base rules just
-       define the new elements (defaults: hidden); the 768px block below
-       switches them on. Desktop split-view is unchanged. */
-    .set-actions-mobile {
-      display: none;
-      gap: 10px;
-      margin: 6px 0 18px;
-    }
-    .set-action-btn {
-      flex: 1;
-      padding: 14px 16px;
-      border-radius: 999px;
-      font-family: var(--font-display);
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.3px;
-      cursor: pointer;
-      border: none;
-      transition: opacity 0.18s, background 0.18s, transform 0.08s;
-    }
-    .set-action-btn.primary {
-      background: var(--amber);
-      color: #fff;
-    }
-    .set-action-btn.secondary {
-      background: var(--s2);
-      color: var(--text);
-      border: 1px solid var(--gb);
-    }
-    .set-action-btn:active { transform: scale(0.98); }
-
-    /* "Done" close button on the library sheet (mobile only). */
-    .library-sheet-close {
-      display: none;
-    }
-
     /* ===================== RESPONSIVE: Tablet (≤1024px) ===================== */
     @media (max-width: 1024px) {
       #app {
@@ -3865,95 +3826,83 @@
         padding-bottom: var(--bottom-nav-height);
       }
 
-      /* ----- Set builder: Spotify/Apple-Music-inspired playlist view -----
-         Single column; library hidden by default, opens as a full sheet
-         via "Add songs"; the set reads like a playlist (big title, slim
-         arc, generous song rows, pill actions). */
+      /* ----- Set builder: split view restored, Spotify-clean styling -----
+         The iPad pattern (library + set both visible, tap-to-add, drag-
+         reorder) carries to mobile as a vertical split. Set on top (capped
+         at 55vh so library still has room), library below filling the rest.
+         Each panel scrolls internally so the page itself doesn't bounce. */
       .set-builder-container {
-        /* Library is now position:fixed when visible, so flatten the
-           grid to a single row for the set panel. */
-        grid-template-rows: 1fr;
+        grid-template-columns: 1fr;
+        /* auto for set so empty/small sets don't waste space; 1fr for
+           library so it fills whatever's left. */
+        grid-template-rows: auto 1fr;
+        overflow: hidden;
       }
-
-      /* Library becomes a fullscreen sheet (only when .mobile-visible) */
+      .set-panel {
+        max-height: 55vh;
+        overflow-y: auto;
+        padding: 16px 18px 12px;
+      }
       .library-panel {
-        display: none;
-      }
-      .library-panel.mobile-visible {
-        display: flex;
-        position: fixed;
-        inset: 0;
-        z-index: 1100;
-        background: var(--bg);
+        /* Subtle separator between the two panels, with rounded top
+           edge to read like a peek/sheet attached to the set above. */
+        border-top: 1px solid var(--gb);
+        border-radius: 14px 14px 0 0;
         max-height: none;
-        border: none;
-        border-radius: 0;
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: var(--bottom-nav-height);
+        overflow: hidden; /* songs-scroll handles its own overflow */
       }
-      .library-panel.mobile-visible .library-sheet-close {
-        display: block;
-        position: absolute;
-        top: calc(env(safe-area-inset-top) + 6px);
-        right: 12px;
-        background: transparent;
-        border: none;
-        color: var(--amber);
-        font-family: var(--font-display);
-        font-size: 14px;
+      .library-header {
+        padding: 14px 18px 8px;
+      }
+      .library-title {
+        font-size: 13px;
         font-weight: 500;
-        cursor: pointer;
-        padding: 10px 14px;
-        z-index: 2;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--mid);
+        margin-bottom: 12px;
       }
 
       /* Hero header — bigger title, less chrome */
-      .set-title { font-size: 24px; letter-spacing: -0.4px; }
-      .set-header { margin-bottom: 12px; }
+      .set-title { font-size: 22px; letter-spacing: -0.4px; }
+      .set-header { margin-bottom: 10px; padding: 0; }
       .btn-pdf-small { display: none; }
 
       /* Slim arc bar, hide the legend (signal is in the song meta below) */
       .arc-container {
         padding: 0;
         background: transparent;
-        margin: 0 0 16px;
+        margin: 0 0 14px;
       }
-      .arc-bar {
-        height: 4px;
-        border-radius: 2px;
-        margin-bottom: 0;
-      }
+      .arc-bar { height: 4px; border-radius: 2px; margin-bottom: 0; }
       .arc-legend { display: none; }
 
-      /* Surface the mobile actions row (defined globally above) */
-      .set-actions-mobile { display: flex; }
-
-      /* Strip clutter — the info lives in the header line + actions */
+      /* Strip the desktop-only bits on mobile */
       .set-stats { display: none; }
       .set-suggest-link { display: none; }
 
-      /* Slot rows — clean playlist list, no boxes */
-      .set-slots { gap: 0; margin-bottom: 20px; }
+      /* Slot rows — clean playlist style, tap targets first */
+      .set-slots { gap: 0; margin-bottom: 14px; }
       .slot.filled {
         background: transparent;
         border: none;
         border-bottom: 1px solid var(--gb);
         border-radius: 0;
-        padding: 14px 4px;
-        gap: 16px;
+        padding: 12px 2px;
+        gap: 14px;
         align-items: center;
       }
       .slot.filled:last-child { border-bottom: none; }
       .slot-number {
-        width: 24px;
+        width: 22px;
         height: auto;
-        min-width: 24px;
+        min-width: 22px;
         background: transparent;
         font-size: 14px;
         font-weight: 400;
         color: var(--mid);
       }
-      .slot-song-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+      .slot-song-title { font-size: 15px; font-weight: 500; margin-bottom: 3px; }
       .slot-song-meta { font-size: 12px; gap: 10px; }
       .slot-badge {
         background: transparent;
@@ -3964,7 +3913,7 @@
         letter-spacing: 0.4px;
         color: var(--mid);
       }
-      .slot-actions { display: flex; } /* always visible on touch — no hover */
+      .slot-actions { display: flex; } /* always visible on touch */
       .slot-action-btn {
         width: 32px;
         height: 32px;
@@ -3974,14 +3923,53 @@
         font-size: 14px;
       }
 
-      /* Big bottom CTA */
+      /* Library song rows — same clean playlist treatment.
+         Bigger tap target, no boxes, color bar promotes to a tinted dot. */
+      .song-row {
+        padding: 12px 18px;
+        margin: 0;
+        border-radius: 0;
+        border-left: none;
+        border-bottom: 1px solid var(--gb);
+        gap: 12px;
+      }
+      .song-row:last-child { border-bottom: none; }
+      .song-row:hover, .song-row:active { background: var(--gl); }
+      .song-color-bar {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        align-self: center;
+      }
+      .song-title { font-size: 15px; font-weight: 500; }
+      .song-artist { font-size: 12px; }
+      .song-meta { font-size: 12px; gap: 10px; }
+      .key-badge {
+        padding: 4px 8px;
+        font-size: 12px;
+        background: transparent;
+        border: 1px solid var(--gb);
+        min-width: 32px;
+      }
+      .category-divider {
+        padding: 14px 18px 6px;
+        font-size: 10px;
+        letter-spacing: 0.8px;
+      }
+
+      /* Finalise button — slimmer (panel is shorter) */
       .btn-finalise {
-        padding: 16px;
-        font-size: 14px;
+        padding: 14px;
+        font-size: 13px;
         border-radius: 999px;
         width: 100%;
-        margin-top: 20px;
+        margin-top: 12px;
       }
+
+      /* Library search + tabs — slimmer on mobile */
+      .search-input { font-size: 16px; padding: 10px 12px 10px 32px; }
+      .category-tabs { gap: 12px; margin-top: 10px; }
+      .category-tab { font-size: 11px; }
     }
 
     /* ===================== RESPONSIVE: Small phone (≤420px) ===================== */
@@ -4177,8 +4165,6 @@
         <div class="set-builder-container">
           <!-- Library Panel -->
           <div class="library-panel">
-            <!-- Mobile-only: close button when library is shown as sheet -->
-            <button class="library-sheet-close" onclick="window.closeLibrarySheet()" aria-label="Close library">Done</button>
             <div class="library-header">
               <h2 class="library-title" id="library-title">All Songs</h2>
               <div class="search-box">
@@ -4222,12 +4208,6 @@
                 </div>
               </div>
             </div>
-            <!-- Mobile-only primary actions. Hidden on desktop via CSS. -->
-            <div class="set-actions-mobile">
-              <button class="set-action-btn primary" onclick="window.openLibrarySheet()">+ Add songs</button>
-              <button class="set-action-btn secondary" onclick="window.shareSet()">Share</button>
-            </div>
-
             <!-- Empty canvas — shown when no set -->
             <div class="set-canvas-empty" id="set-canvas-empty" onclick="window.startNewSet()">
               <div class="set-canvas-symbol">—</div>
@@ -8984,10 +8964,6 @@
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.querySelector(`[data-screen="${screenName}"]`).classList.add('active');
 
-      // Close the mobile library sheet on any screen change — otherwise
-      // it haunts the screen you navigated to (position:fixed overlay).
-      if (typeof window.closeLibrarySheet === 'function') window.closeLibrarySheet();
-
       // Keep both the top nav-tabs (desktop) and bottom-nav-tabs (mobile)
       // in sync. Same data-tab attribute on both, so one querySelectorAll
       // covers them.
@@ -10014,22 +9990,6 @@
       var el = document.getElementById('ios-a2hs-prompt');
       if (el) el.classList.remove('visible');
       try { localStorage.setItem('sunday_a2hs_dismissed', '1'); } catch (e) {}
-    };
-
-    // Library sheet (mobile only). On phones the song library is hidden
-    // by default and pops up as a fullscreen sheet when the user taps
-    // "Add songs". Adding a song doesn't auto-close the sheet — they
-    // can add several in a row and tap "Done" when finished. switchScreen()
-    // closes the sheet on navigation so it doesn't haunt other screens.
-    window.openLibrarySheet = function() {
-      var panel = document.querySelector('.library-panel');
-      if (panel) panel.classList.add('mobile-visible');
-      var scroll = document.getElementById('songs-scroll');
-      if (scroll) scroll.scrollTop = 0;
-    };
-    window.closeLibrarySheet = function() {
-      var panel = document.querySelector('.library-panel');
-      if (panel) panel.classList.remove('mobile-visible');
     };
     (function setupA2HSPrompt() {
       var ua = navigator.userAgent || '';
