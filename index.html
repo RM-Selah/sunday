@@ -3422,6 +3422,52 @@
       transform: scale(0.98);
     }
 
+    /* Mobile bottom tab nav — hidden on desktop, becomes the primary
+       nav on phones (top nav-tabs row hides on mobile to compensate).
+       Lives outside #app so it floats above the grid as a fixed
+       overlay. */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: calc(52px + env(safe-area-inset-bottom));
+      padding-bottom: env(safe-area-inset-bottom);
+      background: rgba(8,8,14,0.96);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--gb);
+      display: none; /* shown only on mobile via media query below */
+      align-items: stretch;
+      z-index: 998; /* below sidebar (999) so opened Sunny covers it */
+    }
+    .bottom-nav-tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.55);
+      font-family: var(--font-display);
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 6px 4px 8px;
+      cursor: pointer;
+      transition: color 0.18s, border-color 0.18s;
+      border-top: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+    }
+    .bottom-nav-tab.active {
+      color: var(--amber);
+      border-top-color: var(--amber);
+    }
+    @media (hover: hover) {
+      .bottom-nav-tab:hover { color: rgba(255,255,255,0.85); }
+    }
+    .bottom-nav-tab:active { opacity: 0.7; }
+
     /* iOS "Add to Home Screen" coach card. Shows on the 2nd+ visit for
        iPhone Safari users who haven't installed yet and haven't
        permanently dismissed it. Sits above the Sunny peek + the home
@@ -3553,9 +3599,11 @@
         position: fixed;
         /* --kb-offset is set by the VisualViewport listener when the soft
            keyboard opens; the sheet lifts above the keyboard so the input
-           never disappears behind it. Falls back to 0 on desktop / when
-           the keyboard is closed. */
-        bottom: var(--kb-offset, 0px);
+           never disappears behind it.
+           --bottom-nav-height is set on :root inside this media query so
+           the closed sheet's peek bar sits above the bottom tab bar.
+           Both fall back to 0 on desktop. */
+        bottom: calc(var(--kb-offset, 0px) + var(--bottom-nav-height, 0px));
         left: 0;
         right: 0;
         top: auto;
@@ -3569,9 +3617,6 @@
         transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
                     bottom 0.18s ease-out;
         box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
-        /* Honor the home-indicator inset so the peek bar (and the
-           input inside it) sits above the bottom safe area. */
-        padding-bottom: env(safe-area-inset-bottom);
       }
 
       /* iOS auto-zooms any input with text smaller than 16px on focus —
@@ -3593,6 +3638,12 @@
 
       .sidebar.mobile-open {
         transform: translateY(0);
+        /* When opened, drop the bottom-nav offset so the sheet covers
+           the tab bar cleanly. Keyboard offset still applies. Add the
+           safe-area inset as inner padding so the content inside the
+           opened sheet still respects the home indicator. */
+        bottom: var(--kb-offset, 0px);
+        padding-bottom: env(safe-area-inset-bottom);
       }
 
       .sidebar-chat-header {
@@ -3754,6 +3805,25 @@
       .slot-picker-item {
         padding: 10px 12px;
         font-size: 13px;
+      }
+
+      /* ----- Bottom tab nav (mobile) -----
+         On phones the primary nav lives at the bottom for thumb reach.
+         Setting --bottom-nav-height on :root inside this media query
+         lets every other rule (.sidebar bottom calc, .main-content
+         padding-bottom) consume it without each having to feature-detect. */
+      :root {
+        --bottom-nav-height: calc(52px + env(safe-area-inset-bottom));
+      }
+      .bottom-nav {
+        display: flex;
+      }
+      .topbar .nav-tabs {
+        display: none;
+      }
+      /* Keep scrollable content from running under the fixed nav. */
+      .main-content {
+        padding-bottom: var(--bottom-nav-height);
       }
     }
 
@@ -8749,8 +8819,11 @@
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.querySelector(`[data-screen="${screenName}"]`).classList.add('active');
 
-      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-      document.querySelector(`[data-tab="${screenName}"]`).classList.add('active');
+      // Keep both the top nav-tabs (desktop) and bottom-nav-tabs (mobile)
+      // in sync. Same data-tab attribute on both, so one querySelectorAll
+      // covers them.
+      document.querySelectorAll('.nav-tab, .bottom-nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll(`[data-tab="${screenName}"]`).forEach(t => t.classList.add('active'));
 
       if (screenName === 'team') renderRoster();
       if (screenName === 'people') { try { buildAddFormRoles(); } catch(e){} setTimeout(function(){ renderPeople(); }, 0); }
@@ -12523,6 +12596,18 @@
       setTimeout(function() { hint.style.display = 'none'; }, ms || 4000);
     }
   </script>
+
+  <!-- Mobile bottom tab nav. Hidden on desktop via CSS (display: none),
+       shown on phones where it replaces the .nav-tabs in the topbar.
+       data-tab attrs mirror the desktop nav so switchScreen() keeps the
+       active state synced across both sets of buttons. -->
+  <nav class="bottom-nav" role="navigation" aria-label="Main">
+    <button class="bottom-nav-tab active" data-tab="set" onclick="switchScreen('set')">Set</button>
+    <button class="bottom-nav-tab" data-tab="team" onclick="switchScreen('team')">Roster</button>
+    <button class="bottom-nav-tab" data-tab="people" onclick="switchScreen('people')">Team</button>
+    <button class="bottom-nav-tab" data-tab="sunday" onclick="switchScreen('sunday')">Sunday</button>
+    <button class="bottom-nav-tab" data-tab="settings" onclick="switchScreen('settings')" aria-label="Settings">⚙</button>
+  </nav>
 
 </body>
 </html>
