@@ -3383,6 +3383,109 @@
       color: var(--bg);
     }
 
+    /* ===================== Mobile polish: tappables + chips + A2HS ===================== */
+    /* Kill the 300ms double-tap-zoom delay on every primary tap target.
+       Pure perf hint — no visual change. Applied to plain <button> and
+       to the named tappable classes that aren't <button>s. */
+    button,
+    .nav-tab, .week-tab, .song-card, .set-song, .starter-chip,
+    .chip, .month-selector, .service-toggle, .slot-picker-item,
+    [role="button"] {
+      touch-action: manipulation;
+    }
+
+    /* Starter chips under the Sunny greeting. Promoted out of inline
+       styles + inline onmouseover so the hover state can be gated to
+       pointer:fine devices — otherwise the amber tint sticks after the
+       first tap on iPhone ("ghost hover"). */
+    .starter-chip {
+      text-align: left;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: var(--font-display);
+      font-size: 12px;
+      color: rgba(255,255,255,0.78);
+      cursor: pointer;
+      transition: background 0.18s, border-color 0.18s, transform 0.08s;
+    }
+    @media (hover: hover) {
+      .starter-chip:hover {
+        background: rgba(224,154,45,0.08);
+        border-color: rgba(224,154,45,0.25);
+      }
+    }
+    .starter-chip:active {
+      background: rgba(224,154,45,0.12);
+      border-color: rgba(224,154,45,0.3);
+      transform: scale(0.98);
+    }
+
+    /* iOS "Add to Home Screen" coach card. Shows on the 2nd+ visit for
+       iPhone Safari users who haven't installed yet and haven't
+       permanently dismissed it. Sits above the Sunny peek + the home
+       indicator inset. z-index 950 so opening the Sunny sheet covers
+       it cleanly (sheet is 999). */
+    .ios-a2hs-prompt {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: calc(96px + env(safe-area-inset-bottom));
+      width: 88vw;
+      max-width: 360px;
+      background: rgba(8,8,14,0.96);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 14px 14px 14px 16px;
+      display: none;
+      align-items: flex-start;
+      gap: 12px;
+      z-index: 950;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.55);
+    }
+    .ios-a2hs-prompt.visible {
+      display: flex;
+      animation: ios-a2hs-slide 0.36s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes ios-a2hs-slide {
+      from { opacity: 0; transform: translate(-50%, 18px); }
+      to   { opacity: 1; transform: translate(-50%, 0); }
+    }
+    .ios-a2hs-icon { font-size: 26px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+    .ios-a2hs-body { flex: 1; min-width: 0; }
+    .ios-a2hs-title {
+      font-family: var(--font-display);
+      font-size: 13px;
+      letter-spacing: 0.3px;
+      color: #fff;
+      font-weight: 500;
+    }
+    .ios-a2hs-text {
+      font-family: var(--font-display);
+      font-size: 11px;
+      color: rgba(255,255,255,0.72);
+      margin-top: 3px;
+      line-height: 1.5;
+    }
+    .ios-a2hs-share { color: #4da3ff; font-weight: 600; padding: 0 1px; }
+    .ios-a2hs-dismiss {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.5);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 2px 6px;
+      margin: -2px -4px 0 0;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    @media (hover: hover) {
+      .ios-a2hs-dismiss:hover { color: rgba(255,255,255,0.9); }
+    }
+
     /* ===================== RESPONSIVE: Tablet (≤1024px) ===================== */
     @media (max-width: 1024px) {
       #app {
@@ -3414,12 +3517,14 @@
 
       #app {
         grid-template-columns: 1fr;
-        grid-template-rows: 48px 1fr;
+        /* First row grows to include the notch / status-bar inset on
+           iPhones so the topbar isn't clipped under the dynamic island. */
+        grid-template-rows: calc(48px + env(safe-area-inset-top)) 1fr;
       }
 
-      /* Topbar — compressed */
+      /* Topbar — compressed, notch-aware */
       .topbar {
-        padding: 0 12px;
+        padding: env(safe-area-inset-top) 12px 0;
         gap: 8px;
       }
 
@@ -3429,9 +3534,11 @@
 
       .divider-v { display: none; }
 
+      /* Nav tabs — bumped from 10px/22px-tall to 13px/~38px-tall so
+         they're both readable at arm's length and big enough to tap. */
       .nav-tab {
-        font-size: 10px;
-        padding: 6px 10px;
+        font-size: 13px;
+        padding: 10px 12px;
       }
 
       .topbar-right .chip {
@@ -3462,6 +3569,9 @@
         transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
                     bottom 0.18s ease-out;
         box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+        /* Honor the home-indicator inset so the peek bar (and the
+           input inside it) sits above the bottom safe area. */
+        padding-bottom: env(safe-area-inset-bottom);
       }
 
       /* iOS auto-zooms any input with text smaller than 16px on focus —
@@ -3594,8 +3704,8 @@
       }
 
       .week-tab {
-        padding: 6px 12px;
-        font-size: 10px;
+        padding: 10px 14px;
+        font-size: 12px;
       }
 
       /* Stage view — scroll horizontally on small screens */
@@ -3656,10 +3766,18 @@
       .logo { font-size: 12px; }
       .logo-practice { display: none; }
 
+      /* Tighten the nav at iPhone SE widths but keep readable. If the
+         row still overflows we fall back to horizontal scroll (no
+         scrollbar) rather than wrapping or clipping. */
       .nav-tab {
-        font-size: 9px;
-        padding: 5px 8px;
+        font-size: 12px;
+        padding: 8px 10px;
       }
+      .nav-tabs {
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .nav-tabs::-webkit-scrollbar { display: none; }
 
       .hero-title { font-size: 22px; }
 
@@ -3677,20 +3795,9 @@
       }
     }
 
-    /* ===================== PWA: Standalone display padding ===================== */
-    @media (display-mode: standalone) {
-      .topbar {
-        padding-top: env(safe-area-inset-top);
-      }
-
-      .sidebar.mobile-open {
-        padding-bottom: env(safe-area-inset-bottom);
-      }
-
-      .mobile-sunday-toggle {
-        bottom: calc(20px + env(safe-area-inset-bottom));
-      }
-    }
+    /* (Safe-area handling moved into @media (max-width: 768px) above
+       so it applies in iOS Safari browser mode too — the notch + home
+       indicator need padding either way, not just when installed.) */
 
   </style>
   <!-- External libraries load in background — app works without them -->
@@ -3762,13 +3869,28 @@
         <button class="nav-tab" data-tab="team" onclick="switchScreen('team')">Roster</button>
         <button class="nav-tab" data-tab="people" onclick="switchScreen('people')">Team</button>
         <button class="nav-tab" data-tab="sunday" onclick="switchScreen('sunday')">Sunday</button>
-        <button class="nav-tab" data-tab="settings" onclick="switchScreen('settings')" style="opacity:0.5; font-size:12px;">⚙</button>
+        <button class="nav-tab" data-tab="settings" onclick="switchScreen('settings')" style="opacity:0.6; font-size:18px;" aria-label="Settings">⚙</button>
       </div>
       <div style="flex: 1;"></div>
       <div class="topbar-right">
         <div class="chip" onclick="window.resetSunday()" title="Reset Sunday &amp; start over" style="cursor:pointer;">Sunday</div>
         <div class="avatar-circle">R</div>
       </div>
+    </div>
+
+    <!-- iOS "Add to Home Screen" coach card. Shown by setupA2HSPrompt()
+         in JS on second-or-later visit for iOS Safari users not yet
+         installed, unless permanently dismissed. -->
+    <div id="ios-a2hs-prompt" class="ios-a2hs-prompt" role="dialog" aria-label="Install The Local">
+      <div class="ios-a2hs-icon" aria-hidden="true">📲</div>
+      <div class="ios-a2hs-body">
+        <div class="ios-a2hs-title">Install The Local</div>
+        <div class="ios-a2hs-text">
+          Tap <span class="ios-a2hs-share" aria-hidden="true">⬆︎</span> in Safari,
+          then <b>Add to Home Screen</b> — opens like an app, no browser bar.
+        </div>
+      </div>
+      <button class="ios-a2hs-dismiss" onclick="window.dismissA2HS()" aria-label="Dismiss">✕</button>
     </div>
 
     <!-- SIDEBAR: SUNDAY CHAT -->
@@ -3784,13 +3906,13 @@
           Hey — what are we building today?
         </div>
         <div id="sidebar-starter-chips" style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
-          <button onclick="window.useStarter(this)" class="starter-chip" style="text-align:left; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:8px 12px; font-family:var(--font-display); font-size:11px; color:rgba(255,255,255,0.75); cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='rgba(224,154,45,0.08)'; this.style.borderColor='rgba(224,154,45,0.25)';" onmouseout="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.08)';">
+          <button onclick="window.useStarter(this)" class="starter-chip">
             ✦ &nbsp; Build me a set for Sunday
           </button>
-          <button onclick="window.useStarter(this)" class="starter-chip" style="text-align:left; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:8px 12px; font-family:var(--font-display); font-size:11px; color:rgba(255,255,255,0.75); cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='rgba(224,154,45,0.08)'; this.style.borderColor='rgba(224,154,45,0.25)';" onmouseout="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.08)';">
+          <button onclick="window.useStarter(this)" class="starter-chip">
             ✦ &nbsp; Build the next roster
           </button>
-          <button onclick="window.useStarter(this)" class="starter-chip" style="text-align:left; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:8px 12px; font-family:var(--font-display); font-size:11px; color:rgba(255,255,255,0.75); cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='rgba(224,154,45,0.08)'; this.style.borderColor='rgba(224,154,45,0.25)';" onmouseout="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.08)';">
+          <button onclick="window.useStarter(this)" class="starter-chip">
             ✦ &nbsp; Who's been on a lot lately?
           </button>
         </div>
@@ -9633,6 +9755,48 @@
       vv.addEventListener('resize', schedule);
       vv.addEventListener('scroll', schedule);
       update();
+    })();
+
+    // iOS "Add to Home Screen" coach card.
+    //
+    // iOS Safari never fires beforeinstallprompt, so we can't programmatically
+    // trigger the install flow — best we can do is show a coach card pointing
+    // at the share icon. Rules:
+    //   - Only iOS, only when not already installed (navigator.standalone).
+    //   - Skip if user has permanently dismissed (localStorage flag).
+    //   - Don't show on the very first visit — let people use the app first.
+    //     Counter ticks on every visit; we show on visit #2+.
+    //   - Hidden behind the Sunny sheet (z-index 950 < sidebar 999) so
+    //     opening Sunny doesn't get blocked by the prompt.
+    window.dismissA2HS = function() {
+      var el = document.getElementById('ios-a2hs-prompt');
+      if (el) el.classList.remove('visible');
+      try { localStorage.setItem('sunday_a2hs_dismissed', '1'); } catch (e) {}
+    };
+    (function setupA2HSPrompt() {
+      var ua = navigator.userAgent || '';
+      var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+      if (!isIOS) return;
+      var isStandalone = window.navigator.standalone === true ||
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+      if (isStandalone) return;
+      try {
+        if (localStorage.getItem('sunday_a2hs_dismissed') === '1') return;
+        var visits = parseInt(localStorage.getItem('sunday_visits') || '0', 10) + 1;
+        localStorage.setItem('sunday_visits', String(visits));
+        if (visits < 2) return;
+      } catch (e) {
+        return; // Private mode etc — fail silent, don't show.
+      }
+      function show() {
+        var el = document.getElementById('ios-a2hs-prompt');
+        if (el) el.classList.add('visible');
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { setTimeout(show, 1200); });
+      } else {
+        setTimeout(show, 1200);
+      }
     })();
 
     function hideSidebarStarterChips() {
