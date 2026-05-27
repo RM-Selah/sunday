@@ -3967,10 +3967,15 @@
         transition: transform 0.08s, box-shadow 0.2s;
       }
       .btn-finalise:disabled {
-        background: rgba(255,255,255,0.05);
-        color: var(--mid);
+        /* Keep the amber bar visible even when empty — Reuben wanted a
+           "big yellow bar" always showing the next step. Dim it heavily
+           but preserve the colour, so it reads as "tap me later" not
+           "broken button". */
+        background: rgba(224, 154, 45, 0.25);
+        color: rgba(255, 255, 255, 0.55);
         box-shadow: none;
-        opacity: 1; /* override the base 0.5 */
+        cursor: default;
+        opacity: 1;
       }
       .btn-finalise:active:not(:disabled) { transform: scale(0.98); }
 
@@ -4146,12 +4151,23 @@
       }
       .song-row.in-set .song-tile-number { display: flex; }
 
-      /* SET (bottom) — flows below the library, no internal scroll */
+      /* SET (bottom) — flows below the library, no internal scroll.
+         Background goes transparent on mobile because the desktop's
+         rgba(10,10,18,0.48) overlay would otherwise sit on top of any
+         library-tile content that's scrolled past — used to look like
+         a smudged "dark middle area" obscuring tiles above the set.
+         Bottom padding pushes the Finalise button above the fixed
+         Sunny peek (78px) + bottom nav. main-content's padding-bottom
+         doesn't help on its own — Chrome doesn't include it in
+         scrollHeight, so the last child ends flush against viewport
+         bottom and gets covered by the chrome. This padding lives in
+         the actual scrollable content, which Chrome DOES include. */
       .set-panel {
         max-height: none;
         overflow-y: visible;
-        padding: 20px 18px 24px;
+        padding: 20px 18px calc(24px + var(--bottom-nav-height) + 78px);
         border-top: 1px solid var(--gb);
+        background: transparent;
       }
 
       /* Hero header, slim arc — same Spotify-clean treatment */
@@ -4255,13 +4271,10 @@
         max-height: 85vh;
       }
 
-      .set-builder-container {
-        grid-template-rows: auto auto;
-      }
-
-      .library-panel {
-        max-height: 50vh;
-      }
+      /* (Older library-panel/.set-builder-container rules removed — they
+         capped library-panel at 50vh which clipped the 4-col tile grid
+         behind the set-panel, hiding the Finalise button. The 768px
+         block above handles the full-flow tile grid + page-scroll.) */
     }
 
     /* (Safe-area handling moved into @media (max-width: 768px) above
