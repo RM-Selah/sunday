@@ -3532,6 +3532,45 @@
       .ios-a2hs-dismiss:hover { color: rgba(255,255,255,0.9); }
     }
 
+    /* ===================== Set builder — mobile playlist layout =====================
+       On phones the split library/set view becomes a single "playlist"-style
+       column (think Spotify or Apple Music). The library lives as a
+       fullscreen sheet you summon with "Add songs". These base rules just
+       define the new elements (defaults: hidden); the 768px block below
+       switches them on. Desktop split-view is unchanged. */
+    .set-actions-mobile {
+      display: none;
+      gap: 10px;
+      margin: 6px 0 18px;
+    }
+    .set-action-btn {
+      flex: 1;
+      padding: 14px 16px;
+      border-radius: 999px;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.18s, background 0.18s, transform 0.08s;
+    }
+    .set-action-btn.primary {
+      background: var(--amber);
+      color: #fff;
+    }
+    .set-action-btn.secondary {
+      background: var(--s2);
+      color: var(--text);
+      border: 1px solid var(--gb);
+    }
+    .set-action-btn:active { transform: scale(0.98); }
+
+    /* "Done" close button on the library sheet (mobile only). */
+    .library-sheet-close {
+      display: none;
+    }
+
     /* ===================== RESPONSIVE: Tablet (≤1024px) ===================== */
     @media (max-width: 1024px) {
       #app {
@@ -3825,6 +3864,124 @@
       .main-content {
         padding-bottom: var(--bottom-nav-height);
       }
+
+      /* ----- Set builder: Spotify/Apple-Music-inspired playlist view -----
+         Single column; library hidden by default, opens as a full sheet
+         via "Add songs"; the set reads like a playlist (big title, slim
+         arc, generous song rows, pill actions). */
+      .set-builder-container {
+        /* Library is now position:fixed when visible, so flatten the
+           grid to a single row for the set panel. */
+        grid-template-rows: 1fr;
+      }
+
+      /* Library becomes a fullscreen sheet (only when .mobile-visible) */
+      .library-panel {
+        display: none;
+      }
+      .library-panel.mobile-visible {
+        display: flex;
+        position: fixed;
+        inset: 0;
+        z-index: 1100;
+        background: var(--bg);
+        max-height: none;
+        border: none;
+        border-radius: 0;
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: var(--bottom-nav-height);
+      }
+      .library-panel.mobile-visible .library-sheet-close {
+        display: block;
+        position: absolute;
+        top: calc(env(safe-area-inset-top) + 6px);
+        right: 12px;
+        background: transparent;
+        border: none;
+        color: var(--amber);
+        font-family: var(--font-display);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        padding: 10px 14px;
+        z-index: 2;
+      }
+
+      /* Hero header — bigger title, less chrome */
+      .set-title { font-size: 24px; letter-spacing: -0.4px; }
+      .set-header { margin-bottom: 12px; }
+      .btn-pdf-small { display: none; }
+
+      /* Slim arc bar, hide the legend (signal is in the song meta below) */
+      .arc-container {
+        padding: 0;
+        background: transparent;
+        margin: 0 0 16px;
+      }
+      .arc-bar {
+        height: 4px;
+        border-radius: 2px;
+        margin-bottom: 0;
+      }
+      .arc-legend { display: none; }
+
+      /* Surface the mobile actions row (defined globally above) */
+      .set-actions-mobile { display: flex; }
+
+      /* Strip clutter — the info lives in the header line + actions */
+      .set-stats { display: none; }
+      .set-suggest-link { display: none; }
+
+      /* Slot rows — clean playlist list, no boxes */
+      .set-slots { gap: 0; margin-bottom: 20px; }
+      .slot.filled {
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--gb);
+        border-radius: 0;
+        padding: 14px 4px;
+        gap: 16px;
+        align-items: center;
+      }
+      .slot.filled:last-child { border-bottom: none; }
+      .slot-number {
+        width: 24px;
+        height: auto;
+        min-width: 24px;
+        background: transparent;
+        font-size: 14px;
+        font-weight: 400;
+        color: var(--mid);
+      }
+      .slot-song-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+      .slot-song-meta { font-size: 12px; gap: 10px; }
+      .slot-badge {
+        background: transparent;
+        border: none;
+        padding: 0;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: var(--mid);
+      }
+      .slot-actions { display: flex; } /* always visible on touch — no hover */
+      .slot-action-btn {
+        width: 32px;
+        height: 32px;
+        background: transparent;
+        border: none;
+        color: var(--mid);
+        font-size: 14px;
+      }
+
+      /* Big bottom CTA */
+      .btn-finalise {
+        padding: 16px;
+        font-size: 14px;
+        border-radius: 999px;
+        width: 100%;
+        margin-top: 20px;
+      }
     }
 
     /* ===================== RESPONSIVE: Small phone (≤420px) ===================== */
@@ -4020,6 +4177,8 @@
         <div class="set-builder-container">
           <!-- Library Panel -->
           <div class="library-panel">
+            <!-- Mobile-only: close button when library is shown as sheet -->
+            <button class="library-sheet-close" onclick="window.closeLibrarySheet()" aria-label="Close library">Done</button>
             <div class="library-header">
               <h2 class="library-title" id="library-title">All Songs</h2>
               <div class="search-box">
@@ -4063,6 +4222,12 @@
                 </div>
               </div>
             </div>
+            <!-- Mobile-only primary actions. Hidden on desktop via CSS. -->
+            <div class="set-actions-mobile">
+              <button class="set-action-btn primary" onclick="window.openLibrarySheet()">+ Add songs</button>
+              <button class="set-action-btn secondary" onclick="window.shareSet()">Share</button>
+            </div>
+
             <!-- Empty canvas — shown when no set -->
             <div class="set-canvas-empty" id="set-canvas-empty" onclick="window.startNewSet()">
               <div class="set-canvas-symbol">—</div>
@@ -8819,6 +8984,10 @@
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.querySelector(`[data-screen="${screenName}"]`).classList.add('active');
 
+      // Close the mobile library sheet on any screen change — otherwise
+      // it haunts the screen you navigated to (position:fixed overlay).
+      if (typeof window.closeLibrarySheet === 'function') window.closeLibrarySheet();
+
       // Keep both the top nav-tabs (desktop) and bottom-nav-tabs (mobile)
       // in sync. Same data-tab attribute on both, so one querySelectorAll
       // covers them.
@@ -9845,6 +10014,22 @@
       var el = document.getElementById('ios-a2hs-prompt');
       if (el) el.classList.remove('visible');
       try { localStorage.setItem('sunday_a2hs_dismissed', '1'); } catch (e) {}
+    };
+
+    // Library sheet (mobile only). On phones the song library is hidden
+    // by default and pops up as a fullscreen sheet when the user taps
+    // "Add songs". Adding a song doesn't auto-close the sheet — they
+    // can add several in a row and tap "Done" when finished. switchScreen()
+    // closes the sheet on navigation so it doesn't haunt other screens.
+    window.openLibrarySheet = function() {
+      var panel = document.querySelector('.library-panel');
+      if (panel) panel.classList.add('mobile-visible');
+      var scroll = document.getElementById('songs-scroll');
+      if (scroll) scroll.scrollTop = 0;
+    };
+    window.closeLibrarySheet = function() {
+      var panel = document.querySelector('.library-panel');
+      if (panel) panel.classList.remove('mobile-visible');
     };
     (function setupA2HSPrompt() {
       var ua = navigator.userAgent || '';
