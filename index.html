@@ -9656,8 +9656,14 @@
     };
 
     window.closeSetCard = function() {
-      document.getElementById('share-dropdown').style.display = 'none';
-      document.getElementById('set-card-overlay').style.display = 'none';
+      // share-dropdown was removed when the share UX was unified; this
+      // line used to throw a TypeError (Cannot read 'style' of null)
+      // which aborted the function BEFORE it could hide the overlay —
+      // i.e. the set-card never closed. Null-check to be safe.
+      var dd = document.getElementById('share-dropdown');
+      if (dd) dd.style.display = 'none';
+      var ov = document.getElementById('set-card-overlay');
+      if (ov) ov.style.display = 'none';
     };
 
     window.buildAndShowSetCard = function() {
@@ -12810,8 +12816,17 @@
     function shouldUseNativeShareSheet() {
       if (!navigator.share) return false;
       var ua = navigator.userAgent || '';
+      // iOS / iPadOS — always native (best UX, no clipboard fallback).
       if (/iPhone|iPad|iPod/.test(ua)) return true;
+      // Android Chrome — supports navigator.share with files reliably.
       if (/Android/.test(ua) && /Chrome\//.test(ua)) return true;
+      // Mac Safari — supports navigator.share via the macOS share
+      // sheet. This is what Claude does. The image is pre-generated
+      // when the set-card opens, so by the time the user taps Share
+      // the promise is already resolved and the .then runs as a
+      // microtask within the click handler — Safari preserves the
+      // gesture context across that boundary.
+      if (/Macintosh/.test(ua) && /Safari/.test(ua) && !/Chrome/.test(ua) && !/Edg\//.test(ua)) return true;
       return false;
     }
 
@@ -13076,14 +13091,11 @@
     }
     window.canWriteClipboardImage = canWriteClipboardImage;
 
-    // supportsNativeFileShare was removed 2026-05-26. The detection now
-    // lives in shouldUseNativeShareSheet() above — UA-based, no probe.
-    // The probe approach was unreliable across Safari versions and
-    // pushed Mac Safari into a clipboard-write that itself failed
-    // because of Safari's strict user-gesture rules, ultimately
-    // dumping the share into Downloads. The new flow uses the
-    // ClipboardItem(Promise<Blob>) pattern which keeps the gesture
-    // alive across async image generation.
+    // Share-routing detection lives in shouldUseNativeShareSheet()
+    // above. Mac Safari is now opted in to navigator.share (matches
+    // Claude). If the macOS share sheet misfires for some reason, the
+    // .catch in shareImageToTarget falls through to the
+    // ClipboardItem(Promise<Blob>) flow as a last resort.
 
     function downloadBlob(blob, filename) {
       var url = URL.createObjectURL(blob);
