@@ -6047,7 +6047,15 @@
           .then(function(data) {
             if (data.error) { if (callback) callback(false, data.error); return; }
             if (Array.isArray(data.team) && data.team.length > 0) { TEAM = data.team; window.TEAM = TEAM; }
-            if (Array.isArray(data.songs) && data.songs.length > 0) { SONGS = data.songs; window.SONGS = SONGS; }
+            if (Array.isArray(data.songs) && data.songs.length > 0) {
+              // Remap server field 'category' → app field 'cat'
+              SONGS = data.songs.map(function(s) {
+                if (!s.cat && s.category) s.cat = s.category;
+                if (!s.cat) s.cat = 'current';
+                return s;
+              });
+              window.SONGS = SONGS;
+            }
             if (Array.isArray(data.services) && data.services.length > 0) { services = data.services; window.services = services; }
             if (data.roster && Object.keys(data.roster).length > 0) state.roster = data.roster;
             if (data.rosterBecause) state.rosterBecause = data.rosterBecause;
