@@ -1502,6 +1502,31 @@
       flex-shrink: 0;
     }
 
+    .roster-view-bar {
+      display: flex;
+      gap: 6px;
+      padding: 8px 16px 0;
+    }
+    .roster-view-btn {
+      padding: 4px 14px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      color: var(--mid);
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: all var(--transition);
+      text-transform: uppercase;
+    }
+    .roster-view-btn.active {
+      background: var(--amber);
+      border-color: var(--amber);
+      color: #000;
+    }
+
     .service-toggle {
       display: flex;
       gap: 0;
@@ -4595,9 +4620,16 @@
             </div>
           </div>
 
+          <div class="roster-view-bar" id="roster-view-bar">
+            <button class="roster-view-btn active" data-view="service" onclick="window.setRosterView('service', this)">Slots</button>
+            <button class="roster-view-btn" data-view="month" onclick="window.setRosterView('month', this)">Month</button>
+          </div>
+
           <div class="month-strip" id="month-strip"></div>
 
           <div class="week-tabs" id="week-tabs"></div>
+
+          <div id="roster-month-overview" style="display:none; padding:16px 20px; overflow-y:auto; flex:1;"></div>
 
           <div class="roster-main">
             <div class="stage-view" id="stage-view"></div>
@@ -5938,6 +5970,21 @@
         prompt += '=== ONE-OFF EVENTS ===\n' + eventSummary + '\n\n';
         prompt += '=== TEAM ===\n' + teamSummary + '\n\n';
 
+        // Demographics summary — only include if at least some people have data
+        var __demoTeam = TEAM.filter(function(p) { return p.gender || p.generation; });
+        if (__demoTeam.length > 0) {
+          var __gCount = {M:0,F:0,Other:0};
+          var __genCount = {'Gen Z':0,'Millennial':0,'Gen X':0,'Boomer':0};
+          TEAM.forEach(function(p) { if (p.gender && __gCount[p.gender] !== undefined) __gCount[p.gender]++; });
+          TEAM.forEach(function(p) { if (p.generation && __genCount[p.generation] !== undefined) __genCount[p.generation]++; });
+          var __gStr = Object.keys(__gCount).filter(function(k){return __gCount[k]>0;}).map(function(k){return k+': '+__gCount[k];}).join(', ');
+          var __genStr = Object.keys(__genCount).filter(function(k){return __genCount[k]>0;}).map(function(k){return k+': '+__genCount[k];}).join(', ');
+          prompt += '=== TEAM DEMOGRAPHICS ===\n';
+          if (__gStr) prompt += 'Gender: ' + __gStr + '\n';
+          if (__genStr) prompt += 'Generation: ' + __genStr + '\n';
+          prompt += 'Use this for balance — mix genders across vocal slots where possible; avoid stacking one generation on the platform.\n\n';
+        }
+
         // Per-person roster history from past months — gives Sunny long memory.
         // Computed from state.roster across ALL months (not just current).
         try {
@@ -6699,6 +6746,8 @@
                   if (Array.isArray(p.avail)) upTarget.avail = p.avail;
                   if (p.phone !== undefined) upTarget.phone = p.phone;
                   if (p.email !== undefined) upTarget.email = p.email;
+                  if (p.gender !== undefined) upTarget.gender = p.gender;
+                  if (p.generation !== undefined) upTarget.generation = p.generation;
                   SundayData.save();
                   console.log('UPDATE_PERSON:', upTarget.name, '→ roles:', upTarget.roles.join(','));
                 } else {
@@ -7235,6 +7284,7 @@
       rosterMonth: (function() { var n = new Date(); var months = ['January','February','March','April','May','June','July','August','September','October','November','December']; return months[n.getMonth()] + ' ' + n.getFullYear(); })(),
       rosterWeek: 1,
       rosterService: '', // active service ID (first in services array)
+      rosterView: 'service', // 'service' | 'month'
       roster: {
         'April 2026-1-sun-am': {'BASS':'Dean Ngugi', 'CO-WL':'Ezra Morgan', 'DRUMS':'Jones Morgan', 'FLV1':'Edmond Phiri', 'FLV2':'Dani Marchio', 'FLV3':'Jade Jeyaratnam', 'FOH':'Andrew Howell', 'GUITAR1':'Bella Mangunson', 'KEYS1':'Nick Paton', 'MD':'Nick Paton', 'WL':'Reuben Morgan'},
         'April 2026-2-sun-am': {'ACOUSTIC':'Reuben Morgan', 'BASS':'Dean Ngugi', 'CO-WL':'Vivienne Williams', 'DRUMS':'Johnny Abraham', 'FLV1':'Maddie Byrne', 'FLV2':'Immie Morgan', 'FLV3':'Tiff Randall', 'FOH':'Brett Randall', 'GUITAR1':'Reuben Morgan', 'KEYS1':'Tim Whincop', 'KEYS2':'Hazzel De Leon', 'MD':'Dean Ngugi', 'WL':'Reuben Morgan'},
@@ -7860,7 +7910,11 @@
       nameEl.textContent = member.name;
       var nameSub = document.createElement('div');
       nameSub.className = 'person-name-sub';
-      nameSub.textContent = member.phone || member.email || '';
+      var subParts = [];
+      if (member.phone || member.email) subParts.push(member.phone || member.email);
+      if (member.gender) subParts.push(member.gender);
+      if (member.generation) subParts.push(member.generation);
+      nameSub.textContent = subParts.join(' · ');
       nameWrap.appendChild(nameEl);
       nameWrap.appendChild(nameSub);
       row.appendChild(nameWrap);
@@ -7990,6 +8044,16 @@
           '<div class="avail-checkboxes" id="ep-avail"></div>' +
         '</div>' +
       '</div>' +
+      '<div style="display:flex; gap:16px; align-items:flex-start; margin-bottom:14px; flex-wrap:wrap;">' +
+        '<div>' +
+          '<div class="member-form-label" style="margin-bottom:6px;">Gender</div>' +
+          '<div class="demo-selector" id="ep-gender" style="display:flex; gap:4px;"></div>' +
+        '</div>' +
+        '<div style="flex:1; min-width:160px;">' +
+          '<div class="member-form-label" style="margin-bottom:6px;">Generation</div>' +
+          '<div class="demo-selector" id="ep-generation" style="display:flex; gap:4px; flex-wrap:wrap;"></div>' +
+        '</div>' +
+      '</div>' +
       '<div style="display:flex; gap:8px;">' +
         '<button class="member-form-save" onclick="window.saveEditPanel(\'' + id + '\', this.closest(\'.person-edit-panel\'))">Save changes</button>' +
         '<button class="member-form-cancel" onclick="this.closest(\'.person-edit-panel\').remove(); document.querySelector(\'[data-id=\\\'' + id + '\\\']\').classList.remove(\'expanded\')">Cancel</button>' +
@@ -8034,6 +8098,41 @@
         availWrap.appendChild(lbl);
       });
 
+      // Gender selector
+      var genderWrap = panel.querySelector('#ep-gender');
+      ['M','F','Other'].forEach(function(g) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tier-btn' + (member.gender === g ? ' active' : '');
+        btn.textContent = g;
+        btn.dataset.val = g;
+        btn.onclick = function() {
+          genderWrap.querySelectorAll('.tier-btn').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.toggle('active', !btn.classList.contains('active') || true);
+          // Toggle off if re-clicking active
+          if (member._genderToggle === g) { btn.classList.remove('active'); member._genderToggle = ''; }
+          else { member._genderToggle = g; }
+        };
+        genderWrap.appendChild(btn);
+      });
+
+      // Generation selector
+      var genWrap = panel.querySelector('#ep-generation');
+      ['Gen Z','Millennial','Gen X','Boomer'].forEach(function(g) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tier-btn' + (member.generation === g ? ' active' : '');
+        btn.style.fontSize = '10px';
+        btn.style.padding = '4px 8px';
+        btn.textContent = g;
+        btn.dataset.val = g;
+        btn.onclick = function() {
+          genWrap.querySelectorAll('.tier-btn').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+        };
+        genWrap.appendChild(btn);
+      });
+
       wrap.appendChild(panel);
     };
 
@@ -8048,6 +8147,10 @@
       var activeTier = panel.querySelector('#ep-tier .tier-btn.active');
       if (activeTier) member.tier = parseInt(activeTier.dataset.tier);
       member.avail = Array.from(panel.querySelectorAll('#ep-avail input:checked')).map(function(i) { return parseInt(i.value); });
+      var activeGender = panel.querySelector('#ep-gender .tier-btn.active');
+      member.gender = activeGender ? activeGender.dataset.val : (member.gender || '');
+      var activeGen = panel.querySelector('#ep-generation .tier-btn.active');
+      member.generation = activeGen ? activeGen.dataset.val : (member.generation || '');
 
       SundayData.save();
       renderPeople();
@@ -8112,13 +8215,92 @@
     /* ==================== ROSTER SCREEN ==================== */
     const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+    window.setRosterView = function(view, btn) {
+      state.rosterView = view;
+      try { localStorage.setItem('sunday_roster_view', view); } catch(e) {}
+      document.querySelectorAll('.roster-view-btn').forEach(function(b) { b.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+      renderRoster();
+    };
+
     function renderRoster() {
       renderRosterHeader();
       renderMonthStrip();
       renderServiceToggle();
       renderWeekTabs();
-      renderStageView();
-      renderAvailableList();
+
+      var isMonth = state.rosterView === 'month';
+      var monthEl = document.getElementById('roster-month-overview');
+      var stageEl = document.querySelector('.stage-view');
+      var sidebarEl = document.querySelector('.available-sidebar');
+      var weekTabsEl = document.getElementById('week-tabs');
+
+      if (isMonth) {
+        if (monthEl) monthEl.style.display = 'block';
+        if (stageEl) stageEl.style.display = 'none';
+        if (sidebarEl) sidebarEl.style.display = 'none';
+        if (weekTabsEl) weekTabsEl.style.display = 'none';
+        renderRosterMonthOverview();
+      } else {
+        if (monthEl) monthEl.style.display = 'none';
+        if (stageEl) stageEl.style.display = '';
+        if (sidebarEl) sidebarEl.style.display = '';
+        if (weekTabsEl) weekTabsEl.style.display = '';
+        renderStageView();
+        renderAvailableList();
+      }
+    }
+
+    function renderRosterMonthOverview() {
+      var container = document.getElementById('roster-month-overview');
+      if (!container) return;
+
+      var weeks = getSundaysForMonth(state.rosterMonth);
+      var recurringServices = services.filter(function(s) { return s.recurring !== false; });
+      if (recurringServices.length === 0) {
+        container.innerHTML = '<div style="color:var(--dim); font-size:13px; padding:20px 0;">No services set up yet.</div>';
+        return;
+      }
+
+      var keySlots = ['WL','CO-WL','FLV1','FLV2','FLV3','KEYS1','KEYS2','DRUMS','BASS','GUITAR1','ACOUSTIC','FOH'];
+      var slotLabels = {WL:'WL','CO-WL':'Co-WL',FLV1:'Vocals 1',FLV2:'Vocals 2',FLV3:'Vocals 3',KEYS1:'Keys',KEYS2:'Keys 2',DRUMS:'Drums',BASS:'Bass',GUITAR1:'Guitar',ACOUSTIC:'Acoustic',FOH:'FOH'};
+
+      var html = '';
+      recurringServices.forEach(function(svc) {
+        html += '<div style="margin-bottom:28px;">';
+        html += '<div style="font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--amber); margin-bottom:10px;">' + esc(svc.name) + '</div>';
+        html += '<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">';
+        html += '<table style="width:100%; border-collapse:collapse; font-size:12px; min-width:320px;">';
+
+        // Header
+        html += '<thead><tr><th style="text-align:left; padding:4px 10px 6px 0; color:var(--dim); font-weight:400; font-size:10px; letter-spacing:1px; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,0.08);">Role</th>';
+        weeks.forEach(function(week) {
+          var shortDate = week.date.split(' ').slice(0,2).join(' ');
+          html += '<th style="text-align:center; padding:4px 8px 6px; color:var(--dim); font-weight:400; font-size:10px; letter-spacing:0.5px; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,0.08);">' + esc(shortDate) + '</th>';
+        });
+        html += '</tr></thead><tbody>';
+
+        // Rows — only show slots that have at least one name filled
+        keySlots.forEach(function(slot) {
+          var names = weeks.map(function(week) {
+            var k = state.rosterMonth + '-' + week.num + '-' + svc.id;
+            return (state.roster[k] && state.roster[k][slot]) || '';
+          });
+          if (names.every(function(n) { return !n; })) return;
+
+          html += '<tr>';
+          html += '<td style="padding:5px 10px 5px 0; color:rgba(255,255,255,0.4); font-size:10px; letter-spacing:0.5px; text-transform:uppercase; white-space:nowrap;">' + (slotLabels[slot] || slot) + '</td>';
+          names.forEach(function(name) {
+            var first = name ? name.split(' ')[0] : '';
+            html += '<td style="padding:5px 8px; text-align:center; font-size:12px; color:' + (name ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.15)') + ';">' + esc(first || '—') + '</td>';
+          });
+          html += '</tr>';
+        });
+
+        html += '</tbody></table></div></div>';
+      });
+
+      container.innerHTML = html || '<div style="color:var(--dim); font-size:13px; padding:20px 0;">No roster built yet for ' + esc(state.rosterMonth) + '</div>';
     }
 
     function renderMonthStrip() {
@@ -9309,7 +9491,14 @@
       document.querySelectorAll('.nav-tab, .bottom-nav-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll(`[data-tab="${screenName}"]`).forEach(t => t.classList.add('active'));
 
-      if (screenName === 'team') renderRoster();
+      if (screenName === 'team') {
+        // Restore saved view mode
+        try { state.rosterView = localStorage.getItem('sunday_roster_view') || 'service'; } catch(e) {}
+        renderRoster();
+        document.querySelectorAll('.roster-view-btn').forEach(function(b) {
+          b.classList.toggle('active', b.dataset.view === state.rosterView);
+        });
+      }
       if (screenName === 'people') { try { buildAddFormRoles(); } catch(e){} setTimeout(function(){ renderPeople(); }, 0); }
       if (screenName === 'sunday') renderAgent();
       if (screenName === 'settings') renderSettings();
