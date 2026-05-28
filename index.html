@@ -5961,7 +5961,8 @@
         } catch(e) {}
       },
 
-      get isAdmin() { return this.role === 'admin' || this.role === 'wl' || !!this.adminKey; },
+      // builder = dev full-access; admin = Kayleigh; wl = sets only (not isAdmin)
+      get isAdmin() { return this.role === 'admin' || this.role === 'builder' || !!this.adminKey; },
       get isConnected() { return !!(this.sessionToken && this.churchId) || !!(this.churchId && this.adminKey); },
 
       _clearSession: function() {
@@ -6160,9 +6161,31 @@
       var gate = document.getElementById('gate-screen');
       if (!gate) return;
 
-      // Already have a valid session — hide gate immediately
+      // Apply nav visibility based on role:
+      //   admin / builder → full access (all tabs visible)
+      //   wl              → sets + Sunny only (hide Roster, Team, Settings)
+      function applyRoleUI(role) {
+        var wlOnly = (role === 'wl');
+        var hiddenTabs = wlOnly ? ['team', 'people', 'settings'] : [];
+        ['team', 'people', 'settings'].forEach(function(tab) {
+          var shouldHide = hiddenTabs.indexOf(tab) >= 0;
+          document.querySelectorAll('[data-tab="' + tab + '"]').forEach(function(el) {
+            el.style.display = shouldHide ? 'none' : '';
+          });
+        });
+        // If landing on a restricted screen, bounce to Set
+        if (wlOnly) {
+          var cur = document.body.getAttribute('data-current-screen');
+          if (['team', 'people', 'settings'].indexOf(cur) >= 0) {
+            try { switchScreen('set'); } catch(e) {}
+          }
+        }
+      }
+
+      // Already have a valid session — hide gate and apply role UI immediately
       if (SundaySync.isConnected) {
         gate.style.display = 'none';
+        applyRoleUI(SundaySync.role);
         return;
       }
 
@@ -6174,7 +6197,8 @@
         statusEl.className = 'gate-status' + (isError ? ' error' : '');
       }
 
-      function gateEnterApp() {
+      function gateEnterApp(role) {
+        applyRoleUI(role);
         SundaySync.loadState(function() {
           try { renderRoster(); } catch(e) {}
           try { renderPeople(); } catch(e) {}
@@ -6212,7 +6236,7 @@
               localStorage.setItem('sunday_role', data.role);
               localStorage.setItem('sunday_session_expires', data.sessionExpires);
             } catch(e) {}
-            gateEnterApp();
+            gateEnterApp(data.role);
           })
           .catch(function() { setStatus("Connection error — check you're online.", true); });
       };
