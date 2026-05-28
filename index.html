@@ -6270,7 +6270,8 @@
         prompt += '{"type":"EXPORT_SET_PDF","params":{}}\n';
         prompt += '{"type":"WHATSAPP_SEND","params":{"to":"+64211234567","body":"message"}}\n';
         prompt += '{"type":"WHATSAPP_BLAST","params":{"week":1,"service":"sun-am","message":"optional"}}\n';
-        prompt += '{"type":"WHATSAPP_CHECK_AVAIL","params":{"person":"Name","message":"optional"}}\n\n';
+        prompt += '{"type":"WHATSAPP_CHECK_AVAIL","params":{"person":"Name","message":"optional"}}\n';
+        prompt += '{"type":"SAVE_ROSTERING_RULES","params":{"append":"One new rule to add"}} — save a standing rostering rule that persists across ALL future sessions. Use `append` to add to existing rules, or `rules:"full text"` to replace everything. Use when the pastor says "save that", "remember this", "always do X when rostering", or states an explicit standing rule. Do NOT save one-off exceptions — only standing policy meant to apply every month.\n\n';
 
         prompt += 'ROSTER ACTIONS:\n';
         prompt += '{"type":"SET_ROSTER_MONTH","params":{"month":"May 2026"}} — switch active roster to a different month. Always do this BEFORE BUILD_MONTH if the user asks for a different month.\n';
@@ -7046,6 +7047,25 @@
                   console.log('REMOVE_FROM_LIBRARY:', rflTitle);
                 } else {
                   console.warn('Sunday: REMOVE_FROM_LIBRARY — unknown title:', p.title);
+                }
+              }
+              break;
+
+            case 'SAVE_ROSTERING_RULES':
+              {
+                var existingRules = '';
+                try { existingRules = localStorage.getItem('sunday_rostering_rules') || ''; } catch(e) {}
+                var newRules;
+                if (typeof p.rules === 'string') {
+                  newRules = p.rules.trim();
+                } else if (typeof p.append === 'string' && p.append.trim()) {
+                  newRules = existingRules ? existingRules.trim() + '\n' + p.append.trim() : p.append.trim();
+                }
+                if (typeof newRules === 'string') {
+                  try { localStorage.setItem('sunday_rostering_rules', newRules); } catch(e) {}
+                  var rulesField = document.getElementById('rostering-rules');
+                  if (rulesField) rulesField.value = newRules;
+                  SundayData.save();
                 }
               }
               break;
