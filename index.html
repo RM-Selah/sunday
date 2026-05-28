@@ -4326,6 +4326,85 @@
        so it applies in iOS Safari browser mode too — the notch + home
        indicator need padding either way, not just when installed.) */
 
+    /* ── Login gate ───────────────────────────────────────────────────────── */
+    #gate-screen {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column;
+      padding: 40px 24px;
+    }
+    .gate-logo {
+      font-family: var(--font-serif);
+      font-size: clamp(52px, 12vw, 88px);
+      font-weight: 300;
+      color: var(--text);
+      letter-spacing: -1px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .gate-tagline {
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 60px;
+    }
+    .gate-prompt {
+      font-family: var(--font-display);
+      font-size: 13px;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .gate-input-row {
+      display: flex;
+      width: 100%;
+      max-width: 400px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .gate-input-row:focus-within { border-color: var(--amber); }
+    .gate-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 14px 18px;
+      font-family: var(--font-display);
+      font-size: 14px;
+      color: var(--text);
+      min-width: 0;
+    }
+    .gate-input::placeholder { color: rgba(255,255,255,0.2); }
+    .gate-btn {
+      background: var(--amber);
+      border: none;
+      padding: 0 22px;
+      cursor: pointer;
+      font-size: 20px;
+      color: var(--bg);
+      font-weight: 700;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .gate-btn:hover { background: var(--amber-bright); }
+    .gate-status {
+      margin-top: 14px;
+      font-family: var(--font-display);
+      font-size: 12px;
+      color: var(--dim);
+      text-align: center;
+      min-height: 18px;
+      transition: color 0.2s;
+    }
+    .gate-status.error { color: #e06060; }
+
   </style>
   <!-- External libraries load in background — app works without them -->
   <script>
@@ -4356,6 +4435,21 @@
   </script>
 </head>
 <body data-current-screen="set">
+
+  <!-- ── Login gate — shown until a valid invite link is entered ── -->
+  <div id="gate-screen">
+    <div class="gate-logo">The Local</div>
+    <div class="gate-tagline">Worship Team</div>
+    <div class="gate-prompt">Paste your invite link to get in</div>
+    <div class="gate-input-row">
+      <input class="gate-input" id="gate-input" type="text"
+             placeholder="Paste link here…"
+             autocomplete="off" autocorrect="off" spellcheck="false"
+             onkeydown="if(event.key==='Enter')window.handleGateSubmit()">
+      <button class="gate-btn" onclick="window.handleGateSubmit()">→</button>
+    </div>
+    <div class="gate-status" id="gate-status"></div>
+  </div>
 
   <!-- HERO LANDING — archived for separate onboarding sprint; hidden via class -->
   <div class="hero-landing hidden" id="hero-landing" style="display:none;">
@@ -5937,6 +6031,107 @@
 
     // Init sync on load
     SundaySync.init();
+
+    // ── Login gate ────────────────────────────────────────────────────────────
+    (function() {
+      var gate = document.getElementById('gate-screen');
+      if (!gate) return;
+
+      // Already connected — hide gate immediately (no flash)
+      if (SundaySync.isConnected) {
+        gate.style.display = 'none';
+        return;
+      }
+
+      // Not connected — gate stays visible; wire up handlers
+      var statusEl = document.getElementById('gate-status');
+
+      function setStatus(msg, isError) {
+        if (!statusEl) return;
+        statusEl.textContent = msg;
+        statusEl.className = 'gate-status' + (isError ? ' error' : '');
+      }
+
+      function parseCode(raw) {
+        var churchId = null, adminKey = null;
+        // Full URL or URL fragment
+        try {
+          var parsed = new URL(raw.indexOf('://') >= 0 ? raw : 'https://x.com/?' + raw.replace(/^\?/, ''));
+          var p = new URLSearchParams(parsed.search);
+          if (p.get('church')) { churchId = p.get('church'); adminKey = p.get('key') || null; }
+        } catch(e) {}
+        // churchId:adminKey shortcode
+        if (!churchId && raw.indexOf(':') >= 0) {
+          var parts = raw.split(':');
+          churchId = parts[0].trim();
+          adminKey = (parts[1] || '').trim() || null;
+        }
+        // Bare church ID
+        if (!churchId) {
+          var cleaned = raw.replace(/[^a-zA-Z0-9]/g, '');
+          if (cleaned.length >= 8) churchId = cleaned;
+        }
+        return { churchId: churchId, adminKey: adminKey };
+      }
+
+      window.handleGateSubmit = function() {
+        var inputEl = document.getElementById('gate-input');
+        var raw = inputEl ? inputEl.value.trim() : '';
+        if (!raw) return;
+
+        var parsed = parseCode(raw);
+        if (!parsed.churchId) {
+          setStatus("Couldn't read that — try copying the whole link.", true);
+          return;
+        }
+
+        setStatus('Checking…');
+
+        fetch('https://api.runworship.com/state?church=' + parsed.churchId)
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.error) {
+              setStatus('Code not recognised. Ask your worship pastor for the link.', true);
+              return;
+            }
+            // Valid — store credentials
+            try {
+              localStorage.setItem('sunday_church_id', parsed.churchId);
+              if (parsed.adminKey) localStorage.setItem('sunday_admin_key', parsed.adminKey);
+            } catch(e) {}
+            SundaySync.churchId = parsed.churchId;
+            if (parsed.adminKey) SundaySync.adminKey = parsed.adminKey;
+
+            // Load state into app
+            SundaySync.loadState(function() {
+              try { renderRoster(); } catch(e) {}
+              try { renderPeople(); } catch(e) {}
+              try { renderSongs(); renderSet(); } catch(e) {}
+            });
+
+            // Fade gate out
+            gate.style.transition = 'opacity 0.35s';
+            gate.style.opacity = '0';
+            setTimeout(function() { gate.style.display = 'none'; }, 380);
+          })
+          .catch(function() {
+            setStatus('Connection error — check you\'re online and try again.', true);
+          });
+      };
+
+      // Auto-submit on paste when it looks like a full link
+      var inputEl2 = document.getElementById('gate-input');
+      if (inputEl2) {
+        inputEl2.addEventListener('paste', function() {
+          setTimeout(function() {
+            var val = document.getElementById('gate-input').value.trim();
+            if (val.indexOf('church=') >= 0 || val.indexOf('runworship.com') >= 0) {
+              window.handleGateSubmit();
+            }
+          }, 60);
+        });
+      }
+    })();
 
     /* ==================== SUNDAY API LAYER ==================== */
     var SundayAPI = {
