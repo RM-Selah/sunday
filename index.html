@@ -4441,9 +4441,6 @@
       transition: color 0.2s;
     }
     .gate-status.error { color: #e06060; }
-    .gate-sent-icon { font-size: 40px; margin-bottom: 16px; }
-    .gate-sent-sub { font-family: var(--font-display); font-size: 13px; color: rgba(255,255,255,0.4); margin-top: 8px; line-height: 1.6; }
-    .gate-back-btn { margin-top: 24px; background: none; border: none; color: var(--dim); font-family: var(--font-display); font-size: 12px; cursor: pointer; text-decoration: underline; }
 
   </style>
   <!-- External libraries load in background — app works without them -->
@@ -4476,31 +4473,19 @@
 </head>
 <body data-current-screen="set">
 
-  <!-- ── Login gate — email magic link flow ── -->
+  <!-- ── Login gate — name lookup ── -->
   <div id="gate-screen">
     <div class="gate-logo">The Local</div>
     <div class="gate-tagline">Worship Team</div>
-
-    <!-- Step 1: email -->
-    <div id="gate-step-email">
-      <div class="gate-prompt">Enter your email to get in</div>
-      <div class="gate-input-row">
-        <input class="gate-input" id="gate-email" type="email"
-               placeholder="you@email.com"
-               autocomplete="email" autocorrect="off" spellcheck="false"
-               onkeydown="if(event.key==='Enter')window.gateRequestLink()">
-        <button class="gate-btn" onclick="window.gateRequestLink()">→</button>
-      </div>
-      <div class="gate-status" id="gate-status"></div>
+    <div class="gate-prompt">What's your first name?</div>
+    <div class="gate-input-row">
+      <input class="gate-input" id="gate-name" type="text"
+             placeholder="Enter your name…"
+             autocomplete="given-name" autocorrect="off" spellcheck="false"
+             onkeydown="if(event.key==='Enter')window.gateSubmitName()">
+      <button class="gate-btn" onclick="window.gateSubmitName()">→</button>
     </div>
-
-    <!-- Step 2: check email -->
-    <div id="gate-step-sent" style="display:none; text-align:center;">
-      <div class="gate-sent-icon">✉</div>
-      <div class="gate-prompt">Check your email</div>
-      <div class="gate-sent-sub">We sent a sign-in link to<br><strong id="gate-sent-email" style="color:var(--text);"></strong></div>
-      <button class="gate-back-btn" onclick="window.gateBackToEmail()">Use a different email</button>
-    </div>
+    <div class="gate-status" id="gate-status"></div>
   </div>
 
   <!-- HERO LANDING — archived for separate onboarding sprint; hidden via class -->
@@ -5941,8 +5926,6 @@
       userId: null,
       role: null,
       sessionExpires: null,
-      _pendingMagicToken: null,
-      _pendingInviteKey: null,
       _saveTimer: null,
 
       init: function() {
@@ -5961,18 +5944,12 @@
             }
           }
         } catch(e) {}
-        // Absorb URL params — ?magicToken= and ?church= / ?key= / ?church= for compat
+        // Absorb URL params — ?church= / ?key= for legacy invite links
         try {
           var params = new URLSearchParams(window.location.search);
-          var magicToken = params.get('magicToken');
           var urlChurch = params.get('church');
           var urlKey = params.get('key');
-          var inviteKey = params.get('inviteKey');
-          if (magicToken) {
-            this._pendingMagicToken = magicToken;
-            if (inviteKey) this._pendingInviteKey = inviteKey;
-            window.history.replaceState({}, '', window.location.pathname);
-          } else if (urlChurch) {
+          if (urlChurch) {
             this.churchId = urlChurch;
             try { localStorage.setItem('sunday_church_id', urlChurch); } catch(e) {}
             if (urlKey) {
@@ -6004,52 +5981,6 @@
         if (this.sessionToken) return { sessionToken: this.sessionToken };
         if (this.adminKey) return { adminKey: this.adminKey };
         return {};
-      },
-
-      requestMagicLink: function(email, callback) {
-        fetch(this.workerUrl + '/auth/magic', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email, churchId: this.churchId || '8c08d0a636fb' })
-        })
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            if (data.ok) { if (callback) callback(true, data); }
-            else { if (callback) callback(false, data); }
-          })
-          .catch(function() { if (callback) callback(false); });
-      },
-
-      verifyMagicToken: function(token, callback) {
-        var self = this;
-        fetch(this.workerUrl + '/auth/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: token, inviteKey: this._pendingInviteKey || undefined })
-        })
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            if (data.ok && data.sessionToken) {
-              self.sessionToken = data.sessionToken;
-              self.userId = data.userId;
-              self.churchId = data.churchId;
-              self.role = data.role;
-              self.sessionExpires = data.sessionExpires;
-              self._pendingMagicToken = null;
-              self._pendingInviteKey = null;
-              try {
-                localStorage.setItem('sunday_session_token', data.sessionToken);
-                localStorage.setItem('sunday_user_id', data.userId);
-                localStorage.setItem('sunday_church_id', data.churchId);
-                localStorage.setItem('sunday_role', data.role);
-                localStorage.setItem('sunday_session_expires', data.sessionExpires);
-              } catch(e) {}
-              if (callback) callback(true, data);
-            } else {
-              if (callback) callback(false, data);
-            }
-          })
-          .catch(function() { if (callback) callback(false); });
       },
 
       createChurch: function(callback) {
@@ -6232,31 +6163,9 @@
       // Already have a valid session — hide gate immediately
       if (SundaySync.isConnected) {
         gate.style.display = 'none';
-        // If there's a pending magic token from the URL, verify it to refresh session
-        if (SundaySync._pendingMagicToken) {
-          SundaySync.verifyMagicToken(SundaySync._pendingMagicToken, function() {});
-        }
         return;
       }
 
-      // Magic token in URL — auto-verify, show gate briefly while it processes
-      if (SundaySync._pendingMagicToken) {
-        var statusEl = document.getElementById('gate-status');
-        if (statusEl) { statusEl.textContent = 'Signing you in…'; }
-        SundaySync.verifyMagicToken(SundaySync._pendingMagicToken, function(ok, data) {
-          if (ok) {
-            gateEnterApp();
-          } else {
-            if (statusEl) {
-              statusEl.textContent = (data && data.error) ? data.error : 'Link expired — request a new one.';
-              statusEl.className = 'gate-status error';
-            }
-          }
-        });
-        return;
-      }
-
-      // Show gate for unauthenticated user
       var statusEl = document.getElementById('gate-status');
 
       function setStatus(msg, isError) {
@@ -6276,48 +6185,36 @@
         setTimeout(function() { gate.style.display = 'none'; }, 380);
       }
 
-      window.gateRequestLink = function() {
-        var emailEl = document.getElementById('gate-email');
-        var email = emailEl ? emailEl.value.trim() : '';
-        if (!email || email.indexOf('@') < 0) {
-          setStatus('Enter a valid email address.', true);
-          return;
-        }
-        setStatus('Sending…');
-        SundaySync.requestMagicLink(email, function(ok, data) {
-          if (!ok) {
-            setStatus('Could not send — check you\'re online and try again.', true);
-            return;
-          }
-          // Dev mode: auto-verify from magicUrl in response
-          if (data.dev && data.magicUrl) {
-            try {
-              var devToken = new URL(data.magicUrl).searchParams.get('magicToken');
-              if (devToken) {
-                setStatus('Dev mode: verifying…');
-                SundaySync.verifyMagicToken(devToken, function(ok2, data2) {
-                  if (ok2) gateEnterApp();
-                  else setStatus((data2 && data2.error) || 'Verify failed', true);
-                });
-                return;
-              }
-            } catch(e) {}
-          }
-          // Show "check email" step
-          document.getElementById('gate-step-email').style.display = 'none';
-          var sentEl = document.getElementById('gate-step-sent');
-          if (sentEl) sentEl.style.display = 'block';
-          var sentEmail = document.getElementById('gate-sent-email');
-          if (sentEmail) sentEmail.textContent = email;
-          setStatus('');
-        });
-      };
+      window.gateSubmitName = function() {
+        var nameEl = document.getElementById('gate-name');
+        var name = nameEl ? nameEl.value.trim() : '';
+        if (!name) { setStatus('Enter your first name.', true); return; }
+        setStatus('Checking…');
 
-      window.gateBackToEmail = function() {
-        document.getElementById('gate-step-email').style.display = 'block';
-        var sentEl = document.getElementById('gate-step-sent');
-        if (sentEl) sentEl.style.display = 'none';
-        setStatus('');
+        var churchId = SundaySync.churchId || '8c08d0a636fb'; // The Local default
+        fetch(SundaySync.workerUrl + '/auth/name', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, churchId: churchId })
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.error) { setStatus(data.error, true); return; }
+            try {
+              SundaySync.churchId = data.churchId;
+              SundaySync.sessionToken = data.sessionToken;
+              SundaySync.userId = data.userId;
+              SundaySync.role = data.role;
+              SundaySync.sessionExpires = data.sessionExpires;
+              localStorage.setItem('sunday_church_id', data.churchId);
+              localStorage.setItem('sunday_session_token', data.sessionToken);
+              localStorage.setItem('sunday_user_id', data.userId);
+              localStorage.setItem('sunday_role', data.role);
+              localStorage.setItem('sunday_session_expires', data.sessionExpires);
+            } catch(e) {}
+            gateEnterApp();
+          })
+          .catch(function() { setStatus("Connection error — check you're online.", true); });
       };
     })();
 
