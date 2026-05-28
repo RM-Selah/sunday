@@ -6466,7 +6466,7 @@
         prompt += '{"type":"WHATSAPP_SEND","params":{"to":"+64211234567","body":"message"}}\n';
         prompt += '{"type":"WHATSAPP_BLAST","params":{"week":1,"service":"sun-am","message":"optional"}}\n';
         prompt += '{"type":"WHATSAPP_CHECK_AVAIL","params":{"person":"Name","message":"optional"}}\n';
-        prompt += '{"type":"SAVE_ROSTERING_RULES","params":{"append":"One new rule to add"}} — save a standing rostering rule that persists across ALL future sessions. Use `append` to add to existing rules, or `rules:"full text"` to replace everything. Use when the pastor says "save that", "remember this", "always do X when rostering", or states an explicit standing rule. Do NOT save one-off exceptions — only standing policy meant to apply every month.\n\n';
+        prompt += '{"type":"SAVE_ROSTERING_RULES","params":{"append":"One new rule to add"}} — save a standing rostering rule that persists across ALL future sessions. Use `append` to add to existing rules, or `rules:"full text"` to replace everything. PROACTIVELY save without being asked — any time the pastor states standing policy ("always X", "we prefer Y", "never put X and Y together", "X should lead every Week 1"), save it automatically. Do NOT save one-off exceptions — only rules meant to apply every month going forward.\n\n';
 
         prompt += 'ROSTER ACTIONS:\n';
         prompt += '{"type":"SET_ROSTER_MONTH","params":{"month":"May 2026"}} — switch active roster to a different month. Always do this BEFORE BUILD_MONTH if the user asks for a different month.\n';
