@@ -4477,11 +4477,11 @@
   <div id="gate-screen">
     <div class="gate-logo">The Local</div>
     <div class="gate-tagline">Worship Team</div>
-    <div class="gate-prompt">What's your first name?</div>
+    <div class="gate-prompt">Enter your access code</div>
     <div class="gate-input-row">
-      <input class="gate-input" id="gate-name" type="text"
-             placeholder="Enter your name…"
-             autocomplete="given-name" autocorrect="off" spellcheck="false"
+      <input class="gate-input" id="gate-name" type="password"
+             placeholder="Access code…"
+             autocomplete="current-password" autocorrect="off" spellcheck="false"
              onkeydown="if(event.key==='Enter')window.gateSubmitName()">
       <button class="gate-btn" onclick="window.gateSubmitName()">→</button>
     </div>
@@ -6186,16 +6186,16 @@
       }
 
       window.gateSubmitName = function() {
-        var nameEl = document.getElementById('gate-name');
-        var name = nameEl ? nameEl.value.trim() : '';
-        if (!name) { setStatus('Enter your first name.', true); return; }
+        var codeEl = document.getElementById('gate-name');
+        var code = codeEl ? codeEl.value.trim() : '';
+        if (!code) { setStatus('Enter your access code.', true); return; }
         setStatus('Checking…');
 
         var churchId = SundaySync.churchId || '8c08d0a636fb'; // The Local default
-        fetch(SundaySync.workerUrl + '/auth/name', {
+        fetch(SundaySync.workerUrl + '/auth/code', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: name, churchId: churchId })
+          body: JSON.stringify({ code: code, churchId: churchId })
         })
           .then(function(r) { return r.json(); })
           .then(function(data) {
