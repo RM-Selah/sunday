@@ -4548,7 +4548,19 @@
               </div>
             </div>
             <button class="btn-finalise" id="btn-finalise" onclick="window.handleFinalise()">Finalise Sunday set</button>
+            <button onclick="window.openSavedSets()" style="background:none; border:none; color:var(--dim); font-family:var(--font-display); font-size:11px; letter-spacing:0.5px; cursor:pointer; padding:8px 4px; text-transform:uppercase;" title="View saved sets">Saved sets</button>
           </div>
+        </div>
+      </div>
+
+      <!-- SAVED SETS OVERLAY -->
+      <div id="saved-sets-overlay" style="display:none; position:fixed; inset:0; z-index:400; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px);">
+        <div style="position:absolute; bottom:0; left:0; right:0; background:#1a1a1c; border-radius:20px 20px 0 0; padding:24px 20px 40px; max-height:80vh; overflow-y:auto;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div style="font-size:16px; font-weight:500; color:#fff;">Saved Sets</div>
+            <button onclick="window.closeSavedSets()" style="background:none; border:none; color:var(--dim); font-size:22px; cursor:pointer; line-height:1;">×</button>
+          </div>
+          <div id="saved-sets-list"></div>
         </div>
       </div>
 
@@ -4580,6 +4592,9 @@
            as the use-case allows: Share / Copy / Save / Destructive / Cancel. -->
       <div id="set-card-menu" class="set-card-menu" onclick="if(event.target.id==='set-card-menu') window.closeSetCardMenu()" role="dialog" aria-label="Share set">
         <div class="set-card-menu-sheet">
+          <button class="set-card-menu-item" onclick="window.closeSetCardMenu(); window.saveCurrentSet();">
+            <span class="set-card-menu-icon" aria-hidden="true">💾</span>Save set
+          </button>
           <button class="set-card-menu-item" onclick="window.closeSetCardMenu(); window.shareSet();">
             <span class="set-card-menu-icon" aria-hidden="true">↗</span>Share
           </button>
@@ -4801,6 +4816,33 @@
             <div style="display:flex; gap:8px; align-items:center;">
               <button class="settings-btn" onclick="window.saveRosteringRules()">Save rules</button>
               <span class="settings-feedback" id="rostering-rules-feedback"></span>
+            </div>
+          </div>
+
+          <!-- CLOUD SYNC SECTION -->
+          <div class="settings-section" id="cloud-sync-section">
+            <div class="settings-section-header">
+              <span class="settings-section-title">Cloud Sync</span>
+              <span class="settings-section-desc">Save your roster and sets to the cloud. Share a link so your team can view — or invite a co-leader with full access.</span>
+            </div>
+            <div id="cloud-sync-disconnected" style="display:none;">
+              <button class="settings-btn" onclick="window.enableCloudSync()">Enable cloud sync</button>
+            </div>
+            <div id="cloud-sync-connected" style="display:none;">
+              <div style="margin-bottom:10px;">
+                <div class="settings-label" style="margin-bottom:4px;">Church ID</div>
+                <div style="font-size:12px; color:var(--dim); font-family:monospace; background:rgba(255,255,255,0.05); padding:6px 10px; border-radius:6px; display:inline-block;" id="cloud-church-id"></div>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+                <button class="settings-btn" onclick="window.copyAdminInvite()" title="Anyone with this link gets full admin access">Copy admin link</button>
+                <button class="settings-btn" onclick="window.copyViewerInvite()" title="Anyone with this link can view the roster — read only">Copy viewer link</button>
+                <button class="settings-btn" onclick="window.forceSyncNow()" title="Sync now">Sync now</button>
+              </div>
+              <div style="font-size:11px; color:var(--dim);" id="cloud-sync-status"></div>
+            </div>
+            <div id="cloud-sync-viewer" style="display:none;">
+              <div style="font-size:12px; color:var(--amber); margin-bottom:8px;">You're in view-only mode. Roster is read-only.</div>
+              <button class="settings-btn" onclick="window.enterAdminPin()">Enter admin key to unlock</button>
             </div>
           </div>
 
@@ -5715,6 +5757,187 @@
       } catch(e) {}
     })();
 
+    /* ==================== SUNDAY SYNC (KV CLOUD) ==================== */
+    var SundaySync = window.SundaySync = {
+      workerUrl: 'https://api.runworship.com',
+      churchId: null,
+      adminKey: null,
+      _saveTimer: null,
+
+      init: function() {
+        try {
+          this.churchId = localStorage.getItem('sunday_church_id') || null;
+          this.adminKey = localStorage.getItem('sunday_admin_key') || null;
+        } catch(e) {}
+        // Absorb ?church= / ?key= URL params — clean the URL afterwards
+        try {
+          var params = new URLSearchParams(window.location.search);
+          var urlChurch = params.get('church');
+          var urlKey = params.get('key');
+          if (urlChurch) {
+            this.churchId = urlChurch;
+            localStorage.setItem('sunday_church_id', urlChurch);
+            if (urlKey) {
+              this.adminKey = urlKey;
+              localStorage.setItem('sunday_admin_key', urlKey);
+            }
+            window.history.replaceState({}, '', window.location.pathname);
+          }
+        } catch(e) {}
+      },
+
+      get isAdmin() { return !!this.adminKey; },
+      get isConnected() { return !!this.churchId; },
+
+      createChurch: function(callback) {
+        var self = this;
+        fetch(this.workerUrl + '/church/new', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.id) {
+              self.churchId = data.id;
+              self.adminKey = data.adminKey;
+              try {
+                localStorage.setItem('sunday_church_id', data.id);
+                localStorage.setItem('sunday_admin_key', data.adminKey);
+              } catch(e) {}
+              if (callback) callback(true, data);
+            } else {
+              if (callback) callback(false);
+            }
+          })
+          .catch(function() { if (callback) callback(false); });
+      },
+
+      saveState: function() {
+        if (!this.isAdmin || !this.churchId) return;
+        var self = this;
+        clearTimeout(this._saveTimer);
+        this._saveTimer = setTimeout(function() {
+          var payload = {
+            adminKey: self.adminKey,
+            roster: state.roster,
+            rosterBecause: state.rosterBecause || {},
+            team: TEAM,
+            songs: SONGS,
+            services: services,
+            savedSets: self._getSavedSets(),
+            churchName: (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : '',
+            rosteringRules: (function(){ try { return localStorage.getItem('sunday_rostering_rules') || ''; } catch(e) { return ''; } })()
+          };
+          fetch(self.workerUrl + '/state?church=' + self.churchId, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+              if (d.ok) {
+                try { localStorage.setItem('sunday_last_sync', d.updatedAt); } catch(e) {}
+                renderSyncStatus();
+              }
+            })
+            .catch(function() {});
+        }, 2000);
+      },
+
+      loadState: function(callback) {
+        if (!this.churchId) { if (callback) callback(false); return; }
+        fetch(this.workerUrl + '/state?church=' + this.churchId)
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.error) { if (callback) callback(false, data.error); return; }
+            if (Array.isArray(data.team) && data.team.length > 0) { TEAM = data.team; window.TEAM = TEAM; }
+            if (Array.isArray(data.songs) && data.songs.length > 0) { SONGS = data.songs; window.SONGS = SONGS; }
+            if (Array.isArray(data.services) && data.services.length > 0) { services = data.services; window.services = services; }
+            if (data.roster && Object.keys(data.roster).length > 0) state.roster = data.roster;
+            if (data.rosterBecause) state.rosterBecause = data.rosterBecause;
+            if (data.churchName) {
+              if (typeof heroState !== 'undefined') heroState.churchName = data.churchName;
+              try { localStorage.setItem('sunday_church', data.churchName); } catch(e) {}
+            }
+            if (data.rosteringRules) {
+              try { localStorage.setItem('sunday_rostering_rules', data.rosteringRules); } catch(e) {}
+            }
+            if (Array.isArray(data.savedSets)) {
+              try { localStorage.setItem('sunday_saved_sets', JSON.stringify(data.savedSets)); } catch(e) {}
+            }
+            SundayData.save();
+            try { localStorage.setItem('sunday_last_sync', data.updatedAt || new Date().toISOString()); } catch(e) {}
+            if (callback) callback(true);
+          })
+          .catch(function() { if (callback) callback(false); });
+      },
+
+      saveSet: function(name) {
+        var setData = {
+          id: Date.now(),
+          name: name || ('Set · ' + state.rosterMonth + ' Wk' + state.rosterWeek),
+          savedAt: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+          month: state.rosterMonth,
+          week: state.rosterWeek,
+          service: state.rosterService,
+          songs: state.set.map(function(s) { return { title: s.title, artist: s.artist, key: s.key, cat: s.cat, bpm: s.bpm, mins: s.mins }; }),
+          ministrySongs: (state.ministrySongs || []).map(function(s) { return { title: s.title, artist: s.artist, key: s.key }; })
+        };
+        var sets = this._getSavedSets();
+        sets.unshift(setData);
+        if (sets.length > 100) sets = sets.slice(0, 100);
+        try { localStorage.setItem('sunday_saved_sets', JSON.stringify(sets)); } catch(e) {}
+        this.saveState();
+        return setData;
+      },
+
+      deleteSet: function(id) {
+        var sets = this._getSavedSets().filter(function(s) { return s.id !== id; });
+        try { localStorage.setItem('sunday_saved_sets', JSON.stringify(sets)); } catch(e) {}
+        this.saveState();
+      },
+
+      loadSet: function(id) {
+        var found = this._getSavedSets().find(function(s) { return s.id === id; });
+        if (!found) return false;
+        state.set = (found.songs || []).map(function(saved) {
+          return SONGS.find(function(s) { return s.title.toLowerCase() === saved.title.toLowerCase(); }) ||
+            Object.assign({ id: Date.now() + Math.random() }, saved);
+        }).filter(Boolean);
+        state.ministrySongs = (found.ministrySongs || []).map(function(saved) {
+          return SONGS.find(function(s) { return s.title.toLowerCase() === saved.title.toLowerCase(); }) ||
+            Object.assign({ id: Date.now() + Math.random() }, saved);
+        }).filter(Boolean);
+        return true;
+      },
+
+      _getSavedSets: function() {
+        try { return JSON.parse(localStorage.getItem('sunday_saved_sets') || '[]'); } catch(e) { return []; }
+      },
+
+      getSavedSets: function() { return this._getSavedSets(); },
+
+      getAdminInviteUrl: function() {
+        return 'https://runworship.com?church=' + this.churchId + '&key=' + this.adminKey;
+      },
+
+      getViewerInviteUrl: function() {
+        return 'https://runworship.com?church=' + this.churchId;
+      }
+    };
+
+    // Hook SundayData.save() → auto-trigger cloud sync
+    (function() {
+      var _origSave = SundayData.save.bind(SundayData);
+      SundayData.save = function() {
+        _origSave();
+        if (SundaySync.isAdmin) SundaySync.saveState();
+      };
+    })();
+
+    // Init sync on load
+    SundaySync.init();
+
     /* ==================== SUNDAY API LAYER ==================== */
     var SundayAPI = {
       // Sunday API Worker (Cloudflare, custom domain on runworship.com).
@@ -6298,6 +6521,13 @@
           // Normalize action type — uppercase to handle casing variations
           var actionType = (action.type || '').toUpperCase().replace(/\s+/g, '_');
           console.log('Sunday executing action:', actionType, JSON.stringify(p));
+
+          // Viewer mode — block destructive roster mutations
+          var rosterMutations = ['BUILD_MONTH','FILL_WEEK','ASSIGN','REMOVE_PERSON','REST_PERSON','CLEAR_WEEK','CLEAR_MONTH','SET_ROSTER_MONTH'];
+          if (window.isViewerMode && window.isViewerMode() && rosterMutations.indexOf(actionType) >= 0) {
+            try { addSidebarMsg('You\'re in view-only mode — ask your admin for the admin key to make roster changes.', 'sunday'); } catch(e) {}
+            return;
+          }
 
           switch (actionType) {
             // === SET ACTIONS ===
@@ -7250,6 +7480,17 @@
 
     // Load saved data AFTER defaults are declared (so localStorage can override them)
     SundayData.load();
+
+    // If connected to cloud, pull latest state on startup (non-blocking)
+    if (SundaySync.isConnected) {
+      SundaySync.loadState(function(ok) {
+        if (ok) {
+          try { renderRoster(); } catch(e) {}
+          try { renderPeople(); } catch(e) {}
+          try { renderSongs(); renderSet(); } catch(e) {}
+        }
+      });
+    }
 
     // (Removed the auto-seed of 'Returning' — songs only added by Reuben directly.)
 
@@ -9875,6 +10116,161 @@
       window.buildAndShowSetCard();
     };
 
+    // ── Cloud sync UI helpers ──────────────────────────────────────────────────
+
+    function renderSyncStatus() {
+      var statusEl = document.getElementById('cloud-sync-status');
+      if (!statusEl) return;
+      try {
+        var ts = localStorage.getItem('sunday_last_sync');
+        if (ts) {
+          var d = new Date(ts);
+          statusEl.textContent = 'Last synced ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        }
+      } catch(e) {}
+    }
+
+    function renderCloudSyncSection() {
+      var disc = document.getElementById('cloud-sync-disconnected');
+      var conn = document.getElementById('cloud-sync-connected');
+      var view = document.getElementById('cloud-sync-viewer');
+      if (!disc) return;
+      if (!SundaySync.isConnected) {
+        disc.style.display = 'block'; conn.style.display = 'none'; view.style.display = 'none';
+      } else if (SundaySync.isAdmin) {
+        disc.style.display = 'none'; conn.style.display = 'block'; view.style.display = 'none';
+        var idEl = document.getElementById('cloud-church-id');
+        if (idEl) idEl.textContent = SundaySync.churchId;
+        renderSyncStatus();
+      } else {
+        disc.style.display = 'none'; conn.style.display = 'none'; view.style.display = 'block';
+      }
+    }
+
+    window.enableCloudSync = function() {
+      var btn = document.querySelector('#cloud-sync-disconnected .settings-btn');
+      if (btn) { btn.textContent = 'Setting up…'; btn.disabled = true; }
+      SundaySync.createChurch(function(ok) {
+        if (ok) {
+          SundaySync.saveState();
+          renderCloudSyncSection();
+          if (btn) { btn.textContent = 'Enable cloud sync'; btn.disabled = false; }
+        } else {
+          if (btn) { btn.textContent = 'Failed — try again'; btn.disabled = false; }
+        }
+      });
+    };
+
+    window.copyAdminInvite = function() {
+      var url = SundaySync.getAdminInviteUrl();
+      navigator.clipboard.writeText(url).then(function() {
+        var btn = document.querySelector('#cloud-sync-connected button');
+        var prev = btn ? btn.textContent : '';
+        if (btn) btn.textContent = '✓ Copied admin link';
+        setTimeout(function() { if (btn) btn.textContent = prev; }, 2000);
+      }).catch(function() { window.prompt('Copy this admin link:', url); });
+    };
+
+    window.copyViewerInvite = function() {
+      var url = SundaySync.getViewerInviteUrl();
+      navigator.clipboard.writeText(url).then(function() {
+        var btns = document.querySelectorAll('#cloud-sync-connected button');
+        var btn = btns[1];
+        var prev = btn ? btn.textContent : '';
+        if (btn) btn.textContent = '✓ Copied viewer link';
+        setTimeout(function() { if (btn) btn.textContent = prev; }, 2000);
+      }).catch(function() { window.prompt('Copy this viewer link (read-only):', url); });
+    };
+
+    window.forceSyncNow = function() {
+      if (SundaySync.isAdmin) {
+        SundaySync.saveState();
+      } else if (SundaySync.isConnected) {
+        SundaySync.loadState(function(ok) { if (ok) { renderRoster(); renderPeople(); } });
+      }
+    };
+
+    window.enterAdminPin = function() {
+      var key = window.prompt('Paste your admin key:');
+      if (key && key.length > 0) {
+        localStorage.setItem('sunday_admin_key', key);
+        SundaySync.adminKey = key;
+        SundaySync.loadState(function(ok) {
+          renderCloudSyncSection();
+          if (ok) { renderRoster(); renderPeople(); }
+        });
+      }
+    };
+
+    // ── Save set helpers ──────────────────────────────────────────────────────
+
+    window.saveCurrentSet = function() {
+      if (state.set.length === 0) return;
+      var defaultName = state.rosterMonth + ' Wk' + state.rosterWeek;
+      var name = window.prompt('Name this set:', defaultName);
+      if (name === null) return; // cancelled
+      var saved = SundaySync.saveSet(name || defaultName);
+      if (saved) {
+        try { addSidebarMsg('Set saved as "' + saved.name + '"', 'sunday'); } catch(e) {}
+      }
+    };
+
+    window.openSavedSets = function() {
+      var overlay = document.getElementById('saved-sets-overlay');
+      if (!overlay) return;
+      renderSavedSetsList();
+      overlay.style.display = 'block';
+    };
+
+    window.closeSavedSets = function() {
+      var overlay = document.getElementById('saved-sets-overlay');
+      if (overlay) overlay.style.display = 'none';
+    };
+
+    function renderSavedSetsList() {
+      var list = document.getElementById('saved-sets-list');
+      if (!list) return;
+      var sets = SundaySync.getSavedSets();
+      if (sets.length === 0) {
+        list.innerHTML = '<div style="color:var(--dim); font-size:13px; text-align:center; padding:32px 0;">No saved sets yet.<br><span style="font-size:11px; opacity:0.6;">Finalise a set then tap Save set.</span></div>';
+        return;
+      }
+      list.innerHTML = sets.map(function(s) {
+        var songList = (s.songs || []).slice(0, 4).map(function(sg) { return sg.title; }).join(', ');
+        if (s.songs && s.songs.length > 4) songList += ' +' + (s.songs.length - 4) + ' more';
+        return '<div style="padding:14px 0; border-bottom:0.5px solid rgba(255,255,255,0.08);">' +
+          '<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">' +
+            '<div style="font-size:14px; font-weight:500; color:#fff;">' + esc(s.name) + '</div>' +
+            '<div style="display:flex; gap:8px;">' +
+              '<button onclick="window.loadSavedSet(' + s.id + ')" style="font-size:11px; background:var(--amber); color:#000; border:none; border-radius:4px; padding:3px 10px; cursor:pointer; font-family:var(--font-display);">Load</button>' +
+              '<button onclick="window.deleteSavedSet(' + s.id + ')" style="font-size:11px; background:rgba(255,255,255,0.08); color:var(--dim); border:none; border-radius:4px; padding:3px 8px; cursor:pointer;">×</button>' +
+            '</div>' +
+          '</div>' +
+          '<div style="font-size:11px; color:var(--dim);">' + esc(s.savedAt) + ' · ' + (s.songs ? s.songs.length : 0) + ' songs</div>' +
+          (songList ? '<div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:3px;">' + esc(songList) + '</div>' : '') +
+        '</div>';
+      }).join('');
+    }
+
+    window.loadSavedSet = function(id) {
+      if (SundaySync.loadSet(id)) {
+        window.closeSavedSets();
+        try { renderSet(); renderSongs(); } catch(e) {}
+        try { addSidebarMsg('Set loaded — make any tweaks then Finalise when ready.', 'sunday'); } catch(e) {}
+      }
+    };
+
+    window.deleteSavedSet = function(id) {
+      SundaySync.deleteSet(id);
+      renderSavedSetsList();
+    };
+
+    // ── Access control — viewer mode blocks roster mutations ──────────────────
+
+    window.isViewerMode = function() {
+      return SundaySync.isConnected && !SundaySync.isAdmin;
+    };
+
     window.closeSetCard = function() {
       // share-dropdown was removed when the share UX was unified; this
       // line used to throw a TypeError (Cannot read 'style' of null)
@@ -11504,6 +11900,8 @@
         var savedRules = localStorage.getItem('sunday_rostering_rules') || '';
         if (rulesField) rulesField.value = savedRules;
       } catch(e) {}
+
+      renderCloudSyncSection();
 
       // Update status dots (WhatsApp checks the live Worker)
       updateSettingsStatus();
