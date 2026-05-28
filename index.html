@@ -3069,14 +3069,70 @@
     /* Team list */
     /* Two-column grid on desktop/iPad, single column on mobile */
     .people-list {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      align-items: start;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .people-instrument-row {
+      display: flex;
+      align-items: flex-start;
+      padding: 7px 0;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      flex-wrap: wrap;
+    }
+
+    .people-instrument-label {
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--dim);
+      width: 106px;
+      flex-shrink: 0;
+      padding-top: 6px;
+    }
+
+    .people-name-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      flex: 1;
+    }
+
+    .person-name-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 11px 5px 8px;
+      border-radius: 20px;
+      background: var(--s1);
+      font-family: var(--font-display);
+      font-size: 12.5px;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.1s;
+      border: 1px solid rgba(255,255,255,0.05);
+      line-height: 1;
+    }
+
+    .person-name-chip:hover,
+    .person-name-chip.chip-active {
+      background: var(--s2);
+      border-color: var(--gb);
+    }
+
+    .person-chip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
     }
 
     @media (max-width: 640px) {
-      .people-list { grid-template-columns: 1fr; }
+      .people-instrument-label { width: 72px; font-size: 9px; }
     }
 
     .people-section-label {
@@ -3087,7 +3143,6 @@
       text-transform: uppercase;
       color: var(--dim);
       padding: 16px 0 6px;
-      grid-column: 1 / -1;
     }
 
     /* Card — replaces .person-row */
@@ -3118,9 +3173,8 @@
       border-radius: var(--radius-md) var(--radius-md) 0 0;
     }
 
-    /* When expanded, the wrapper stretches across both grid columns */
+    /* expanded-wrap: no longer needed for grid spanning */
     .person-card-wrap.expanded-wrap {
-      grid-column: 1 / -1;
     }
 
     /* WhatsApp opted-in dot */
@@ -8426,40 +8480,122 @@
           list.innerHTML = '<div style="padding:48px 0; text-align:center;">' +
             '<div style="font-size:32px; margin-bottom:12px; opacity:0.3;">♪</div>' +
             '<div style="font-size:14px; color:var(--text); opacity:0.5; margin-bottom:8px;">No musicians yet</div>' +
-            '<div style="font-size:12px; color:var(--mid);">Hit "+ Add team member" above or tell Sunny in the chat.</div>' +
+            '<div style="font-size:12px; color:var(--mid);">Hit "+ Add" above or tell Sunny in the chat.</div>' +
             '</div>';
           return;
         }
 
-        // Group by role section — how a worship pastor actually thinks about the team
-        var ROLE_TO_SECTION = {
-          'WL': 'Leadership', 'CO-WL': 'Leadership',
-          'FLV': 'Vocals',
-          'Keys': 'Rhythm', 'Drums': 'Rhythm', 'Bass': 'Rhythm',
-          'Guitar': 'Rhythm', 'Acoustic': 'Rhythm',
-          'FOH': 'Tech',
+        // Per-instrument buckets — WL checked first so WL+other-role people land in WL
+        var INSTRUMENT_ORDER  = ['WL','FLV','Keys','Drums','Bass','Guitar','Acoustic','FOH'];
+        var INSTRUMENT_LABELS = {
+          'WL':'Worship Leaders', 'FLV':'Vocals', 'Keys':'Keys',
+          'Drums':'Drums', 'Bass':'Bass', 'Guitar':'Guitar',
+          'Acoustic':'Acoustic', 'FOH':'FOH'
         };
-        var SECTION_ORDER = ['Leadership', 'Vocals', 'Rhythm', 'Tech', 'Team'];
-        var sections = { Leadership: [], Vocals: [], Rhythm: [], Tech: [], Team: [] };
+
+        var buckets = {};
+        INSTRUMENT_ORDER.forEach(function(k) { buckets[k] = []; });
+        var other = [];
 
         members.forEach(function(m) {
-          var primaryRole = m.roles && m.roles[0];
-          var section = (primaryRole && ROLE_TO_SECTION[primaryRole]) || 'Team';
-          sections[section].push(m);
+          var roles = m.roles || [];
+          var placed = false;
+          for (var i = 0; i < INSTRUMENT_ORDER.length; i++) {
+            if (roles.indexOf(INSTRUMENT_ORDER[i]) >= 0) {
+              buckets[INSTRUMENT_ORDER[i]].push(m);
+              placed = true;
+              break;
+            }
+          }
+          if (!placed) other.push(m);
         });
 
-        // Within each section, sort by tier so Leads come first
-        SECTION_ORDER.forEach(function(s) {
-          if (!sections[s] || sections[s].length === 0) return;
-          sections[s].sort(function(a, b) { return (parseInt(a.tier)||2) - (parseInt(b.tier)||2); });
-          var label = document.createElement('div');
-          label.className = 'people-section-label';
-          label.textContent = s;
-          list.appendChild(label);
-          sections[s].forEach(function(member) {
-            try { list.appendChild(buildPersonCard(member)); } catch(e) { console.error('Sunday: error rendering member', member.name, e); }
+        // Render each instrument row
+        INSTRUMENT_ORDER.forEach(function(key) {
+          var bucket = buckets[key];
+          if (!bucket.length) return;
+
+          // Sort: tier 1 first, then alphabetical
+          bucket.sort(function(a,b) {
+            var ta = parseInt(a.tier)||2, tb = parseInt(b.tier)||2;
+            if (ta !== tb) return ta - tb;
+            return (a.name||'').localeCompare(b.name||'');
           });
+
+          var row = document.createElement('div');
+          row.className = 'people-instrument-row';
+          row.dataset.instrument = key;
+
+          var label = document.createElement('div');
+          label.className = 'people-instrument-label';
+          label.textContent = INSTRUMENT_LABELS[key] || key;
+          row.appendChild(label);
+
+          var chipsWrap = document.createElement('div');
+          chipsWrap.className = 'people-name-chips';
+
+          bucket.forEach(function(member) {
+            var chip = document.createElement('div');
+            chip.className = 'person-name-chip';
+            chip.setAttribute('data-id', member.id);
+            chip.setAttribute('data-name', (member.name||'').toLowerCase());
+            chip.setAttribute('data-roles', (member.roles||[]).join(' ').toLowerCase());
+            chip.setAttribute('data-tier', member.tier||2);
+
+            var dot = document.createElement('div');
+            dot.className = 'person-chip-dot';
+            dot.style.background = member.color || '#5888d8';
+            chip.appendChild(dot);
+
+            var nameSpan = document.createElement('span');
+            nameSpan.textContent = member.name;
+            chip.appendChild(nameSpan);
+
+            chip.addEventListener('click', (function(m, c) {
+              return function() { window.editMember(m.id, c); };
+            })(member, chip));
+
+            chipsWrap.appendChild(chip);
+          });
+
+          row.appendChild(chipsWrap);
+          list.appendChild(row);
         });
+
+        // Uncategorised people (no recognised role)
+        if (other.length) {
+          var row2 = document.createElement('div');
+          row2.className = 'people-instrument-row';
+          row2.dataset.instrument = 'other';
+          var lbl2 = document.createElement('div');
+          lbl2.className = 'people-instrument-label';
+          lbl2.textContent = 'Team';
+          row2.appendChild(lbl2);
+          var chips2 = document.createElement('div');
+          chips2.className = 'people-name-chips';
+          other.forEach(function(member) {
+            var chip = document.createElement('div');
+            chip.className = 'person-name-chip';
+            chip.setAttribute('data-id', member.id);
+            chip.setAttribute('data-name', (member.name||'').toLowerCase());
+            chip.setAttribute('data-roles', (member.roles||[]).join(' ').toLowerCase());
+            chip.setAttribute('data-tier', member.tier||2);
+            var dot = document.createElement('div');
+            dot.className = 'person-chip-dot';
+            dot.style.background = member.color || '#5888d8';
+            chip.appendChild(dot);
+            var nameSpan = document.createElement('span');
+            nameSpan.textContent = member.name;
+            chip.appendChild(nameSpan);
+            chip.addEventListener('click', (function(m, c) {
+              return function() { window.editMember(m.id, c); };
+            })(member, chip));
+            chips2.appendChild(chip);
+          });
+          row2.appendChild(chips2);
+          list.appendChild(row2);
+        }
+
       } catch(e) {
         console.error('Sunday: renderPeople error', e);
         var list2 = document.getElementById('people-list');
@@ -8551,16 +8687,26 @@
       var q = (document.getElementById('people-search') || {}).value || '';
       q = q.toLowerCase().trim();
       var f = window._activeFilter || 'all';
-      document.querySelectorAll('#people-list .person-card').forEach(function(card) {
-        var name = card.getAttribute('data-name') || '';
-        var roles = card.getAttribute('data-roles') || '';
-        var tier = card.getAttribute('data-tier') || '';
+
+      document.querySelectorAll('#people-list .person-name-chip').forEach(function(chip) {
+        var name  = chip.getAttribute('data-name')  || '';
+        var roles = chip.getAttribute('data-roles') || '';
+        var tier  = chip.getAttribute('data-tier')  || '';
         var matchQ = !q || name.indexOf(q) >= 0 || roles.indexOf(q) >= 0;
         var matchF = f === 'all' ||
-          (f === 'lead' && tier === '1') ||
-          roles.indexOf(f) >= 0;
-        var wrap = card.parentElement;
-        if (wrap) wrap.style.display = (matchQ && matchF) ? '' : 'none';
+          (f === 'lead'   && tier === '1') ||
+          roles.indexOf(f.toLowerCase()) >= 0;
+        chip.style.display = (matchQ && matchF) ? '' : 'none';
+      });
+
+      // Hide rows where all chips are hidden
+      document.querySelectorAll('#people-list .people-instrument-row').forEach(function(row) {
+        var chips = row.querySelectorAll('.person-name-chip');
+        var anyVisible = false;
+        chips.forEach(function(c) { if (c.style.display !== 'none') anyVisible = true; });
+        row.style.display = anyVisible ? '' : 'none';
+        // Also hide edit panels inside hidden rows
+        if (!anyVisible) row.querySelectorAll('.person-edit-panel').forEach(function(p) { p.remove(); });
       });
     };
     window._activeFilter = 'all';
@@ -8570,18 +8716,29 @@
       document.querySelectorAll('.person-edit-panel').forEach(function(p) { p.remove(); });
       document.querySelectorAll('.person-card.expanded').forEach(function(c) { c.classList.remove('expanded'); });
       document.querySelectorAll('.person-card-wrap.expanded-wrap').forEach(function(w) { w.classList.remove('expanded-wrap'); });
+      document.querySelectorAll('.person-name-chip.chip-active').forEach(function(c) { c.classList.remove('chip-active'); });
 
       var member = TEAM.find(function(m) { return m.id === id; });
       if (!member) return;
 
-      var card = wrap.querySelector('.person-card');
-      if (card.classList.contains('expanded')) {
-        card.classList.remove('expanded');
-        wrap.classList.remove('expanded-wrap');
-        return;
+      var isChip = wrap && wrap.classList.contains('person-name-chip');
+
+      if (isChip) {
+        if (wrap.dataset.open === '1') { wrap.dataset.open = ''; return; }
+        wrap.dataset.open = '1';
+        wrap.classList.add('chip-active');
+      } else if (wrap) {
+        var card = wrap.querySelector('.person-card');
+        if (card) {
+          if (card.classList.contains('expanded')) {
+            card.classList.remove('expanded');
+            wrap.classList.remove('expanded-wrap');
+            return;
+          }
+          card.classList.add('expanded');
+          wrap.classList.add('expanded-wrap');
+        }
       }
-      card.classList.add('expanded');
-      wrap.classList.add('expanded-wrap'); // span both grid columns
 
       var panel = document.createElement('div');
       panel.className = 'person-edit-panel';
@@ -8680,7 +8837,6 @@
         btn.onclick = function() {
           genderWrap.querySelectorAll('.tier-btn').forEach(function(b) { b.classList.remove('active'); });
           btn.classList.toggle('active', !btn.classList.contains('active') || true);
-          // Toggle off if re-clicking active
           if (member._genderToggle === g) { btn.classList.remove('active'); member._genderToggle = ''; }
           else { member._genderToggle = g; }
         };
@@ -8704,11 +8860,29 @@
         genWrap.appendChild(btn);
       });
 
-      wrap.appendChild(panel);
+      // Insert: after the instrument row (chip mode) or append to wrap (card mode)
+      if (isChip) {
+        var row = wrap.closest('.people-instrument-row');
+        if (row) {
+          row.parentNode.insertBefore(panel, row.nextSibling);
+        } else {
+          wrap.parentNode.appendChild(panel);
+        }
+      } else if (wrap) {
+        wrap.appendChild(panel);
+      } else {
+        document.getElementById('people-list').appendChild(panel);
+      }
     };
 
     window.closeEditPanel = function(id) {
       document.querySelectorAll('.person-edit-panel').forEach(function(p) { p.remove(); });
+      // Chip mode
+      document.querySelectorAll('.person-name-chip.chip-active').forEach(function(c) {
+        c.classList.remove('chip-active');
+        c.dataset.open = '';
+      });
+      // Legacy card mode
       var card = document.querySelector('.person-card[data-id="' + id + '"]');
       if (card) {
         card.classList.remove('expanded');
