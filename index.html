@@ -4757,6 +4757,21 @@
             </div>
           </div>
 
+          <!-- ROSTERING GUIDELINES SECTION -->
+          <div class="settings-section">
+            <div class="settings-section-header">
+              <span class="settings-section-title">Rostering Guidelines</span>
+              <span class="settings-section-desc">Rules Sunny follows every session — availability limits, pairings, rotation preferences. Sunny reads these before every response.</span>
+            </div>
+            <div class="settings-field">
+              <textarea class="settings-input" id="rostering-rules" rows="6" placeholder="e.g. Reuben always leads Week 1. Never put Sam and Jordan on vocals together. Max 3 Sundays per month for FLV. Rotate keys players evenly." style="resize:vertical; min-height:100px; font-family:inherit; font-size:13px; line-height:1.5;"></textarea>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button class="settings-btn" onclick="window.saveRosteringRules()">Save rules</button>
+              <span class="settings-feedback" id="rostering-rules-feedback"></span>
+            </div>
+          </div>
+
           <!-- SUPABASE SECTION -->
           <div class="settings-section">
             <div class="settings-section-header">
@@ -5899,7 +5914,15 @@
         prompt += '2. If someone\'s HISTORY shows ONE role exclusively (e.g. Ben Hurrell: Keys×12, no other history), that is their role. Don\'t experiment by putting them somewhere else.\n';
         prompt += '3. New team members with "(no past services in data)" — be cautious. Only assign them to roles their tagged roles support, and flag the assignment as unproven (use the `because` field to note "no rostering history — give it a try").\n';
         prompt += '4. When asked questions like "who plays bass" or "who\'s our singers" — answer from HISTORY, not tags. People who have actually been on stage in that role.\n';
-        prompt += '5. Never invent a person or a song. If a name isn\'t in the TEAM list, say so and ask. If a song isn\'t in the SONG LIBRARY, ask before adding.\n\n';
+        prompt += '5. Never invent a person or a song. If a name isn\'t in the TEAM list, say so and ask. If a song isn\'t in the SONG LIBRARY, ask before adding.\n';
+        prompt += '6. BUILD_MONTH runs a default algorithm — it does not read specific instructions from this conversation. When the pastor has given you specific requirements (particular people, pairings, limits, someone to keep off or on), use individual ASSIGN actions to implement them slot by slot. Reserve BUILD_MONTH only for "build everything fresh, no specific instructions."\n\n';
+
+        var customRules = '';
+        try { customRules = localStorage.getItem('sunday_rostering_rules') || ''; } catch(e) {}
+        if (customRules.trim()) {
+          prompt += 'PASTOR\'S CUSTOM RULES — follow these above everything else:\n' + customRules.trim() + '\n\n';
+        }
+
         prompt += 'HOW YOU TALK: Worship team insider. "The room" not "the venue." "Leading" not "performing." "Flow" not "sequence." "Keys," "acoustic," "pads." NEVER say "optimize," "metrics," "workflow," or "actionable." 1-3 sentences max unless real detail is needed.\n\n';
         var todayDate = new Date();
         var todayStr = todayDate.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
@@ -11287,6 +11310,10 @@
         if (apiKeyField && savedApiKey) apiKeyField.placeholder = 'sk-ant-api03-••••••••••••' + savedApiKey.slice(-4);
         if (urlField && sUrl) urlField.value = sUrl;
         if (keyField && sKey) keyField.value = sKey;
+
+        var rulesField = document.getElementById('rostering-rules');
+        var savedRules = localStorage.getItem('sunday_rostering_rules') || '';
+        if (rulesField) rulesField.value = savedRules;
       } catch(e) {}
 
       // Update status dots (WhatsApp checks the live Worker)
@@ -11337,6 +11364,18 @@
           feedback.className = 'settings-feedback error';
         }
       });
+    };
+
+    window.saveRosteringRules = function() {
+      var field = document.getElementById('rostering-rules');
+      var feedback = document.getElementById('rostering-rules-feedback');
+      var rules = field ? field.value.trim() : '';
+      try { localStorage.setItem('sunday_rostering_rules', rules); } catch(e) {}
+      if (feedback) {
+        feedback.textContent = rules ? '✓ Saved — Sunny will follow these from now on' : '✓ Cleared';
+        feedback.className = 'settings-feedback success';
+        setTimeout(function() { if (feedback) feedback.textContent = ''; }, 3000);
+      }
     };
 
     function updateSettingsStatus() {
