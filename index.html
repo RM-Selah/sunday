@@ -3067,10 +3067,16 @@
     }
 
     /* Team list */
+    /* Two-column grid on desktop/iPad, single column on mobile */
     .people-list {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      align-items: start;
+    }
+
+    @media (max-width: 640px) {
+      .people-list { grid-template-columns: 1fr; }
     }
 
     .people-section-label {
@@ -3080,15 +3086,16 @@
       letter-spacing: 1.5px;
       text-transform: uppercase;
       color: var(--dim);
-      padding: 16px 0 8px;
+      padding: 16px 0 6px;
       grid-column: 1 / -1;
     }
 
-    .person-row {
+    /* Card — replaces .person-row */
+    .person-card {
       display: flex;
       align-items: center;
-      gap: 16px;
-      padding: 13px 16px 13px 20px;
+      gap: 14px;
+      padding: 14px 16px;
       background: var(--s1);
       border: 1px solid transparent;
       border-left: 3px solid var(--gb2);
@@ -3098,34 +3105,46 @@
       position: relative;
     }
 
-    .person-row[data-tier="1"] { border-left-color: var(--amber); }
-    .person-row[data-tier="2"] { border-left-color: #5888d8; }
-    .person-row[data-tier="3"] { border-left-color: var(--gb2); }
+    .person-card[data-tier="1"] { border-left-color: var(--amber); }
+    .person-card[data-tier="2"] { border-left-color: #5888d8; }
+    .person-card[data-tier="3"] { border-left-color: var(--gb2); }
 
-    .person-row:hover {
-      background: var(--s2);
-      border-color: var(--gb);
-      border-left-color: inherit;
-    }
-    .person-row[data-tier="1"]:hover { border-left-color: var(--amber); }
-    .person-row[data-tier="2"]:hover { border-left-color: #5888d8; }
+    .person-card:hover { background: var(--s2); border-color: var(--gb); }
+    .person-card[data-tier="1"]:hover { border-left-color: var(--amber); }
+    .person-card[data-tier="2"]:hover { border-left-color: #5888d8; }
 
-    .person-row.expanded {
+    .person-card.expanded {
       background: var(--s2);
       border-radius: var(--radius-md) var(--radius-md) 0 0;
     }
 
+    /* When expanded, the wrapper stretches across both grid columns */
+    .person-card-wrap.expanded-wrap {
+      grid-column: 1 / -1;
+    }
+
+    /* WhatsApp opted-in dot */
+    .person-wa-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #25d366;
+      box-shadow: 0 0 5px rgba(37,211,102,0.55);
+      flex-shrink: 0;
+    }
+
     .person-avatar {
-      width: 38px;
-      height: 38px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       font-family: var(--font-display);
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 13px;
+      font-weight: 700;
       flex-shrink: 0;
+      letter-spacing: 0.5px;
     }
 
     .person-name {
@@ -3196,7 +3215,7 @@
       margin-left: 8px;
     }
 
-    .person-row:hover .person-actions { opacity: 1; }
+    .person-card:hover .person-actions { opacity: 1; }
 
     .person-tier {
       font-family: var(--font-display);
@@ -3226,15 +3245,33 @@
     .person-action-btn:hover { border-color: var(--amber); color: var(--amber); }
     .person-action-btn.del:hover { border-color: #c0392b; color: #c0392b; }
 
-    /* Inline edit panel */
+    /* Inline edit panel — sits below the card, full width of the wrap */
     .person-edit-panel {
       background: var(--s2);
       border: 1px solid var(--gb2);
       border-top: none;
       border-radius: 0 0 var(--radius-md) var(--radius-md);
-      padding: 16px 16px 16px 68px;
-      margin-bottom: 2px;
+      padding: 16px 20px 20px 72px; /* left-pad aligns to name column */
+      margin-bottom: 0;
     }
+
+    .person-notes-input {
+      width: 100%;
+      background: var(--s1);
+      border: 1px solid var(--gb);
+      border-radius: var(--radius-md);
+      padding: 8px 12px;
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--text);
+      resize: vertical;
+      min-height: 56px;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.15s;
+    }
+    .person-notes-input:focus { border-color: var(--gb2); }
+    .person-notes-input::placeholder { color: var(--dim); }
 
     /* ===================== SETTINGS SCREEN ===================== */
     .settings-status-pill {
@@ -4840,6 +4877,11 @@
                     <label class="avail-check"><input type="checkbox" value="5" checked> Wk 5</label>
                   </div>
                 </div>
+              </div>
+
+              <div class="member-form-field">
+                <label class="member-form-label">Notes <span style="font-weight:400; color:var(--dim);">— Sunny reads this</span></label>
+                <textarea class="person-notes-input" id="mf-notes" placeholder="e.g. prefers not to do back-to-back weeks · great with new songs"></textarea>
               </div>
 
               <div class="member-form-actions">
@@ -8314,23 +8356,33 @@
           return;
         }
 
-        // Group by tier
-        var tiers = { 1: [], 2: [], 3: [] };
-        members.forEach(function(m) {
-          var t = parseInt(m.tier) || 2;
-          if (!tiers[t]) tiers[t] = [];
-          tiers[t].push(m);
-        });
-        var tierLabels = { 1: 'Tier 1 — Lead', 2: 'Tier 2 — Regular', 3: 'Tier 3 — Developing' };
+        // Group by role section — how a worship pastor actually thinks about the team
+        var ROLE_TO_SECTION = {
+          'WL': 'Leadership', 'CO-WL': 'Leadership',
+          'FLV': 'Vocals',
+          'Keys': 'Rhythm', 'Drums': 'Rhythm', 'Bass': 'Rhythm',
+          'Guitar': 'Rhythm', 'Acoustic': 'Rhythm',
+          'FOH': 'Tech',
+        };
+        var SECTION_ORDER = ['Leadership', 'Vocals', 'Rhythm', 'Tech', 'Team'];
+        var sections = { Leadership: [], Vocals: [], Rhythm: [], Tech: [], Team: [] };
 
-        [1, 2, 3].forEach(function(t) {
-          if (!tiers[t] || tiers[t].length === 0) return;
+        members.forEach(function(m) {
+          var primaryRole = m.roles && m.roles[0];
+          var section = (primaryRole && ROLE_TO_SECTION[primaryRole]) || 'Team';
+          sections[section].push(m);
+        });
+
+        // Within each section, sort by tier so Leads come first
+        SECTION_ORDER.forEach(function(s) {
+          if (!sections[s] || sections[s].length === 0) return;
+          sections[s].sort(function(a, b) { return (parseInt(a.tier)||2) - (parseInt(b.tier)||2); });
           var label = document.createElement('div');
           label.className = 'people-section-label';
-          label.textContent = tierLabels[t];
+          label.textContent = s;
           list.appendChild(label);
-          tiers[t].forEach(function(member) {
-            try { list.appendChild(buildPersonRow(member)); } catch(e) { console.error('Sunday: error rendering member', member.name, e); }
+          sections[s].forEach(function(member) {
+            try { list.appendChild(buildPersonCard(member)); } catch(e) { console.error('Sunday: error rendering member', member.name, e); }
           });
         });
       } catch(e) {
@@ -8340,46 +8392,41 @@
       }
     }
 
-    function buildPersonRow(member) {
+    function buildPersonCard(member) {
       var wrap = document.createElement('div');
+      wrap.className = 'person-card-wrap';
       var tier = parseInt(member.tier) || 2;
 
-      var row = document.createElement('div');
-      row.className = 'person-row';
-      row.setAttribute('data-id', member.id);
-      row.setAttribute('data-tier', tier);
-      row.setAttribute('data-name', (member.name || '').toLowerCase());
-      row.setAttribute('data-roles', (member.roles || []).join(' ').toLowerCase());
+      var card = document.createElement('div');
+      card.className = 'person-card';
+      card.setAttribute('data-id', member.id);
+      card.setAttribute('data-tier', tier);
+      card.setAttribute('data-name', (member.name || '').toLowerCase());
+      card.setAttribute('data-roles', (member.roles || []).join(' ').toLowerCase());
 
-      // Avatar
+      // Avatar — two-letter initials
       var av = document.createElement('div');
       av.className = 'person-avatar';
       av.style.background = (member.color || '#5888d8') + '22';
       av.style.color = member.color || '#5888d8';
-      av.textContent = member.name.charAt(0).toUpperCase();
-      row.appendChild(av);
+      av.textContent = getInitials(member.name);
+      card.appendChild(av);
 
-      // Name block
+      // Name + roles block
       var nameWrap = document.createElement('div');
+      nameWrap.style.flex = '1';
+      nameWrap.style.minWidth = '0';
+
       var nameEl = document.createElement('div');
       nameEl.className = 'person-name';
       nameEl.textContent = member.name;
-      var nameSub = document.createElement('div');
-      nameSub.className = 'person-name-sub';
-      var subParts = [];
-      if (member.phone || member.email) subParts.push(member.phone || member.email);
-      if (member.gender) subParts.push(member.gender);
-      if (member.generation) subParts.push(member.generation);
-      nameSub.textContent = subParts.join(' · ');
       nameWrap.appendChild(nameEl);
-      nameWrap.appendChild(nameSub);
-      row.appendChild(nameWrap);
 
-      // Roles
+      // Role pills
       var rolesEl = document.createElement('div');
       rolesEl.className = 'person-roles';
-      rolesEl.style.flex = '1';
-      (member.roles || []).slice(0,3).forEach(function(r) {
+      rolesEl.style.marginTop = '4px';
+      (member.roles || []).slice(0, 3).forEach(function(r) {
         var pill = document.createElement('span');
         pill.className = 'person-role-pill';
         pill.textContent = r;
@@ -8387,34 +8434,23 @@
         pill.style.color = ROLE_COLORS[r] || '#5888d8';
         rolesEl.appendChild(pill);
       });
-      row.appendChild(rolesEl);
+      nameWrap.appendChild(rolesEl);
+      card.appendChild(nameWrap);
 
-      // Availability dots
-      var availEl = document.createElement('div');
-      availEl.className = 'person-avail';
-      availEl.title = 'Weeks: ' + ([1,2,3,4,5].map(function(w){ return (member.avail && member.avail.indexOf(w) >= 0) ? 'W'+w : '—'; }).join(' '));
-      [1,2,3,4,5].forEach(function(w) {
-        var dot = document.createElement('div');
-        dot.className = 'avail-dot' + (member.avail && member.avail.indexOf(w) >= 0 ? ' on' : '');
-        availEl.appendChild(dot);
-      });
-      row.appendChild(availEl);
+      // WhatsApp dot — shows they have a number (and can receive messages)
+      if (member.phone) {
+        var waDot = document.createElement('div');
+        waDot.className = 'person-wa-dot';
+        waDot.title = member.phone;
+        card.appendChild(waDot);
+      }
 
-      // Actions (revealed on hover)
-      var actionsEl = document.createElement('div');
-      actionsEl.className = 'person-actions';
-
-      var editBtn = document.createElement('button');
-      editBtn.className = 'person-action-btn';
-      editBtn.title = 'Edit';
-      editBtn.textContent = '✎';
-      editBtn.onclick = function(e) { e.stopPropagation(); window.editMember(member.id, wrap); };
-
-      var archiveBtn = document.createElement('button');
-      archiveBtn.className = 'person-action-btn del';
-      archiveBtn.title = 'Remove from team';
-      archiveBtn.textContent = '×';
-      archiveBtn.onclick = function(e) {
+      // Delete button (always visible, top-right)
+      var delBtn = document.createElement('button');
+      delBtn.className = 'person-action-btn del';
+      delBtn.title = 'Remove from team';
+      delBtn.textContent = '×';
+      delBtn.onclick = function(e) {
         e.stopPropagation();
         if (confirm('Remove ' + member.name + ' from the team?')) {
           member.archived = true;
@@ -8422,13 +8458,10 @@
           renderPeople();
         }
       };
+      card.appendChild(delBtn);
 
-      actionsEl.appendChild(editBtn);
-      actionsEl.appendChild(archiveBtn);
-      row.appendChild(actionsEl);
-
-      row.onclick = function() { window.editMember(member.id, wrap); };
-      wrap.appendChild(row);
+      card.onclick = function() { window.editMember(member.id, wrap); };
+      wrap.appendChild(card);
       return wrap;
     }
 
@@ -8443,15 +8476,15 @@
       var q = (document.getElementById('people-search') || {}).value || '';
       q = q.toLowerCase().trim();
       var f = window._activeFilter || 'all';
-      document.querySelectorAll('#people-list .person-row').forEach(function(row) {
-        var name = row.getAttribute('data-name') || '';
-        var roles = row.getAttribute('data-roles') || '';
-        var tier = row.getAttribute('data-tier') || '';
+      document.querySelectorAll('#people-list .person-card').forEach(function(card) {
+        var name = card.getAttribute('data-name') || '';
+        var roles = card.getAttribute('data-roles') || '';
+        var tier = card.getAttribute('data-tier') || '';
         var matchQ = !q || name.indexOf(q) >= 0 || roles.indexOf(q) >= 0;
         var matchF = f === 'all' ||
           (f === 'lead' && tier === '1') ||
           roles.indexOf(f) >= 0;
-        var wrap = row.parentElement;
+        var wrap = card.parentElement;
         if (wrap) wrap.style.display = (matchQ && matchF) ? '' : 'none';
       });
     };
@@ -8460,17 +8493,20 @@
     window.editMember = function(id, wrap) {
       // Close any already-open edit panel
       document.querySelectorAll('.person-edit-panel').forEach(function(p) { p.remove(); });
-      document.querySelectorAll('.person-row.expanded').forEach(function(r) { r.classList.remove('expanded'); });
+      document.querySelectorAll('.person-card.expanded').forEach(function(c) { c.classList.remove('expanded'); });
+      document.querySelectorAll('.person-card-wrap.expanded-wrap').forEach(function(w) { w.classList.remove('expanded-wrap'); });
 
       var member = TEAM.find(function(m) { return m.id === id; });
       if (!member) return;
 
-      var row = wrap.querySelector('.person-row');
-      if (row.classList.contains('expanded')) {
-        row.classList.remove('expanded');
+      var card = wrap.querySelector('.person-card');
+      if (card.classList.contains('expanded')) {
+        card.classList.remove('expanded');
+        wrap.classList.remove('expanded-wrap');
         return;
       }
-      row.classList.add('expanded');
+      card.classList.add('expanded');
+      wrap.classList.add('expanded-wrap'); // span both grid columns
 
       var panel = document.createElement('div');
       panel.className = 'person-edit-panel';
@@ -8510,9 +8546,13 @@
           '<div class="demo-selector" id="ep-generation" style="display:flex; gap:4px; flex-wrap:wrap;"></div>' +
         '</div>' +
       '</div>' +
+      '<div style="margin-bottom:14px;">' +
+        '<div class="member-form-label" style="margin-bottom:6px;">Notes <span style="font-weight:400; color:var(--dim);">— Sunny reads this</span></div>' +
+        '<textarea class="person-notes-input" id="ep-notes" placeholder="e.g. prefers not to do back-to-back weeks · learning bass · great with new songs">' + (member.notes || '').replace(/</g,'&lt;') + '</textarea>' +
+      '</div>' +
       '<div style="display:flex; gap:8px;">' +
-        '<button class="member-form-save" onclick="window.saveEditPanel(\'' + id + '\', this.closest(\'.person-edit-panel\'))">Save changes</button>' +
-        '<button class="member-form-cancel" onclick="this.closest(\'.person-edit-panel\').remove(); document.querySelector(\'[data-id=\\\'' + id + '\\\']\').classList.remove(\'expanded\')">Cancel</button>' +
+        '<button class="member-form-save" onclick="window.saveEditPanel(\'' + id + '\', this.closest(\'.person-edit-panel\'))">Save</button>' +
+        '<button class="member-form-cancel" onclick="window.closeEditPanel(\'' + id + '\')">Cancel</button>' +
       '</div>';
 
       // Build role checkboxes
@@ -8592,6 +8632,15 @@
       wrap.appendChild(panel);
     };
 
+    window.closeEditPanel = function(id) {
+      document.querySelectorAll('.person-edit-panel').forEach(function(p) { p.remove(); });
+      var card = document.querySelector('.person-card[data-id="' + id + '"]');
+      if (card) {
+        card.classList.remove('expanded');
+        if (card.parentElement) card.parentElement.classList.remove('expanded-wrap');
+      }
+    };
+
     window.saveEditPanel = function(id, panel) {
       var member = TEAM.find(function(m) { return m.id === id; });
       if (!member) return;
@@ -8599,6 +8648,7 @@
       var name = panel.querySelector('#ep-name').value.trim();
       if (name) member.name = name;
       member.phone = panel.querySelector('#ep-phone').value.trim();
+      member.notes = panel.querySelector('#ep-notes').value.trim();
       member.roles = Array.from(panel.querySelectorAll('#ep-roles input:checked')).map(function(i) { return i.value; });
       var activeTier = panel.querySelector('#ep-tier .tier-btn.active');
       if (activeTier) member.tier = parseInt(activeTier.dataset.tier);
@@ -8620,6 +8670,8 @@
       if (title) title.textContent = 'New musician';
       document.getElementById('mf-name').value = '';
       document.getElementById('mf-phone').value = '';
+      var notesEl = document.getElementById('mf-notes');
+      if (notesEl) notesEl.value = '';
       // Reset roles
       buildAddFormRoles();
       // Reset tier
@@ -8661,8 +8713,10 @@
       var tier = tierBtn ? parseInt(tierBtn.dataset.tier) : 2;
       var avail = Array.from(document.querySelectorAll('#avail-checkboxes input:checked')).map(function(i) { return parseInt(i.value); });
       var phone = document.getElementById('mf-phone').value.trim();
+      var notes = (document.getElementById('mf-notes') || {}).value || '';
+      notes = notes.trim();
 
-      SundayData.addMember({ name: name, roles: roles, tier: tier, avail: avail, phone: phone });
+      SundayData.addMember({ name: name, roles: roles, tier: tier, avail: avail, phone: phone, notes: notes });
       SundayData.save();
       window.closeAddMember();
       renderPeople();
