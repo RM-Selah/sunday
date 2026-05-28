@@ -4441,6 +4441,9 @@
       transition: color 0.2s;
     }
     .gate-status.error { color: #e06060; }
+    .gate-sent-icon { font-size: 40px; margin-bottom: 16px; }
+    .gate-sent-sub { font-family: var(--font-display); font-size: 13px; color: rgba(255,255,255,0.4); margin-top: 8px; line-height: 1.6; }
+    .gate-back-btn { margin-top: 24px; background: none; border: none; color: var(--dim); font-family: var(--font-display); font-size: 12px; cursor: pointer; text-decoration: underline; }
 
   </style>
   <!-- External libraries load in background — app works without them -->
@@ -4473,19 +4476,31 @@
 </head>
 <body data-current-screen="set">
 
-  <!-- ── Login gate — shown until a valid invite link is entered ── -->
+  <!-- ── Login gate — email magic link flow ── -->
   <div id="gate-screen">
     <div class="gate-logo">The Local</div>
     <div class="gate-tagline">Worship Team</div>
-    <div class="gate-prompt">Paste your invite link to get in</div>
-    <div class="gate-input-row">
-      <input class="gate-input" id="gate-input" type="text"
-             placeholder="Paste link here…"
-             autocomplete="off" autocorrect="off" spellcheck="false"
-             onkeydown="if(event.key==='Enter')window.handleGateSubmit()">
-      <button class="gate-btn" onclick="window.handleGateSubmit()">→</button>
+
+    <!-- Step 1: email -->
+    <div id="gate-step-email">
+      <div class="gate-prompt">Enter your email to get in</div>
+      <div class="gate-input-row">
+        <input class="gate-input" id="gate-email" type="email"
+               placeholder="you@email.com"
+               autocomplete="email" autocorrect="off" spellcheck="false"
+               onkeydown="if(event.key==='Enter')window.gateRequestLink()">
+        <button class="gate-btn" onclick="window.gateRequestLink()">→</button>
+      </div>
+      <div class="gate-status" id="gate-status"></div>
     </div>
-    <div class="gate-status" id="gate-status"></div>
+
+    <!-- Step 2: check email -->
+    <div id="gate-step-sent" style="display:none; text-align:center;">
+      <div class="gate-sent-icon">✉</div>
+      <div class="gate-prompt">Check your email</div>
+      <div class="gate-sent-sub">We sent a sign-in link to<br><strong id="gate-sent-email" style="color:var(--text);"></strong></div>
+      <button class="gate-back-btn" onclick="window.gateBackToEmail()">Use a different email</button>
+    </div>
   </div>
 
   <!-- HERO LANDING — archived for separate onboarding sprint; hidden via class -->
@@ -4979,6 +4994,28 @@
             <div id="cloud-sync-viewer" style="display:none;">
               <div style="font-size:12px; color:var(--amber); margin-bottom:8px;">You're in view-only mode. Roster is read-only.</div>
               <button class="settings-btn" onclick="window.enterAdminPin()">Enter admin key to unlock</button>
+            </div>
+          </div>
+
+          <!-- TEAM ACCESS SECTION -->
+          <div class="settings-section" id="team-access-section">
+            <div class="settings-section-header">
+              <span class="settings-section-title">Team Access</span>
+              <span class="settings-section-desc">Who can sign in to The Local</span>
+            </div>
+            <div id="team-access-list" style="margin-bottom:12px;"></div>
+            <div id="team-access-invite" style="display:none;">
+              <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
+                <input type="email" id="invite-email" placeholder="email@example.com"
+                       class="settings-input" style="flex:1; min-width:160px;">
+                <select id="invite-role" class="settings-input" style="width:auto; padding:8px 12px;">
+                  <option value="wl">Worship Leader</option>
+                  <option value="admin">Admin</option>
+                  <option value="viewer">View only</option>
+                </select>
+                <button class="settings-btn" onclick="window.addTeamMember()">Add</button>
+              </div>
+              <span class="settings-feedback" id="invite-feedback"></span>
             </div>
           </div>
 
@@ -5896,34 +5933,124 @@
     /* ==================== SUNDAY SYNC (KV CLOUD) ==================== */
     var SundaySync = window.SundaySync = {
       workerUrl: 'https://api.runworship.com',
+      // Legacy fields — keep working for Reuben's existing session during transition
       churchId: null,
       adminKey: null,
+      // New session auth fields
+      sessionToken: null,
+      userId: null,
+      role: null,
+      sessionExpires: null,
+      _pendingMagicToken: null,
+      _pendingInviteKey: null,
       _saveTimer: null,
 
       init: function() {
         try {
           this.churchId = localStorage.getItem('sunday_church_id') || null;
           this.adminKey = localStorage.getItem('sunday_admin_key') || null;
+          // Load session from localStorage
+          this.sessionToken = localStorage.getItem('sunday_session_token') || null;
+          this.userId = localStorage.getItem('sunday_user_id') || null;
+          this.role = localStorage.getItem('sunday_role') || null;
+          this.sessionExpires = localStorage.getItem('sunday_session_expires') || null;
+          // Validate session expiry
+          if (this.sessionToken && this.sessionExpires) {
+            if (new Date(this.sessionExpires) <= new Date()) {
+              this._clearSession();
+            }
+          }
         } catch(e) {}
-        // Absorb ?church= / ?key= URL params — clean the URL afterwards
+        // Absorb URL params — ?magicToken= and ?church= / ?key= / ?church= for compat
         try {
           var params = new URLSearchParams(window.location.search);
+          var magicToken = params.get('magicToken');
           var urlChurch = params.get('church');
           var urlKey = params.get('key');
-          if (urlChurch) {
+          var inviteKey = params.get('inviteKey');
+          if (magicToken) {
+            this._pendingMagicToken = magicToken;
+            if (inviteKey) this._pendingInviteKey = inviteKey;
+            window.history.replaceState({}, '', window.location.pathname);
+          } else if (urlChurch) {
             this.churchId = urlChurch;
-            localStorage.setItem('sunday_church_id', urlChurch);
+            try { localStorage.setItem('sunday_church_id', urlChurch); } catch(e) {}
             if (urlKey) {
               this.adminKey = urlKey;
-              localStorage.setItem('sunday_admin_key', urlKey);
+              try { localStorage.setItem('sunday_admin_key', urlKey); } catch(e) {}
             }
             window.history.replaceState({}, '', window.location.pathname);
           }
         } catch(e) {}
       },
 
-      get isAdmin() { return !!this.adminKey; },
-      get isConnected() { return !!this.churchId; },
+      get isAdmin() { return this.role === 'admin' || this.role === 'wl' || !!this.adminKey; },
+      get isConnected() { return !!(this.sessionToken && this.churchId) || !!(this.churchId && this.adminKey); },
+
+      _clearSession: function() {
+        this.sessionToken = null;
+        this.userId = null;
+        this.role = null;
+        this.sessionExpires = null;
+        try {
+          localStorage.removeItem('sunday_session_token');
+          localStorage.removeItem('sunday_user_id');
+          localStorage.removeItem('sunday_role');
+          localStorage.removeItem('sunday_session_expires');
+        } catch(e) {}
+      },
+
+      _getAuthPayload: function() {
+        if (this.sessionToken) return { sessionToken: this.sessionToken };
+        if (this.adminKey) return { adminKey: this.adminKey };
+        return {};
+      },
+
+      requestMagicLink: function(email, callback) {
+        fetch(this.workerUrl + '/auth/magic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, churchId: this.churchId || '8c08d0a636fb' })
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.ok) { if (callback) callback(true, data); }
+            else { if (callback) callback(false, data); }
+          })
+          .catch(function() { if (callback) callback(false); });
+      },
+
+      verifyMagicToken: function(token, callback) {
+        var self = this;
+        fetch(this.workerUrl + '/auth/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: token, inviteKey: this._pendingInviteKey || undefined })
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.ok && data.sessionToken) {
+              self.sessionToken = data.sessionToken;
+              self.userId = data.userId;
+              self.churchId = data.churchId;
+              self.role = data.role;
+              self.sessionExpires = data.sessionExpires;
+              self._pendingMagicToken = null;
+              self._pendingInviteKey = null;
+              try {
+                localStorage.setItem('sunday_session_token', data.sessionToken);
+                localStorage.setItem('sunday_user_id', data.userId);
+                localStorage.setItem('sunday_church_id', data.churchId);
+                localStorage.setItem('sunday_role', data.role);
+                localStorage.setItem('sunday_session_expires', data.sessionExpires);
+              } catch(e) {}
+              if (callback) callback(true, data);
+            } else {
+              if (callback) callback(false, data);
+            }
+          })
+          .catch(function() { if (callback) callback(false); });
+      },
 
       createChurch: function(callback) {
         var self = this;
@@ -5949,12 +6076,11 @@
       },
 
       saveState: function() {
-        if (!this.isAdmin || !this.churchId) return;
+        if (!this.isConnected || !this.churchId) return;
         var self = this;
         clearTimeout(this._saveTimer);
         this._saveTimer = setTimeout(function() {
-          var payload = {
-            adminKey: self.adminKey,
+          var payload = Object.assign(self._getAuthPayload(), {
             roster: state.roster,
             rosterBecause: state.rosterBecause || {},
             team: TEAM,
@@ -5963,7 +6089,7 @@
             savedSets: self._getSavedSets(),
             churchName: (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : '',
             rosteringRules: (function(){ try { return localStorage.getItem('sunday_rostering_rules') || ''; } catch(e) { return ''; } })()
-          };
+          });
           fetch(self.workerUrl + '/state?church=' + self.churchId, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -5982,7 +6108,9 @@
 
       loadState: function(callback) {
         if (!this.churchId) { if (callback) callback(false); return; }
-        fetch(this.workerUrl + '/state?church=' + this.churchId)
+        var url = this.workerUrl + '/state?church=' + this.churchId;
+        if (this.sessionToken) url += '&session=' + this.sessionToken;
+        fetch(url)
           .then(function(r) { return r.json(); })
           .then(function(data) {
             if (data.error) { if (callback) callback(false, data.error); return; }
@@ -6059,6 +6187,28 @@
 
       getViewerInviteUrl: function() {
         return 'https://runworship.com?church=' + this.churchId;
+      },
+
+      getMembers: function(callback) {
+        if (!this.sessionToken) { if (callback) callback(false, []); return; }
+        fetch(this.workerUrl + '/members?session=' + this.sessionToken)
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.members) { if (callback) callback(true, data.members); }
+            else { if (callback) callback(false, []); }
+          })
+          .catch(function() { if (callback) callback(false, []); });
+      },
+
+      addMember: function(email, name, role, callback) {
+        fetch(this.workerUrl + '/members/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken: this.sessionToken, email: email, name: name, role: role || 'viewer' })
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(data) { if (callback) callback(data.ok, data); })
+          .catch(function() { if (callback) callback(false); });
       }
     };
 
@@ -6067,7 +6217,7 @@
       var _origSave = SundayData.save.bind(SundayData);
       SundayData.save = function() {
         _origSave();
-        if (SundaySync.isAdmin) SundaySync.saveState();
+        if (SundaySync.isConnected && SundaySync.isAdmin) SundaySync.saveState();
       };
     })();
 
@@ -6079,13 +6229,34 @@
       var gate = document.getElementById('gate-screen');
       if (!gate) return;
 
-      // Already connected — hide gate immediately (no flash)
+      // Already have a valid session — hide gate immediately
       if (SundaySync.isConnected) {
         gate.style.display = 'none';
+        // If there's a pending magic token from the URL, verify it to refresh session
+        if (SundaySync._pendingMagicToken) {
+          SundaySync.verifyMagicToken(SundaySync._pendingMagicToken, function() {});
+        }
         return;
       }
 
-      // Not connected — gate stays visible; wire up handlers
+      // Magic token in URL — auto-verify, show gate briefly while it processes
+      if (SundaySync._pendingMagicToken) {
+        var statusEl = document.getElementById('gate-status');
+        if (statusEl) { statusEl.textContent = 'Signing you in…'; }
+        SundaySync.verifyMagicToken(SundaySync._pendingMagicToken, function(ok, data) {
+          if (ok) {
+            gateEnterApp();
+          } else {
+            if (statusEl) {
+              statusEl.textContent = (data && data.error) ? data.error : 'Link expired — request a new one.';
+              statusEl.className = 'gate-status error';
+            }
+          }
+        });
+        return;
+      }
+
+      // Show gate for unauthenticated user
       var statusEl = document.getElementById('gate-status');
 
       function setStatus(msg, isError) {
@@ -6094,85 +6265,60 @@
         statusEl.className = 'gate-status' + (isError ? ' error' : '');
       }
 
-      function parseCode(raw) {
-        var churchId = null, adminKey = null;
-        // Full URL or URL fragment
-        try {
-          var parsed = new URL(raw.indexOf('://') >= 0 ? raw : 'https://x.com/?' + raw.replace(/^\?/, ''));
-          var p = new URLSearchParams(parsed.search);
-          if (p.get('church')) { churchId = p.get('church'); adminKey = p.get('key') || null; }
-        } catch(e) {}
-        // churchId:adminKey shortcode
-        if (!churchId && raw.indexOf(':') >= 0) {
-          var parts = raw.split(':');
-          churchId = parts[0].trim();
-          adminKey = (parts[1] || '').trim() || null;
-        }
-        // Bare church ID
-        if (!churchId) {
-          var cleaned = raw.replace(/[^a-zA-Z0-9]/g, '');
-          if (cleaned.length >= 8) churchId = cleaned;
-        }
-        return { churchId: churchId, adminKey: adminKey };
+      function gateEnterApp() {
+        SundaySync.loadState(function() {
+          try { renderRoster(); } catch(e) {}
+          try { renderPeople(); } catch(e) {}
+          try { renderSongs(); renderSet(); } catch(e) {}
+        });
+        gate.style.transition = 'opacity 0.35s';
+        gate.style.opacity = '0';
+        setTimeout(function() { gate.style.display = 'none'; }, 380);
       }
 
-      window.handleGateSubmit = function() {
-        var inputEl = document.getElementById('gate-input');
-        var raw = inputEl ? inputEl.value.trim() : '';
-        if (!raw) return;
-
-        var parsed = parseCode(raw);
-        if (!parsed.churchId) {
-          setStatus("Couldn't read that — try copying the whole link.", true);
+      window.gateRequestLink = function() {
+        var emailEl = document.getElementById('gate-email');
+        var email = emailEl ? emailEl.value.trim() : '';
+        if (!email || email.indexOf('@') < 0) {
+          setStatus('Enter a valid email address.', true);
           return;
         }
-
-        setStatus('Checking…');
-
-        fetch('https://api.runworship.com/state?church=' + parsed.churchId)
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            if (data.error) {
-              setStatus('Code not recognised. Ask your worship pastor for the link.', true);
-              return;
-            }
-            // Valid — store credentials
+        setStatus('Sending…');
+        SundaySync.requestMagicLink(email, function(ok, data) {
+          if (!ok) {
+            setStatus('Could not send — check you\'re online and try again.', true);
+            return;
+          }
+          // Dev mode: auto-verify from magicUrl in response
+          if (data.dev && data.magicUrl) {
             try {
-              localStorage.setItem('sunday_church_id', parsed.churchId);
-              if (parsed.adminKey) localStorage.setItem('sunday_admin_key', parsed.adminKey);
+              var devToken = new URL(data.magicUrl).searchParams.get('magicToken');
+              if (devToken) {
+                setStatus('Dev mode: verifying…');
+                SundaySync.verifyMagicToken(devToken, function(ok2, data2) {
+                  if (ok2) gateEnterApp();
+                  else setStatus((data2 && data2.error) || 'Verify failed', true);
+                });
+                return;
+              }
             } catch(e) {}
-            SundaySync.churchId = parsed.churchId;
-            if (parsed.adminKey) SundaySync.adminKey = parsed.adminKey;
-
-            // Load state into app
-            SundaySync.loadState(function() {
-              try { renderRoster(); } catch(e) {}
-              try { renderPeople(); } catch(e) {}
-              try { renderSongs(); renderSet(); } catch(e) {}
-            });
-
-            // Fade gate out
-            gate.style.transition = 'opacity 0.35s';
-            gate.style.opacity = '0';
-            setTimeout(function() { gate.style.display = 'none'; }, 380);
-          })
-          .catch(function() {
-            setStatus('Connection error — check you\'re online and try again.', true);
-          });
+          }
+          // Show "check email" step
+          document.getElementById('gate-step-email').style.display = 'none';
+          var sentEl = document.getElementById('gate-step-sent');
+          if (sentEl) sentEl.style.display = 'block';
+          var sentEmail = document.getElementById('gate-sent-email');
+          if (sentEmail) sentEmail.textContent = email;
+          setStatus('');
+        });
       };
 
-      // Auto-submit on paste when it looks like a full link
-      var inputEl2 = document.getElementById('gate-input');
-      if (inputEl2) {
-        inputEl2.addEventListener('paste', function() {
-          setTimeout(function() {
-            var val = document.getElementById('gate-input').value.trim();
-            if (val.indexOf('church=') >= 0 || val.indexOf('runworship.com') >= 0) {
-              window.handleGateSubmit();
-            }
-          }, 60);
-        });
-      }
+      window.gateBackToEmail = function() {
+        document.getElementById('gate-step-email').style.display = 'block';
+        var sentEl = document.getElementById('gate-step-sent');
+        if (sentEl) sentEl.style.display = 'none';
+        setStatus('');
+      };
     })();
 
     /* ==================== SUNDAY API LAYER ==================== */
@@ -10537,7 +10683,8 @@
     // ── Access control — viewer mode blocks roster mutations ──────────────────
 
     window.isViewerMode = function() {
-      return SundaySync.isConnected && !SundaySync.isAdmin;
+      if (!SundaySync.isConnected) return false;
+      return SundaySync.role === 'viewer';
     };
 
     window.closeSetCard = function() {
@@ -12148,6 +12295,56 @@
 
     };
 
+    // ─── Team Access ─────────────────────────────────────────────────
+    function renderTeamAccess() {
+      var listEl = document.getElementById('team-access-list');
+      var inviteEl = document.getElementById('team-access-invite');
+      if (!listEl) return;
+      if (!SundaySync.isConnected) {
+        listEl.innerHTML = '<div style="font-size:12px;color:var(--dim);">Not connected.</div>';
+        return;
+      }
+      if (SundaySync.isAdmin) {
+        if (inviteEl) inviteEl.style.display = 'block';
+        listEl.innerHTML = '<div style="font-size:12px;color:var(--dim);">Loading…</div>';
+        SundaySync.getMembers(function(ok, members) {
+          if (!ok || !members.length) {
+            listEl.innerHTML = '<div style="font-size:12px;color:var(--dim);">No members yet.</div>';
+            return;
+          }
+          listEl.innerHTML = members.map(function(m) {
+            var lastSeen = m.last_sign_in ? new Date(m.last_sign_in).toLocaleDateString('en-GB', {day:'numeric',month:'short'}) : 'never';
+            return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">' +
+              '<div><div style="font-size:13px;color:var(--text);">' + (m.name || m.email) + '</div>' +
+              '<div style="font-size:11px;color:var(--dim);">' + m.email + ' · ' + m.role + ' · last seen ' + lastSeen + '</div></div>' +
+              '</div>';
+          }).join('');
+        });
+      } else {
+        if (inviteEl) inviteEl.style.display = 'none';
+        listEl.innerHTML = '<div style="font-size:12px;color:var(--dim);">Signed in · ' + (SundaySync.role || 'viewer') + '</div>';
+      }
+    }
+
+    window.addTeamMember = function() {
+      var emailEl = document.getElementById('invite-email');
+      var roleEl = document.getElementById('invite-role');
+      var fbEl = document.getElementById('invite-feedback');
+      var email = emailEl ? emailEl.value.trim() : '';
+      var role = roleEl ? roleEl.value : 'viewer';
+      if (!email || email.indexOf('@') < 0) { if (fbEl) fbEl.textContent = 'Enter a valid email.'; return; }
+      if (fbEl) fbEl.textContent = 'Adding…';
+      SundaySync.addMember(email, null, role, function(ok) {
+        if (ok) {
+          if (fbEl) fbEl.textContent = '✓ Added — they can now sign in';
+          if (emailEl) emailEl.value = '';
+          setTimeout(function() { renderTeamAccess(); }, 500);
+        } else {
+          if (fbEl) fbEl.textContent = 'Failed — try again.';
+        }
+      });
+    };
+
     // ─── Settings Screen Logic ──────────────────────────────────────
     function renderSettings() {
       // Load saved values into fields
@@ -12171,6 +12368,7 @@
       } catch(e) {}
 
       renderCloudSyncSection();
+      renderTeamAccess();
 
       // Update status dots (WhatsApp checks the live Worker)
       updateSettingsStatus();
