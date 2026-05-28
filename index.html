@@ -6066,16 +6066,19 @@
         var self = this;
         clearTimeout(this._saveTimer);
         this._saveTimer = setTimeout(function() {
-          var payload = Object.assign(self._getAuthPayload(), {
-            roster: state.roster,
-            rosterBecause: state.rosterBecause || {},
-            team: TEAM,
-            songs: SONGS,
-            services: services,
-            savedSets: self._getSavedSets(),
-            churchName: (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : '',
-            rosteringRules: (function(){ try { return localStorage.getItem('sunday_rostering_rules') || ''; } catch(e) { return ''; } })()
-          });
+          var isWL = (self.role === 'wl');
+          // WL only syncs their own set lists — never overwrites shared roster/team/songs
+          var payload = self._getAuthPayload();
+          payload.savedSets = self._getSavedSets();
+          if (!isWL) {
+            payload.roster       = state.roster;
+            payload.rosterBecause = state.rosterBecause || {};
+            payload.team         = TEAM;
+            payload.songs        = SONGS;
+            payload.services     = services;
+            payload.churchName   = (typeof heroState !== 'undefined' && heroState.churchName) ? heroState.churchName : '';
+            payload.rosteringRules = (function(){ try { return localStorage.getItem('sunday_rostering_rules') || ''; } catch(e) { return ''; } })();
+          }
           fetch(self.workerUrl + '/state?church=' + self.churchId, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -6320,7 +6323,7 @@
       // === SMART MODEL ROUTING ===
       // Haiku  → fast + cheap — simple tasks (assign, add song, quick questions)
       // Sonnet → smart + capable — complex tasks (build month, set building, big requests)
-      modelFast:    'claude-haiku-4-5-20251001',  // ~4x cheaper — pedestrian tasks
+      modelFast:    'claude-3-5-haiku-20241022',    // ~4x cheaper — pedestrian tasks
       modelSmart:   'claude-sonnet-4-6',           // full power — anything complex
       model:        'claude-sonnet-4-6',           // default, overridden per-call
 
@@ -6889,10 +6892,10 @@
           var actionType = (action.type || '').toUpperCase().replace(/\s+/g, '_');
           console.log('Sunday executing action:', actionType, JSON.stringify(p));
 
-          // Viewer mode — block destructive roster mutations
+          // Block roster mutations for viewer + worship leader roles
           var rosterMutations = ['BUILD_MONTH','FILL_WEEK','ASSIGN','REMOVE_PERSON','REST_PERSON','CLEAR_WEEK','CLEAR_MONTH','SET_ROSTER_MONTH'];
-          if (window.isViewerMode && window.isViewerMode() && rosterMutations.indexOf(actionType) >= 0) {
-            try { addSidebarMsg('You\'re in view-only mode — ask your admin for the admin key to make roster changes.', 'sunday'); } catch(e) {}
+          if (window.isRosterReadOnly && window.isRosterReadOnly() && rosterMutations.indexOf(actionType) >= 0) {
+            try { addSidebarMsg('Roster changes are handled by the team admin — I can help you with set lists here.', 'sunday'); } catch(e) {}
             return;
           }
 
@@ -8705,8 +8708,11 @@
         var anyVisible = false;
         chips.forEach(function(c) { if (c.style.display !== 'none') anyVisible = true; });
         row.style.display = anyVisible ? '' : 'none';
-        // Also hide edit panels inside hidden rows
-        if (!anyVisible) row.querySelectorAll('.person-edit-panel').forEach(function(p) { p.remove(); });
+        // Also clean up any open edit panels + chip state inside hidden rows
+        if (!anyVisible) {
+          row.querySelectorAll('.person-name-chip').forEach(function(c) { c.classList.remove('chip-active'); c.dataset.open = ''; });
+          row.querySelectorAll('.person-edit-panel').forEach(function(p) { p.remove(); });
+        }
       });
     };
     window._activeFilter = 'all';
@@ -8835,10 +8841,9 @@
         btn.textContent = g;
         btn.dataset.val = g;
         btn.onclick = function() {
+          var wasActive = btn.classList.contains('active');
           genderWrap.querySelectorAll('.tier-btn').forEach(function(b) { b.classList.remove('active'); });
-          btn.classList.toggle('active', !btn.classList.contains('active') || true);
-          if (member._genderToggle === g) { btn.classList.remove('active'); member._genderToggle = ''; }
-          else { member._genderToggle = g; }
+          if (!wasActive) btn.classList.add('active'); // click again to deselect
         };
         genderWrap.appendChild(btn);
       });
@@ -10788,6 +10793,12 @@
     window.isViewerMode = function() {
       if (!SundaySync.isConnected) return false;
       return SundaySync.role === 'viewer';
+    };
+
+    // Roster mutations blocked for viewer AND wl (worship leader is set-list only)
+    window.isRosterReadOnly = function() {
+      if (!SundaySync.isConnected) return false;
+      return SundaySync.role === 'viewer' || SundaySync.role === 'wl';
     };
 
     window.closeSetCard = function() {
