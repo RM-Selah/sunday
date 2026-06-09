@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>RUN · V1 Wireframe · The Local</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3EDE0;--card:#FAFAF5;--ink:#1C1915;--dim:#56524C;--faint:#9C9890;
+  --sep:rgba(28,25,21,.08);--bdr:rgba(28,25,21,.12);
+  --key:#C9461F;--nav:68px;
+  --display:'Bebas Neue',sans-serif;
+  --sans:'DM Sans',system-ui,sans-serif;
+  --mono:'Space Grotesk',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{
+  width:100%;height:100%;overflow:hidden;font-family:var(--sans);
+  background:#1c1a14 url('https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1200&q=70') center/cover no-repeat fixed;
+}
+
+#app{
+  width:100%;max-width:430px;height:100%;margin:0 auto;
+  background:var(--bg);display:flex;flex-direction:column;
+  position:relative;overflow:hidden;
+  box-shadow:0 0 100px rgba(0,0,0,.4);
+}
+
+/* ── SCREENS ── */
+.scr{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+.scr.on{display:flex}
+
+/* ── HEADER (BUILD + ROSTERS only) ── */
+.hdr{
+  display:flex;align-items:center;height:48px;padding:0 20px;
+  flex-shrink:0;border-bottom:1px solid var(--sep);gap:10px;
+  background:var(--bg);
+}
+.hdr-lbl{flex:1;font-family:var(--mono);font-size:10px;font-weight:600;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--faint)}
+.hdr-create{display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;
+  font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--ink)}
+.hdr-dot{width:7px;height:7px;border-radius:50%;background:var(--key)}
+
+/* ── SUNNY BAR ── */
+.sbar{
+  display:flex;align-items:center;height:50px;flex-shrink:0;
+  background:var(--card);border:1px solid var(--bdr);border-radius:14px;
+  margin:8px 16px;padding:0 14px;gap:10px;
+}
+.sbar input{flex:1;border:none;background:transparent;font-family:var(--sans);
+  font-size:14px;color:var(--ink);outline:none}
+.sbar input::placeholder{color:var(--faint)}
+.sbar-ico{
+  width:8px;height:8px;border-radius:50%;background:var(--key);flex-shrink:0;
+  box-shadow:0 0 7px rgba(201,70,31,.6);
+}
+.sbar-btn{width:32px;height:32px;border-radius:50%;background:var(--key);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(201,70,31,.4)}
+.sbar-btn svg{width:12px;height:12px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── BOTTOM NAV ── */
+#nav{
+  height:var(--nav);flex-shrink:0;
+  background:rgba(20,16,12,.90);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-top:1px solid rgba(255,255,255,.06);
+  display:flex;z-index:80;
+}
+.ni{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;cursor:pointer;user-select:none;
+  font-family:var(--mono);font-size:8px;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:rgba(255,255,255,.28);transition:color .15s;
+  padding-bottom:2px;position:relative;
+}
+.ni.on{color:rgba(255,255,255,.88)}
+.ni svg{
+  width:22px;height:22px;stroke:currentColor;fill:none;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;
+  transition:stroke .15s;
+}
+.ni.on svg{stroke:var(--key)}
+.ni-dot{
+  position:absolute;top:8px;width:4px;height:4px;border-radius:50%;
+  background:transparent;transition:background .15s;
+}
+.ni.on .ni-dot{background:var(--key)}
+
+/* ═══════════════════════════════════
+   HOME
+═══════════════════════════════════ */
+#scr-home .scroll{flex:1;overflow-y:auto;scrollbar-width:none}
+#scr-home .scroll::-webkit-scrollbar{display:none}
+
+.h-hero{
+  padding:30px 20px 22px;
+  background:linear-gradient(to bottom, rgba(28,25,21,.03) 0%, transparent 100%);
+  border-bottom:1px solid var(--sep);
+}
+.h-eyebrow{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:2.5px;
+  text-transform:uppercase;color:var(--faint);margin-bottom:4px}
+.h-today{font-family:var(--display);font-size:82px;line-height:.88;color:var(--ink);letter-spacing:1px}
+.h-sub{font-size:13px;color:var(--dim);margin-top:8px;line-height:1.4}
+
+.hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:16px 16px 4px}
+.hero{
+  background:var(--card);border:1px solid var(--bdr);border-radius:14px;
+  padding:14px;cursor:pointer;transition:all .14s;
+  min-height:120px;display:flex;flex-direction:column;justify-content:space-between;
+}
+.hero:active{transform:scale(.97);background:#EDE8DA}
+.hero-n{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--faint)}
+.hero-title{font-family:var(--display);font-size:38px;line-height:1;color:var(--ink);margin-top:6px}
+.hero-arrow{font-family:var(--mono);font-size:11px;color:var(--key);font-weight:600}
+
+.cu-lbl{display:flex;align-items:center;justify-content:space-between;padding:0 20px;margin:16px 0 9px}
+.cu-lbl .l{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;color:var(--faint)}
+.cu-lbl .r{font-family:var(--mono);font-size:10px;color:var(--key);cursor:pointer;font-weight:600}
+
+.svc-row{display:flex;gap:8px;padding:0 16px 8px;overflow-x:auto;scrollbar-width:none}
+.svc-row::-webkit-scrollbar{display:none}
+
+.svc{flex-shrink:0;width:188px;background:var(--card);border:1px solid var(--bdr);border-radius:14px;overflow:hidden}
+.svc-head{border-top:2.5px solid var(--ink);padding:10px 14px}
+.svc-time{font-family:var(--mono);font-size:9.5px;color:var(--faint);letter-spacing:.3px;margin-bottom:2px}
+.svc-name{font-family:var(--display);font-size:26px;color:var(--ink);display:flex;align-items:baseline;gap:4px}
+.svc-name em{font-family:var(--sans);font-size:13px;font-style:italic;color:var(--key);font-weight:400}
+.svc-songs{border-top:1px solid var(--sep)}
+.ss{display:flex;align-items:baseline;gap:7px;padding:7px 14px;border-bottom:1px solid var(--sep);font-size:12.5px}
+.ss:last-child{border-bottom:none}
+.ss .n{font-family:var(--mono);font-size:9px;color:var(--faint);width:12px;flex-shrink:0}
+.ss .t{flex:1;color:var(--ink)}
+.ss .k{font-family:var(--mono);font-size:11px;color:var(--key);font-weight:600}
+
+/* ═══════════════════════════════════
+   BUILD
+═══════════════════════════════════ */
+#scr-build{overflow:hidden}
+.b-head{padding:18px 20px 14px;flex-shrink:0;border-bottom:1px solid var(--sep)}
+.b-title{font-family:var(--display);font-size:68px;line-height:.88;color:var(--ink);letter-spacing:1px}
+.b-sub{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-top:5px}
+
+.cols{flex:1;display:flex;gap:1px;background:var(--sep);min-height:0}
+.col{flex:1;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+.col-set{background:#1C1915;flex:1.05}
+
+.col-hdr{padding:10px 12px 8px;flex-shrink:0;border-bottom:1px solid var(--sep);background:inherit}
+.col-set .col-hdr{border-bottom:1px solid rgba(255,255,255,.07)}
+.col-hdr-n{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;color:var(--faint)}
+.col-set .col-hdr-n{color:rgba(255,255,255,.32)}
+
+.col-body{flex:1;overflow-y:auto;scrollbar-width:none;padding:5px 7px 8px}
+.col-body::-webkit-scrollbar{display:none}
+.col-set .col-body{padding:4px 0 8px}
+
+.sec{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;color:var(--faint);padding:8px 5px 3px;display:block}
+.col-set .sec{color:rgba(255,255,255,.22);padding:8px 12px 3px}
+
+/* Song tiles in PRAISE / WORSHIP */
+.sr{
+  display:flex;align-items:center;gap:6px;padding:9px 10px;
+  border-radius:10px;cursor:pointer;transition:all .12s;
+  margin-bottom:4px;background:var(--card);border:1px solid var(--bdr);
+  min-height:38px;
+}
+.sr:active{transform:scale(.96)}
+.sr .n{font-family:var(--mono);font-size:9px;color:var(--faint);width:10px;flex-shrink:0;line-height:1}
+.sr .t{flex:1;font-size:12px;color:var(--ink);line-height:1.2;font-weight:500}
+.sr .k{font-family:var(--mono);font-size:11px;color:var(--key);font-weight:600;flex-shrink:0}
+
+/* SET column tiles */
+.col-set .sr{
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);
+  border-radius:10px;margin:4px 10px;
+}
+.col-set .sr:active{background:rgba(255,255,255,.13)}
+.col-set .sr .n{color:rgba(255,255,255,.28)}
+.col-set .sr .t{color:rgba(255,255,255,.85);font-size:11.5px}
+.col-set .sr .k{color:var(--key)}
+
+.sr.newest{background:rgba(201,70,31,.13);border-color:rgba(201,70,31,.28)}
+.col-set .sr.newest{background:rgba(201,70,31,.22);border-color:rgba(201,70,31,.38)}
+.col-set .sr.newest .t{color:#fff}
+
+/* Phantom empty slots */
+.phantom{
+  display:flex;align-items:center;gap:6px;padding:9px 10px;
+  border:1.5px dashed rgba(255,255,255,.14);border-radius:10px;
+  margin:4px 10px;opacity:.4;
+}
+.phantom .n{font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.32);width:10px}
+.phantom .line{flex:1;height:1px;background:rgba(255,255,255,.14);border-radius:1px}
+
+.b-foot{flex-shrink:0;display:flex;align-items:center;background:#1C1915;padding:10px 16px;gap:10px}
+.b-foot-txt{flex:1;font-family:var(--mono);font-size:9px;letter-spacing:1.5px;
+  text-transform:uppercase;color:rgba(255,255,255,.28)}
+.fin-btn{padding:10px 20px;background:var(--key);color:#fff;border-radius:10px;
+  font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;cursor:pointer;flex-shrink:0;
+  box-shadow:0 2px 10px rgba(201,70,31,.45)}
+.fin-btn:active{opacity:.8;transform:scale(.97)}
+
+/* ═══════════════════════════════════
+   ROSTERS
+═══════════════════════════════════ */
+#scr-rosters .scroll{flex:1;overflow-y:auto;scrollbar-width:none}
+#scr-rosters .scroll::-webkit-scrollbar{display:none}
+
+.r-head{padding:22px 20px 16px;border-bottom:1px solid var(--sep)}
+.r-title{font-family:var(--display);font-size:68px;line-height:.88;color:var(--ink);letter-spacing:1px}
+.r-sub{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--faint);margin-top:5px}
+
+/* ── Horizontal service scroll ── */
+.svc-scroll-x{
+  display:flex;
+  overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;flex-shrink:0;
+  border-bottom:1px solid var(--sep);
+}
+.svc-scroll-x::-webkit-scrollbar{display:none}
+
+.svc-slide{
+  flex:0 0 100%;scroll-snap-align:start;
+  padding:14px 16px 16px;
+}
+
+.svc-slide-hdr{
+  display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;
+}
+.svc-slide-lhs{}
+.svc-slide-date{
+  font-family:var(--display);font-size:34px;line-height:1;color:var(--ink);
+  display:flex;align-items:baseline;gap:5px;
+}
+.svc-slide-date em{font-family:var(--sans);font-size:15px;font-style:italic;color:var(--key);font-weight:400}
+.svc-slide-time{font-family:var(--mono);font-size:9.5px;color:var(--faint);letter-spacing:.3px;margin-top:3px}
+
+.ratio-pill{
+  font-family:var(--mono);font-size:11px;font-weight:600;
+  padding:5px 11px;border-radius:20px;flex-shrink:0;margin-top:4px;
+}
+.ratio-pill.full{background:var(--ink);color:var(--bg)}
+.ratio-pill.gap{background:var(--key);color:#fff}
+.ratio-pill.open{background:rgba(28,25,21,.08);color:var(--faint);border:1px solid var(--bdr)}
+
+/* Stage map */
+.stage{background:var(--card);border:1px solid var(--bdr);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.stage-front{
+  background:var(--ink);color:rgba(255,255,255,.4);
+  display:flex;justify-content:space-between;
+  padding:5px 12px;font-family:var(--mono);font-size:8px;letter-spacing:2.5px;text-transform:uppercase;
+}
+.stage-row{
+  display:flex;justify-content:center;gap:10px;padding:10px 14px;
+  border-bottom:1px solid var(--sep);
+}
+.stage-row:last-of-type{border-bottom:none}
+.pl{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;min-width:52px}
+.pl-ico{
+  width:42px;height:42px;border-radius:12px;
+  background:rgba(28,25,21,.05);border:1.5px solid var(--bdr);
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;color:var(--dim);
+}
+.pl-ico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.pl:hover .pl-ico{border-color:var(--dim);background:rgba(28,25,21,.09)}
+.pl-name{font-size:10px;color:var(--dim);text-align:center;line-height:1.2;font-weight:500}
+.pl-role{font-family:var(--mono);font-size:8px;color:var(--faint);letter-spacing:.5px;text-transform:uppercase}
+
+/* Tech chips */
+.tech-row{display:flex;gap:5px;flex-wrap:wrap}
+.tc{
+  display:flex;align-items:center;gap:5px;
+  background:var(--card);border:1px solid var(--bdr);border-radius:20px;
+  padding:5px 10px;cursor:pointer;
+}
+.tc svg{width:12px;height:12px;stroke:var(--faint);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.tc-lbl{font-family:var(--mono);font-size:8px;color:var(--faint);letter-spacing:.5px;text-transform:uppercase}
+.tc-name{font-size:11.5px;color:var(--ink);font-weight:500}
+.tc.empty .tc-name{color:var(--faint)}
+
+/* Slide indicator dots */
+.slide-dots{display:flex;justify-content:center;gap:5px;padding:9px 0}
+.slide-dot{width:5px;height:5px;border-radius:50%;background:rgba(28,25,21,.12);transition:all .2s}
+.slide-dot.on{background:var(--key);width:14px;border-radius:3px}
+
+/* ── Month outlook ── */
+.mo-section{padding:16px 16px 0}
+.mo-section-hdr{
+  display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;
+}
+.mo-section-hdr .label{
+  font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;color:var(--faint);
+}
+.mo-section-hdr .mo-month{font-family:var(--display);font-size:17px;color:var(--dim)}
+
+.mo-week{
+  background:var(--card);border:1px solid var(--bdr);border-radius:12px;
+  margin-bottom:8px;overflow:hidden;
+}
+.mo-week-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-bottom:1px solid var(--sep);
+}
+.mo-week-date{font-family:var(--display);font-size:22px;color:var(--ink);
+  display:flex;align-items:baseline;gap:4px}
+.mo-week-date em{font-family:var(--sans);font-size:11px;font-style:italic;color:var(--key);font-weight:400}
+.mo-status{font-family:var(--mono);font-size:8px;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;padding:3px 9px;border-radius:10px}
+.s-locked{background:var(--ink);color:var(--bg)}
+.s-gap{background:var(--key);color:#fff}
+.s-open{background:rgba(28,25,21,.07);color:var(--faint);border:1px solid var(--bdr)}
+
+.mo-week-body{display:flex;align-items:center;gap:5px;padding:10px 14px;flex-wrap:wrap}
+.mi{
+  width:30px;height:30px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(28,25,21,.05);border:1px solid var(--bdr);
+  color:var(--dim);transition:all .12s;
+}
+.mi svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.mi.filled{background:rgba(28,25,21,.09);border-color:rgba(28,25,21,.2);color:var(--ink)}
+.mi.gap-slot{background:rgba(201,70,31,.07);border:1px dashed rgba(201,70,31,.3);color:rgba(201,70,31,.5)}
+
+/* ═══════════════════════════════════
+   SHARE CARD OVERLAY
+═══════════════════════════════════ */
+#overlay{
+  display:none;position:absolute;inset:0;bottom:var(--nav);z-index:200;
+  background:rgba(18,15,11,.75);backdrop-filter:blur(4px);
+  flex-direction:column;justify-content:flex-end;padding:12px;
+}
+#overlay.on{display:flex}
+#overlay .tap-away{position:absolute;inset:0;z-index:0}
+
+.card{
+  position:relative;z-index:1;
+  background:#1C1915;border-radius:14px;overflow:hidden;
+  box-shadow:0 24px 60px rgba(0,0,0,.55);
+}
+.card-head{padding:22px 22px 16px;border-bottom:1px solid rgba(255,255,255,.09)}
+.card-eyebrow{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:3px;
+  text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px}
+.card-date{font-family:var(--display);font-size:42px;line-height:.9;color:#F3EDE0;letter-spacing:1px}
+.card-svc{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.32);margin-top:6px;letter-spacing:.5px}
+
+.card-sec{padding:14px 22px}
+.card-sec+.card-sec{border-top:1px solid rgba(255,255,255,.07)}
+.card-sec-lbl{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:2.5px;
+  text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:10px}
+.card-song{display:flex;align-items:baseline;gap:8px;padding:4px 0}
+.card-song-n{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.22);width:14px;flex-shrink:0}
+.card-song-t{flex:1;font-size:14px;color:rgba(255,255,255,.88)}
+.card-song-k{font-family:var(--mono);font-size:12px;color:var(--key);font-weight:600;flex-shrink:0}
+.card-team{font-size:12.5px;color:rgba(255,255,255,.5);line-height:1.8}
+.card-ver{font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.16);letter-spacing:1px;
+  padding:10px 22px;border-top:1px solid rgba(255,255,255,.06)}
+
+.card-btns{display:flex;gap:8px;padding:12px 16px;background:#141210}
+.cb{flex:1;padding:12px;text-align:center;border-radius:10px;cursor:pointer;
+  font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase}
+.cb-copy{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6)}
+.cb-copy:active{background:rgba(255,255,255,.14)}
+.cb-share{background:var(--key);color:#fff;box-shadow:0 2px 10px rgba(201,70,31,.45)}
+.cb-share:active{opacity:.8}
+
+/* ── TOAST ── */
+#toast{
+  position:absolute;bottom:calc(var(--nav) + 12px);left:50%;transform:translateX(-50%);
+  background:var(--ink);color:var(--bg);padding:8px 18px;border-radius:8px;
+  font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;z-index:300;
+}
+#toast.show{opacity:1}
+
+/* ── WIREFRAME BADGE ── */
+#wf-badge{
+  position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
+  z-index:90;color:rgba(255,255,255,.18);
+  font-family:var(--mono);font-size:7px;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;pointer-events:none;white-space:nowrap;
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ════════════════════════════════
+     HOME
+════════════════════════════════ -->
+<div id="scr-home" class="scr on">
+  <div class="scroll">
+    <div class="h-hero">
+      <div class="h-eyebrow">Sun 31 May 2026</div>
+      <div class="h-today">TODAY</div>
+      <div class="h-sub">Two services · Reuben leading</div>
+    </div>
+
+    <div class="hero-grid">
+      <div class="hero" onclick="go('build')">
+        <div class="hero-n">SERVICE RUN</div>
+        <div class="hero-title">BUILD</div>
+        <div class="hero-arrow">→</div>
+      </div>
+      <div class="hero" onclick="go('rosters')">
+        <div class="hero-n">CAST TEAM</div>
+        <div class="hero-title">TEAM</div>
+        <div class="hero-arrow">→</div>
+      </div>
+    </div>
+
+    <div class="cu-lbl">
+      <span class="l">Coming Up</span>
+      <span class="r">ALL →</span>
+    </div>
+    <div class="svc-row">
+      <div class="svc">
+        <div class="svc-head">
+          <div class="svc-time">First service · 9:00am</div>
+          <div class="svc-name">MAY 31 <em>am</em></div>
+        </div>
+        <div class="svc-songs">
+          <div class="ss"><span class="n">1</span><span class="t">Goodness of God</span><span class="k">A</span></div>
+          <div class="ss"><span class="n">2</span><span class="t">Build My Life</span><span class="k">E</span></div>
+          <div class="ss"><span class="n">3</span><span class="t">Mighty to Save</span><span class="k">G</span></div>
+          <div class="ss"><span class="n">4</span><span class="t">Cornerstone</span><span class="k">C</span></div>
+        </div>
+      </div>
+      <div class="svc">
+        <div class="svc-head">
+          <div class="svc-time">Night service · 6:30pm</div>
+          <div class="svc-name">MAY 31 <em>pm</em></div>
+        </div>
+        <div class="svc-songs">
+          <div class="ss"><span class="n">1</span><span class="t">King of Kings</span><span class="k">D</span></div>
+          <div class="ss"><span class="n">2</span><span class="t">Beautiful Name</span><span class="k">A</span></div>
+          <div class="ss"><span class="n">3</span><span class="t">So Will I</span><span class="k">B</span></div>
+          <div class="ss"><span class="n">4</span><span class="t">Living Hope</span><span class="k">C</span></div>
+        </div>
+      </div>
+      <div class="svc" style="opacity:.35">
+        <div class="svc-head">
+          <div class="svc-time">Sunday · 9:00am</div>
+          <div class="svc-name">JUN 7 <em>am</em></div>
+        </div>
+        <div class="svc-songs">
+          <div class="ss"><span class="n"></span><span class="t" style="color:var(--faint);font-style:italic">Not set yet</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sbar">
+      <div class="sbar-ico"></div>
+      <input type="text" placeholder="Ask Sunny anything…">
+      <div class="sbar-btn">
+        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     BUILD
+════════════════════════════════ -->
+<div id="scr-build" class="scr">
+  <div class="hdr">
+    <span class="hdr-lbl">SUN 31 MAY · PM</span>
+    <span class="hdr-create" onclick="openCard()"><span class="hdr-dot"></span> CARD</span>
+  </div>
+  <div class="b-head">
+    <div class="b-title">BUILD</div>
+    <div class="b-sub">PM SERVICE · SUN 31 MAY</div>
+  </div>
+  <div class="cols">
+    <!-- SET column -->
+    <div class="col col-set">
+      <div class="col-hdr"><div class="col-hdr-n">SET</div></div>
+      <div class="col-body" id="set-col"></div>
+    </div>
+    <!-- PRAISE column -->
+    <div class="col">
+      <div class="col-hdr"><div class="col-hdr-n">PRAISE</div></div>
+      <div class="col-body">
+        <span class="sec">CURRENT</span>
+        <div class="sr" onclick="tap('Gratitude','G')"><span class="n">·</span><span class="t">Gratitude</span><span class="k">G</span></div>
+        <div class="sr" onclick="tap('Firm Foundation','E')"><span class="n">·</span><span class="t">Firm Foundation</span><span class="k">E</span></div>
+        <div class="sr" onclick="tap('Praise A','A')"><span class="n">·</span><span class="t">Praise A</span><span class="k">A</span></div>
+        <span class="sec">CLASSIC</span>
+        <div class="sr" onclick="tap('10,000 Reasons','G')"><span class="n">·</span><span class="t">10,000 Reasons</span><span class="k">G</span></div>
+        <div class="sr" onclick="tap('Mighty to Save','A')"><span class="n">·</span><span class="t">Mighty to Save</span><span class="k">A</span></div>
+        <div class="sr" onclick="tap('Happy Day','D')"><span class="n">·</span><span class="t">Happy Day</span><span class="k">D</span></div>
+        <span class="sec">HOMEGROWN</span>
+        <div class="sr" onclick="tap('Sing of Your Name','B')"><span class="n">·</span><span class="t">Sing of Your Name</span><span class="k">B</span></div>
+        <div class="sr" onclick="tap('Run for the Hills','C')"><span class="n">·</span><span class="t">Run for the Hills</span><span class="k">C</span></div>
+      </div>
+    </div>
+    <!-- WORSHIP column -->
+    <div class="col">
+      <div class="col-hdr"><div class="col-hdr-n">WORSHIP</div></div>
+      <div class="col-body">
+        <span class="sec">CURRENT</span>
+        <div class="sr" onclick="tap('Goodness of God','A')"><span class="n">·</span><span class="t">Goodness of God</span><span class="k">A</span></div>
+        <div class="sr" onclick="tap('Same God','E')"><span class="n">·</span><span class="t">Same God</span><span class="k">E</span></div>
+        <div class="sr" onclick="tap('I Thank God','D')"><span class="n">·</span><span class="t">I Thank God</span><span class="k">D</span></div>
+        <span class="sec">CLASSIC</span>
+        <div class="sr" onclick="tap('Cornerstone','C')"><span class="n">·</span><span class="t">Cornerstone</span><span class="k">C</span></div>
+        <div class="sr" onclick="tap('Oceans','D')"><span class="n">·</span><span class="t">Oceans</span><span class="k">D</span></div>
+        <div class="sr" onclick="tap('Beautiful Name','D')"><span class="n">·</span><span class="t">Beautiful Name</span><span class="k">D</span></div>
+        <span class="sec">HOMEGROWN</span>
+        <div class="sr" onclick="tap('Quiet Country','G')"><span class="n">·</span><span class="t">Quiet Country</span><span class="k">G</span></div>
+        <div class="sr" onclick="tap('Be Still','F')"><span class="n">·</span><span class="t">Be Still</span><span class="k">F</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="sbar" style="margin:8px 16px 6px">
+    <div class="sbar-ico"></div>
+    <input type="text" placeholder="Ask Sunny — 'move Cornerstone to slot 1'">
+    <div class="sbar-btn">
+      <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </div>
+  </div>
+  <div class="b-foot">
+    <span class="b-foot-txt">↓ finalise → v1 stamp → share</span>
+    <div class="fin-btn" onclick="openCard()">FINALISE →</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     ROSTERS
+════════════════════════════════ -->
+<div id="scr-rosters" class="scr">
+  <div class="scroll">
+    <div class="r-head">
+      <div class="r-title">ROSTERS</div>
+      <div class="r-sub">MAY 31 · SUN</div>
+    </div>
+
+    <!-- ── Horizontal service scroll ── -->
+    <div class="svc-scroll-x" id="svc-scroll">
+
+      <!-- Service 1: MAY 31 am -->
+      <div class="svc-slide">
+        <div class="svc-slide-hdr">
+          <div class="svc-slide-lhs">
+            <div class="svc-slide-date">MAY 31 <em>am</em></div>
+            <div class="svc-slide-time">First service · 9:00am</div>
+          </div>
+          <div class="ratio-pill full">8 / 8</div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-front"><span>STAGE</span><span>FRONT</span></div>
+          <!-- WL -->
+          <div class="stage-row">
+            <div class="pl">
+              <div class="pl-ico">
+                <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+              </div>
+              <div class="pl-name">Reuben</div>
+              <div class="pl-role">WL</div>
+            </div>
+          </div>
+          <!-- FLV row -->
+          <div class="stage-row">
+            <div class="pl">
+              <div class="pl-ico">
+                <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+              </div>
+              <div class="pl-name">Viv</div>
+              <div class="pl-role">FLV</div>
+            </div>
+            <div class="pl">
+              <div class="pl-ico">
+                <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+              </div>
+              <div class="pl-name">Georgia</div>
+              <div class="pl-role">FLV</div>
+            </div>
+            <div class="pl">
+              <div class="pl-ico">
+                <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+              </div>
+              <div class="pl-name">Hazel</div>
+              <div class="pl-role">FLV</div>
+            </div>
+          </div>
+          <!-- Keys + Guitars row -->
+          <div class="stage-row">
+            <div class="pl">
+              <div class="pl-ico">
+                <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="1"/><rect x="5.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/><rect x="10.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/><rect x="15.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/></svg>
+              </div>
+              <div class="pl-name">Isa</div>
+              <div class="pl-role">Keys</div>
+            </div>
+            <div class="pl">
+              <div class="pl-ico">
+                <svg viewBox="0 0 24 24"><circle cx="9" cy="16" r="4"/><circle cx="9" cy="16" r="1.5" fill="currentColor" stroke="none"/><path d="M13 12l7-7"/><path d="M18 4l2.5.5.5 2.5" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="pl-name">Jake</div>
+              <div class="pl-role">Guitar</div>
+            </div>
+            <div class="pl">
+              <div class="pl-ico">
+                <svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="5" ry="5.5"/><ellipse cx="12" cy="14" rx="2" ry="2" stroke-width="1"/><line x1="12" y1="8.5" x2="12" y2="3"/><line x1="9.5" y1="4.5" x2="14.5" y2="4.5"/><line x1="9.5" y1="3" x2="14.5" y2="3"/></svg>
+              </div>
+              <div class="pl-name">Hazel C</div>
+              <div class="pl-role">Acoustic</div>
+            </div>
+          </div>
+          <!-- Rhythm row -->
+          <div class="stage-row">
+            <div class="pl">
+              <div class="pl-ico">
+                <svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="8" ry="4.5"/><line x1="4" y1="14" x2="4" y2="10"/><line x1="20" y1="14" x2="20" y2="10"/><ellipse cx="12" cy="10" rx="8" ry="3"/><line x1="8" y1="4" x2="10.5" y2="8.5"/><line x1="16" y1="4" x2="13.5" y2="8.5"/></svg>
+              </div>
+              <div class="pl-name">Eddie</div>
+              <div class="pl-role">Drums</div>
+            </div>
+            <div class="pl">
+              <div class="pl-ico">
+                <svg viewBox="0 0 24 24"><circle cx="8" cy="16" r="4"/><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none"/><path d="M12 12.5l6.5-8.5"/><path d="M17 3.5l2.5.5.5 2.5" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="pl-name">Ezra</div>
+              <div class="pl-role">Bass</div>
+            </div>
+          </div>
+        </div><!-- /stage -->
+
+        <div class="tech-row">
+          <div class="tc">
+            <svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            <span class="tc-lbl">FOH</span><span class="tc-name">John</span>
+          </div>
+          <div class="tc">
+            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <span class="tc-lbl">MM</span><span class="tc-name">Alex</span>
+          </div>
+          <div class="tc">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <span class="tc-lbl">Lights</span><span class="tc-name">Lily</span>
+          </div>
+          <div class="tc">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="tc-lbl">Host</span><span class="tc-name">Chris</span>
+          </div>
+          <div class="tc empty">
+            <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span class="tc-lbl">Cam</span><span class="tc-name">—</span>
+          </div>
+        </div>
+      </div><!-- /slide 1 -->
+
+      <!-- Service 2: MAY 31 pm -->
+      <div class="svc-slide">
+        <div class="svc-slide-hdr">
+          <div class="svc-slide-lhs">
+            <div class="svc-slide-date">MAY 31 <em>pm</em></div>
+            <div class="svc-slide-time">Night service · 6:30pm</div>
+          </div>
+          <div class="ratio-pill gap">7 / 8</div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-front"><span>STAGE</span><span>FRONT</span></div>
+          <div class="stage-row">
+            <div class="pl">
+              <div class="pl-ico"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg></div>
+              <div class="pl-name">Kayleigh</div>
+              <div class="pl-role">WL</div>
+            </div>
+          </div>
+          <div class="stage-row">
+            <div class="pl">
+              <div class="pl-ico"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg></div>
+              <div class="pl-name">Cass</div>
+              <div class="pl-role">FLV</div>
+            </div>
+            <div class="pl">
+              <div class="pl-ico"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg></div>
+              <div class="pl-name">Lucy</div>
+              <div class="pl-role">FLV</div>
+            </div>
+          </div>
+          <div class="stage-row">
+            <div class="pl">
+              <div class="pl-ico"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="1"/><rect x="5.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/><rect x="10.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/><rect x="15.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/></svg></div>
+              <div class="pl-name">Ben</div>
+              <div class="pl-role">Keys</div>
+            </div>
+            <div class="pl">
+              <div class="pl-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="16" r="4"/><circle cx="9" cy="16" r="1.5" fill="currentColor" stroke="none"/><path d="M13 12l7-7"/><path d="M18 4l2.5.5.5 2.5" stroke-linejoin="round"/></svg></div>
+              <div class="pl-name">Tom</div>
+              <div class="pl-role">Guitar</div>
+            </div>
+            <!-- Acoustic — gap -->
+            <div class="pl" style="opacity:.35">
+              <div class="pl-ico" style="border-color:rgba(201,70,31,.3);background:rgba(201,70,31,.05)">
+                <svg viewBox="0 0 24 24" style="stroke:rgba(201,70,31,.5)"><ellipse cx="12" cy="14" rx="5" ry="5.5"/><ellipse cx="12" cy="14" rx="2" ry="2" stroke-width="1"/><line x1="12" y1="8.5" x2="12" y2="3"/><line x1="9.5" y1="4.5" x2="14.5" y2="4.5"/><line x1="9.5" y1="3" x2="14.5" y2="3"/></svg>
+              </div>
+              <div class="pl-name" style="color:var(--key)">—</div>
+              <div class="pl-role">Acoustic</div>
+            </div>
+          </div>
+          <div class="stage-row">
+            <div class="pl">
+              <div class="pl-ico"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="8" ry="4.5"/><line x1="4" y1="14" x2="4" y2="10"/><line x1="20" y1="14" x2="20" y2="10"/><ellipse cx="12" cy="10" rx="8" ry="3"/><line x1="8" y1="4" x2="10.5" y2="8.5"/><line x1="16" y1="4" x2="13.5" y2="8.5"/></svg></div>
+              <div class="pl-name">Liam</div>
+              <div class="pl-role">Drums</div>
+            </div>
+            <div class="pl">
+              <div class="pl-ico"><svg viewBox="0 0 24 24"><circle cx="8" cy="16" r="4"/><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none"/><path d="M12 12.5l6.5-8.5"/><path d="M17 3.5l2.5.5.5 2.5" stroke-linejoin="round"/></svg></div>
+              <div class="pl-name">Ezra</div>
+              <div class="pl-role">Bass</div>
+            </div>
+          </div>
+        </div><!-- /stage -->
+
+        <div class="tech-row">
+          <div class="tc">
+            <svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            <span class="tc-lbl">FOH</span><span class="tc-name">Sam</span>
+          </div>
+          <div class="tc">
+            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <span class="tc-lbl">MM</span><span class="tc-name">Alex</span>
+          </div>
+          <div class="tc">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="tc-lbl">Host</span><span class="tc-name">Chris</span>
+          </div>
+        </div>
+      </div><!-- /slide 2 -->
+
+    </div><!-- /svc-scroll-x -->
+
+    <!-- Slide indicator -->
+    <div class="slide-dots" id="slide-dots">
+      <div class="slide-dot on"></div>
+      <div class="slide-dot"></div>
+    </div>
+
+    <!-- ── Month Outlook ── -->
+    <div class="mo-section">
+      <div class="mo-section-hdr">
+        <span class="label">Month Outlook</span>
+        <span class="mo-month">JUN 2026</span>
+      </div>
+
+      <!-- Week 1: Jun 7 — LOCKED -->
+      <div class="mo-week">
+        <div class="mo-week-hdr">
+          <div class="mo-week-date">JUN 7 <em>am</em></div>
+          <div class="mo-status s-locked">LOCKED</div>
+        </div>
+        <div class="mo-week-body">
+          <div class="mi filled"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="mi filled"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="mi filled"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="mi filled"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="1"/><rect x="5.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/><rect x="10.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/><rect x="15.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/></svg></div>
+          <div class="mi filled"><svg viewBox="0 0 24 24"><circle cx="9" cy="16" r="4"/><circle cx="9" cy="16" r="1.5" fill="currentColor" stroke="none"/><path d="M13 12l7-7"/></svg></div>
+          <div class="mi filled"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="5" ry="5.5"/><ellipse cx="12" cy="14" rx="2" ry="2" stroke-width="1"/><line x1="12" y1="8.5" x2="12" y2="3"/></svg></div>
+          <div class="mi filled"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="8" ry="4.5"/><line x1="4" y1="14" x2="4" y2="10"/><line x1="20" y1="14" x2="20" y2="10"/><ellipse cx="12" cy="10" rx="8" ry="3"/></svg></div>
+          <div class="mi filled"><svg viewBox="0 0 24 24"><circle cx="8" cy="16" r="4"/><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none"/><path d="M12 12.5l6.5-8.5"/></svg></div>
+        </div>
+      </div>
+
+      <!-- Week 2: Jun 14 — 2 GAPS -->
+      <div class="mo-week">
+        <div class="mo-week-hdr">
+          <div class="mo-week-date">JUN 14 <em>am</em></div>
+          <div class="mo-status s-gap">2 GAPS</div>
+        </div>
+        <div class="mo-week-body">
+          <div class="mi filled"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="mi filled"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="mi gap-slot"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="mi filled"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="1"/><rect x="5.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/><rect x="10.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/><rect x="15.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/></svg></div>
+          <div class="mi gap-slot"><svg viewBox="0 0 24 24"><circle cx="9" cy="16" r="4"/><circle cx="9" cy="16" r="1.5" fill="currentColor" stroke="none"/><path d="M13 12l7-7"/></svg></div>
+          <div class="mi filled"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="5" ry="5.5"/><ellipse cx="12" cy="14" rx="2" ry="2" stroke-width="1"/><line x1="12" y1="8.5" x2="12" y2="3"/></svg></div>
+          <div class="mi filled"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="8" ry="4.5"/><line x1="4" y1="14" x2="4" y2="10"/><line x1="20" y1="14" x2="20" y2="10"/><ellipse cx="12" cy="10" rx="8" ry="3"/></svg></div>
+          <div class="mi filled"><svg viewBox="0 0 24 24"><circle cx="8" cy="16" r="4"/><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none"/><path d="M12 12.5l6.5-8.5"/></svg></div>
+        </div>
+      </div>
+
+      <!-- Week 3: Jun 21 — OPEN -->
+      <div class="mo-week">
+        <div class="mo-week-hdr">
+          <div class="mo-week-date">JUN 21 <em>am</em></div>
+          <div class="mo-status s-open">OPEN</div>
+        </div>
+        <div class="mo-week-body">
+          <div class="mi"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="1"/><rect x="5.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/><rect x="10.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/><rect x="15.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 24 24"><circle cx="9" cy="16" r="4"/><circle cx="9" cy="16" r="1.5" fill="currentColor" stroke="none"/><path d="M13 12l7-7"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="5" ry="5.5"/><ellipse cx="12" cy="14" rx="2" ry="2" stroke-width="1"/><line x1="12" y1="8.5" x2="12" y2="3"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="8" ry="4.5"/><line x1="4" y1="14" x2="4" y2="10"/><line x1="20" y1="14" x2="20" y2="10"/><ellipse cx="12" cy="10" rx="8" ry="3"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 24 24"><circle cx="8" cy="16" r="4"/><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none"/><path d="M12 12.5l6.5-8.5"/></svg></div>
+        </div>
+      </div>
+
+      <!-- Week 4: Jun 28 — OPEN -->
+      <div class="mo-week">
+        <div class="mo-week-hdr">
+          <div class="mo-week-date">JUN 28 <em>am</em></div>
+          <div class="mo-status s-open">OPEN</div>
+        </div>
+        <div class="mo-week-body">
+          <div class="mi"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10c0 3.9 3.1 7 7 7s7-3.1 7-7"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="1"/><rect x="5.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/><rect x="10.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/><rect x="15.5" y="7" width="2.5" height="5.5" rx=".4" fill="currentColor" stroke="none"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 24 24"><circle cx="9" cy="16" r="4"/><circle cx="9" cy="16" r="1.5" fill="currentColor" stroke="none"/><path d="M13 12l7-7"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="5" ry="5.5"/><ellipse cx="12" cy="14" rx="2" ry="2" stroke-width="1"/><line x1="12" y1="8.5" x2="12" y2="3"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="8" ry="4.5"/><line x1="4" y1="14" x2="4" y2="10"/><line x1="20" y1="14" x2="20" y2="10"/><ellipse cx="12" cy="10" rx="8" ry="3"/></svg></div>
+          <div class="mi"><svg viewBox="0 0 24 24"><circle cx="8" cy="16" r="4"/><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none"/><path d="M12 12.5l6.5-8.5"/></svg></div>
+        </div>
+      </div>
+
+    </div><!-- /mo-section -->
+
+    <div class="sbar" style="margin-top:16px">
+      <div class="sbar-ico"></div>
+      <input type="text" placeholder="Ask Sunny — 'who's free Jun 14'">
+      <div class="sbar-btn">
+        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </div>
+    </div>
+  </div>
+</div><!-- /scr-rosters -->
+
+<!-- ════════════════════════════════
+     SHARE CARD OVERLAY
+════════════════════════════════ -->
+<div id="overlay">
+  <div class="tap-away" onclick="closeCard()"></div>
+  <div class="card">
+    <div class="card-head">
+      <div class="card-eyebrow">RUN · The Local</div>
+      <div class="card-date">MAY 31<br>7pm service</div>
+      <div class="card-svc">v1 · Reuben Morgan · Just now</div>
+    </div>
+    <div class="card-sec">
+      <div class="card-sec-lbl">SET LIST</div>
+      <div id="card-songs"></div>
+    </div>
+    <div class="card-sec">
+      <div class="card-sec-lbl">TEAM</div>
+      <div class="card-team">
+        Reuben WL · Viv FLV · Georgia FLV<br>
+        Isa Keys · Jake Guitar · Hazel Acoustic<br>
+        Eddie Drums · Ezra Bass<br>
+        John FOH · Alex MM · Chris Host
+      </div>
+    </div>
+    <div class="card-ver">v1 · The Local · 31 May 2026</div>
+    <div class="card-btns">
+      <div class="cb cb-copy" onclick="copyCard()">COPY</div>
+      <div class="cb cb-share" onclick="shareCard()">↑ SHARE</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     BOTTOM NAV
+════════════════════════════════ -->
+<div id="nav">
+  <div class="ni on" data-s="home" onclick="go('home')">
+    <div class="ni-dot"></div>
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>HOME</span>
+  </div>
+  <div class="ni" data-s="rosters" onclick="go('rosters')">
+    <div class="ni-dot"></div>
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span>TEAM</span>
+  </div>
+  <div class="ni" data-s="build" onclick="go('build')">
+    <div class="ni-dot"></div>
+    <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    <span>RUN</span>
+  </div>
+</div>
+
+<div id="wf-badge">WIREFRAME</div>
+<div id="toast"></div>
+
+</div><!-- #app -->
+<script>
+// ── STATE ──
+var SET = [
+  {t:'Goodness of God',k:'A'},
+  {t:'Build My Life',k:'E'},
+  {t:'Cornerstone',k:'C'},
+  {t:'Same God',k:'E'},
+  {t:'King of Kings',k:'D'},
+];
+var MAX = 7;
+var newestIdx = SET.length - 1;
+
+// ── NAV ──
+function go(name) {
+  document.querySelectorAll('.scr').forEach(function(s){s.classList.remove('on')});
+  var t = document.getElementById('scr-'+name);
+  if (t) t.classList.add('on');
+  document.querySelectorAll('.ni').forEach(function(n){
+    n.classList.toggle('on', n.dataset.s === name);
+  });
+}
+
+// ── BUILD: tap to snap ──
+function tap(title, key) {
+  if (SET.length >= MAX) { toast('Set is full'); return; }
+  for (var i=0; i<SET.length; i++) {
+    if (SET[i].t === title) { SET.splice(i,1); newestIdx=-1; renderSet(); return; }
+  }
+  SET.push({t:title,k:key});
+  newestIdx = SET.length - 1;
+  renderSet();
+}
+
+function removeSlot(i) {
+  SET.splice(i,1);
+  newestIdx = -1;
+  renderSet();
+}
+
+function renderSet() {
+  var col = document.getElementById('set-col');
+  if (!col) return;
+  var h = '';
+  SET.forEach(function(s,i){
+    var cls = 'sr'+(i===newestIdx?' newest':'');
+    h += '<div class="'+cls+'" onclick="removeSlot('+i+')">' +
+         '<span class="n">'+(i+1)+'</span>' +
+         '<span class="t">'+s.t+'</span>' +
+         '<span class="k">'+s.k+'</span>' +
+         '</div>';
+  });
+  // phantom slots
+  var shown = Math.max(SET.length + 1, 4);
+  var phantoms = Math.min(shown - SET.length, MAX - SET.length);
+  for (var p=0; p<phantoms && p<2; p++) {
+    h += '<div class="phantom"><span class="n">'+(SET.length+p+1)+'</span><span class="line"></span></div>';
+  }
+  col.innerHTML = h;
+  renderCardSongs();
+}
+
+// ── SHARE CARD ──
+function renderCardSongs() {
+  var el = document.getElementById('card-songs');
+  if (!el) return;
+  var h = '';
+  SET.forEach(function(s,i){
+    h += '<div class="card-song">' +
+         '<span class="card-song-n">'+(i+1)+'</span>' +
+         '<span class="card-song-t">'+s.t+'</span>' +
+         '<span class="card-song-k">'+s.k+'</span>' +
+         '</div>';
+  });
+  el.innerHTML = h;
+}
+
+function openCard() {
+  renderCardSongs();
+  document.getElementById('overlay').classList.add('on');
+}
+function closeCard() {
+  document.getElementById('overlay').classList.remove('on');
+}
+function copyCard() {
+  toast('Card copied');
+  closeCard();
+}
+function shareCard() {
+  if (navigator.share) {
+    navigator.share({title:'The Local · May 31',text:'Set list from RUN'}).catch(function(){});
+  } else {
+    toast('Copied — paste into WhatsApp');
+  }
+  closeCard();
+}
+
+// ── ROSTER SLIDE INDICATOR ──
+var svcScroll = document.getElementById('svc-scroll');
+if (svcScroll) {
+  svcScroll.addEventListener('scroll', function() {
+    var idx = Math.round(svcScroll.scrollLeft / svcScroll.offsetWidth);
+    document.querySelectorAll('.slide-dot').forEach(function(d,i){
+      d.classList.toggle('on', i===idx);
+    });
+  }, {passive:true});
+}
+
+// ── TOAST ──
+var toastTimer;
+function toast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){el.classList.remove('show')}, 2000);
+}
+
+// ── INIT ──
+renderSet();
+</script>
+</body>
+</html>
