@@ -93,50 +93,89 @@ html,body{
 /* ═══════════════════════════════════
    HOME
 ═══════════════════════════════════ */
+#scr-home{
+  background:
+    linear-gradient(to bottom, var(--bg) 35%, rgba(243,237,224,.55) 62%, rgba(243,237,224,0) 100%),
+    #1c1a14 url('https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1200&q=70') center/cover no-repeat;
+}
 #scr-home .scroll{flex:1;overflow-y:auto;scrollbar-width:none}
 #scr-home .scroll::-webkit-scrollbar{display:none}
 
-.h-hero{
-  padding:30px 20px 22px;
-  background:linear-gradient(to bottom, rgba(28,25,21,.03) 0%, transparent 100%);
-  border-bottom:1px solid var(--sep);
+.h-topbar{display:flex;align-items:center;height:44px;padding:0 20px;flex-shrink:0;gap:10px}
+.h-topbar-lbl{flex:1;font-family:var(--mono);font-size:10px;font-weight:600;
+  letter-spacing:2px;text-transform:uppercase;color:var(--dim)}
+.h-topbar-create{display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;
+  font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--ink)}
+.h-topbar-dot{width:7px;height:7px;border-radius:50%;background:var(--key)}
+
+.h-title-row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:0 20px 16px}
+.h-title-word{font-family:var(--display);font-size:78px;line-height:.88;color:var(--ink);letter-spacing:1px}
+.h-title-meta{flex:1;text-align:right;font-size:13px;font-style:italic;color:var(--dim);
+  align-self:flex-end;padding-bottom:8px;line-height:1.4;min-width:130px}
+
+.h-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px 16px}
+.h-card{border-radius:16px;height:185px;display:flex;flex-direction:column;
+  justify-content:space-between;padding:13px;position:relative;overflow:hidden;
+  cursor:pointer;transition:transform .14s;background-size:cover;background-position:center}
+.h-card:active{transform:scale(.97)}
+.h-card-set{
+  background-color:var(--card);
+  background-image:url('https://images.unsplash.com/photo-1501854140801-50d01698950b?w=600&q=50');
 }
-.h-eyebrow{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:2.5px;
-  text-transform:uppercase;color:var(--faint);margin-bottom:4px}
-.h-today{font-family:var(--display);font-size:82px;line-height:.88;color:var(--ink);letter-spacing:1px}
-.h-sub{font-size:13px;color:var(--dim);margin-top:8px;line-height:1.4}
-
-.hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:16px 16px 4px}
-.hero{
-  background:var(--card);border:1px solid var(--bdr);border-radius:14px;
-  padding:14px;cursor:pointer;transition:all .14s;
-  min-height:120px;display:flex;flex-direction:column;justify-content:space-between;
+.h-card-set::after{content:'';position:absolute;inset:0;background:rgba(245,239,227,.84);pointer-events:none}
+.h-card-team{
+  background-color:#2b1f18;
+  background-image:url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&q=70');
+  background-blend-mode:multiply;
 }
-.hero:active{transform:scale(.97);background:#EDE8DA}
-.hero-n{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:1.5px;
-  text-transform:uppercase;color:var(--faint)}
-.hero-title{font-family:var(--display);font-size:38px;line-height:1;color:var(--ink);margin-top:6px}
-.hero-arrow{font-family:var(--mono);font-size:11px;color:var(--key);font-weight:600}
+.h-card-team::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(to bottom,rgba(28,18,12,.2) 0%,rgba(28,18,12,.55) 100%);pointer-events:none}
+.h-card-row{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1}
+.h-card-label{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--dim)}
+.h-card-team .h-card-label{color:rgba(255,255,255,.45)}
+.h-card-plus{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:18px;line-height:1;font-weight:300;
+  background:rgba(28,25,21,.06);border:1px solid rgba(28,25,21,.16);color:var(--dim)}
+.h-card-team .h-card-plus{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.75)}
+.h-card-word{font-family:var(--display);font-size:52px;line-height:1;letter-spacing:1px;
+  color:var(--ink);position:relative;z-index:1}
+.h-card-team .h-card-word{color:#F3EDE0}
 
-.cu-lbl{display:flex;align-items:center;justify-content:space-between;padding:0 20px;margin:16px 0 9px}
-.cu-lbl .l{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:2px;
-  text-transform:uppercase;color:var(--faint)}
-.cu-lbl .r{font-family:var(--mono);font-size:10px;color:var(--key);cursor:pointer;font-weight:600}
+.cu-header{display:flex;align-items:center;justify-content:space-between;padding:0 20px 10px}
+.cu-header-l{display:flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;color:var(--ink)}
+.cu-dash{width:16px;height:2px;background:var(--key);border-radius:1px;flex-shrink:0}
+.cu-header-r{font-family:var(--mono);font-size:10px;color:var(--dim);cursor:pointer}
 
-.svc-row{display:flex;gap:8px;padding:0 16px 8px;overflow-x:auto;scrollbar-width:none}
-.svc-row::-webkit-scrollbar{display:none}
+.cu-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px 16px}
+.cu-card{background:var(--card);border:1px solid var(--bdr);border-radius:14px;overflow:hidden}
+.cu-card-hdr{padding:11px 12px 8px;border-bottom:1px solid var(--sep)}
+.cu-card-date{font-family:var(--display);font-size:24px;line-height:1;
+  color:var(--ink);display:flex;align-items:baseline;gap:3px}
+.cu-card-date em{font-family:var(--sans);font-size:11px;font-style:italic;color:var(--key);font-weight:400}
+.cu-card-time{font-size:10px;font-style:italic;color:var(--dim);margin-top:2px}
+.cu-song{display:flex;align-items:baseline;gap:6px;padding:6px 12px;
+  border-bottom:1px solid var(--sep)}
+.cu-song:last-child{border-bottom:none}
+.cu-song .cu-n{font-size:9px;color:var(--faint);width:10px;flex-shrink:0}
+.cu-song .cu-t{flex:1;font-size:11.5px;color:var(--ink);font-weight:500}
+.cu-song .cu-k{font-family:var(--mono);font-size:10px;color:var(--key);font-weight:600;flex-shrink:0}
 
-.svc{flex-shrink:0;width:188px;background:var(--card);border:1px solid var(--bdr);border-radius:14px;overflow:hidden}
-.svc-head{border-top:2.5px solid var(--ink);padding:10px 14px}
-.svc-time{font-family:var(--mono);font-size:9.5px;color:var(--faint);letter-spacing:.3px;margin-bottom:2px}
-.svc-name{font-family:var(--display);font-size:26px;color:var(--ink);display:flex;align-items:baseline;gap:4px}
-.svc-name em{font-family:var(--sans);font-size:13px;font-style:italic;color:var(--key);font-weight:400}
-.svc-songs{border-top:1px solid var(--sep)}
-.ss{display:flex;align-items:baseline;gap:7px;padding:7px 14px;border-bottom:1px solid var(--sep);font-size:12.5px}
-.ss:last-child{border-bottom:none}
-.ss .n{font-family:var(--mono);font-size:9px;color:var(--faint);width:12px;flex-shrink:0}
-.ss .t{flex:1;color:var(--ink)}
-.ss .k{font-family:var(--mono);font-size:11px;color:var(--key);font-weight:600}
+.sbar-home{flex-shrink:0;display:flex;align-items:center;height:54px;
+  background:rgba(20,16,12,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-radius:16px;margin:6px 14px 10px;padding:0 14px;gap:10px}
+.sbar-home input{flex:1;border:none;background:transparent;outline:none;
+  font-family:var(--sans);font-size:14px;font-style:italic;color:rgba(255,255,255,.7)}
+.sbar-home input::placeholder{color:rgba(255,255,255,.35);font-style:italic}
+.sbar-home-ico{width:9px;height:9px;border-radius:50%;background:var(--key);
+  box-shadow:0 0 8px rgba(201,70,31,.65);flex-shrink:0}
+.sbar-home-btn{width:36px;height:36px;border-radius:50%;background:var(--key);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
+  box-shadow:0 2px 10px rgba(201,70,31,.5)}
+.sbar-home-btn svg{width:14px;height:14px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
 /* ═══════════════════════════════════
    BUILD
@@ -399,72 +438,63 @@ html,body{
      HOME
 ════════════════════════════════ -->
 <div id="scr-home" class="scr on">
+  <div class="h-topbar">
+    <span class="h-topbar-lbl">SET LIST</span>
+    <span class="h-topbar-create"><span class="h-topbar-dot"></span> CREATE</span>
+  </div>
   <div class="scroll">
-    <div class="h-hero">
-      <div class="h-eyebrow">Sun 31 May 2026</div>
-      <div class="h-today">TODAY</div>
-      <div class="h-sub">Two services · Reuben leading</div>
+    <div class="h-title-row">
+      <div class="h-title-word">TODAY</div>
+      <div class="h-title-meta">Sun 31 May · two services</div>
     </div>
-
-    <div class="hero-grid">
-      <div class="hero" onclick="go('build')">
-        <div class="hero-n">SERVICE RUN</div>
-        <div class="hero-title">BUILD</div>
-        <div class="hero-arrow">→</div>
+    <div class="h-cards">
+      <div class="h-card h-card-set" onclick="go('build')">
+        <div class="h-card-row">
+          <span class="h-card-label">01 — BUILD</span>
+          <div class="h-card-plus">+</div>
+        </div>
+        <div class="h-card-word">SET</div>
       </div>
-      <div class="hero" onclick="go('rosters')">
-        <div class="hero-n">CAST TEAM</div>
-        <div class="hero-title">TEAM</div>
-        <div class="hero-arrow">→</div>
-      </div>
-    </div>
-
-    <div class="cu-lbl">
-      <span class="l">Coming Up</span>
-      <span class="r">ALL →</span>
-    </div>
-    <div class="svc-row">
-      <div class="svc">
-        <div class="svc-head">
-          <div class="svc-time">First service · 9:00am</div>
-          <div class="svc-name">MAY 31 <em>am</em></div>
+      <div class="h-card h-card-team" onclick="go('rosters')">
+        <div class="h-card-row">
+          <span class="h-card-label">02 — TEAM</span>
+          <div class="h-card-plus">+</div>
         </div>
-        <div class="svc-songs">
-          <div class="ss"><span class="n">1</span><span class="t">Goodness of God</span><span class="k">A</span></div>
-          <div class="ss"><span class="n">2</span><span class="t">Build My Life</span><span class="k">E</span></div>
-          <div class="ss"><span class="n">3</span><span class="t">Mighty to Save</span><span class="k">G</span></div>
-          <div class="ss"><span class="n">4</span><span class="t">Cornerstone</span><span class="k">C</span></div>
-        </div>
-      </div>
-      <div class="svc">
-        <div class="svc-head">
-          <div class="svc-time">Night service · 6:30pm</div>
-          <div class="svc-name">MAY 31 <em>pm</em></div>
-        </div>
-        <div class="svc-songs">
-          <div class="ss"><span class="n">1</span><span class="t">King of Kings</span><span class="k">D</span></div>
-          <div class="ss"><span class="n">2</span><span class="t">Beautiful Name</span><span class="k">A</span></div>
-          <div class="ss"><span class="n">3</span><span class="t">So Will I</span><span class="k">B</span></div>
-          <div class="ss"><span class="n">4</span><span class="t">Living Hope</span><span class="k">C</span></div>
-        </div>
-      </div>
-      <div class="svc" style="opacity:.35">
-        <div class="svc-head">
-          <div class="svc-time">Sunday · 9:00am</div>
-          <div class="svc-name">JUN 7 <em>am</em></div>
-        </div>
-        <div class="svc-songs">
-          <div class="ss"><span class="n"></span><span class="t" style="color:var(--faint);font-style:italic">Not set yet</span></div>
-        </div>
+        <div class="h-card-word">ROSTERS</div>
       </div>
     </div>
-
-    <div class="sbar">
-      <div class="sbar-ico"></div>
-      <input type="text" placeholder="Ask Sunny anything…">
-      <div class="sbar-btn">
-        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    <div class="cu-header">
+      <div class="cu-header-l"><div class="cu-dash"></div>COMING UP</div>
+      <span class="cu-header-r">ALL →</span>
+    </div>
+    <div class="cu-cards">
+      <div class="cu-card">
+        <div class="cu-card-hdr">
+          <div class="cu-card-date">MAY 31 <em>am</em></div>
+          <div class="cu-card-time">First service · 9:00</div>
+        </div>
+        <div class="cu-song"><span class="cu-n">1</span><span class="cu-t">Goodness of God</span><span class="cu-k">A</span></div>
+        <div class="cu-song"><span class="cu-n">2</span><span class="cu-t">Build My Life</span><span class="cu-k">E</span></div>
+        <div class="cu-song"><span class="cu-n">3</span><span class="cu-t">Mighty to Save</span><span class="cu-k">G</span></div>
+        <div class="cu-song"><span class="cu-n">4</span><span class="cu-t">Cornerstone</span><span class="cu-k">C</span></div>
       </div>
+      <div class="cu-card">
+        <div class="cu-card-hdr">
+          <div class="cu-card-date">MAY 31 <em>pm</em></div>
+          <div class="cu-card-time">Night service · 6:30</div>
+        </div>
+        <div class="cu-song"><span class="cu-n">1</span><span class="cu-t">King of Kings</span><span class="cu-k">D</span></div>
+        <div class="cu-song"><span class="cu-n">2</span><span class="cu-t">Beautiful Name</span><span class="cu-k">A</span></div>
+        <div class="cu-song"><span class="cu-n">3</span><span class="cu-t">So Will I</span><span class="cu-k">B</span></div>
+        <div class="cu-song"><span class="cu-n">4</span><span class="cu-t">Living Hope</span><span class="cu-k">C</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="sbar-home">
+    <div class="sbar-home-ico"></div>
+    <input type="text" placeholder="Ask Sunny">
+    <div class="sbar-home-btn">
+      <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
     </div>
   </div>
 </div>
@@ -889,8 +919,8 @@ html,body{
   </div>
   <div class="ni" data-s="build" onclick="go('build')">
     <div class="ni-dot"></div>
-    <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-    <span>RUN</span>
+    <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    <span>SERVICE RUN</span>
   </div>
 </div>
 
